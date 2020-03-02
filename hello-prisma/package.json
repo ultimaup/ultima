@@ -1,0 +1,18 @@
+{
+  "name": "platform",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^2.0.0-preview022",
+    "apollo-fetch": "^0.7.0",
+    "fs-extra": "^8.1.0",
+    "jsonwebtoken": "^8.5.1",
+    "pg": "^7.18.2",
+    "prisma2": "^2.0.0-preview022",
+    "uuid": "^7.0.1"
+  },
+  "scripts": {
+    "start": "node ."
+  }
+}

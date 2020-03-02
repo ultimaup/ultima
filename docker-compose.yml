@@ -1,0 +1,64 @@
+version: '3.1'
+
+services:
+  
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./tmp/pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: example
+
+  # graphql-engine:
+  #   image: hasura/graphql-engine:v1.1.0
+  #   ports:
+  #   - "8080:8080"
+  #   depends_on:
+  #   - "db"
+  #   restart: always
+  #   environment:
+  #     HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:example@db:5432/postgres
+  #     HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+  #     HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
+
+  prisma:
+    image: prismagraphql/prisma:1.34
+    restart: always
+    ports:
+      - '4466:4466'
+    depends_on:
+      - "db"
+    environment:
+      PRISMA_CONFIG: |
+        port: 4466
+        databases:
+          default:
+            connector: postgres
+            host: db
+            port: 5432
+            user: postgres
+            password: example
+            database: postgres
+        managementApiSecret: supersecret
+
+  mgmt:
+    build: .
+    
+    ports:
+      - '4467:4467'
+    depends_on:
+      - "db"
+      - "prisma"
+    volumes:
+      - './hello-prisma:/app'
+    working_dir: '/app'
+    command: ["node", "index.js"]
+    environment:
+      PGUSER: postgres 
+      PGHOST: db
+      PGPASSWORD: example
+      PGDATABASE: postgres
+      PGPORT: 5432
+      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
+      PRISMA_MANAGEMENT_SECRET: supersecret
