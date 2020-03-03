@@ -1,7 +1,7 @@
 version: '3.1'
 
 services:
-  
+
   db:
     image: postgres
     restart: always
@@ -31,6 +31,29 @@ services:
             password: example
             database: postgres
         managementApiSecret: supersecret
+  
+  gitea:
+    image: gitea/gitea:latest
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - DB_TYPE=postgres
+      - DB_HOST=db:5432
+      - DB_NAME=gitea #seemingly ignored
+      - DB_USER=gitea
+      - DB_PASSWD=gitea
+      - SECRET_KEY=giteasecretkey
+      - APP_NAME=Platform
+      #iflive - RUN_MODE=prod
+      # - ROOT_URL=publicurl.com
+    restart: always
+    volumes:
+      - ./gitea:/data
+    ports:
+      - "4469:3000"
+      - "222:22"
+    depends_on:
+      - db
 
   mgmt:
     image: node
@@ -40,18 +63,11 @@ services:
       - "db"
       - "prisma"
     volumes:
-      - './hello-prisma:/app'
+      - './mgmt:/app'
     working_dir: '/app'
     command: ["yarn", "start"]
     environment:
-      PGUSER: postgres 
-      PGHOST: db
-      PGPASSWORD: example
-      PGDATABASE: postgres
-      PGPORT: 5432
       PRISMA_MANAGEMENT_URL: http://prisma:4466/management
-      PRISMA_MANAGEMENT_SECRET: supersecret
       PRISMA_MANAGEMENT_API_SECRET: supersecret
-      PRISMA_QUERY_ENGINE_BINARY: /app/node_modules/prisma2/query-engine-debian-openssl-1.1.x
-      PRISMA_MIGRATION_ENGINE_BINARY: /app/node_modules/prisma2/migration-engine-debian-openssl-1.1.x
-      PRISMA_INTROSPECTION_ENGINE_BINARY: /app/node_modules/prisma2/introspection-engine-debian-openssl-1.1.x
+      PORT: 4467
+      

@@ -1,2 +1,5 @@
 node_modules
 tmp
+gitea
+!gitea/gitea/public/*
+!gitea/gitea/conf/*
