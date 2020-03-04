@@ -85,7 +85,7 @@ const getProjectStatus = (name, stage) => {
 const deployProject = ({ name, stage, types, dryRun }) => {
     return mgmtFetch({
         query:`mutation deploy($name: String!, $stage: String!, $types: String!, $dryRun: Boolean!) {
-                deploy(input: { name: $name, stage: $stage, types: $types }) {
+                deploy(input: { name: $name, stage: $stage, types: $types, dryRun: $dryRun }) {
                     errors {
                         type
                         field

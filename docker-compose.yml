@@ -43,6 +43,7 @@ services:
       - DB_USER=gitea
       - DB_PASSWD=gitea
       - SECRET_KEY=giteasecretkey
+      - ENABLE_SWAGGER=false
       - APP_NAME=Platform
       #iflive - RUN_MODE=prod
       # - ROOT_URL=publicurl.com
@@ -65,9 +66,13 @@ services:
     volumes:
       - './mgmt:/app'
     working_dir: '/app'
-    command: ["yarn", "start"]
+    command: ["yarn", "dev"]
     environment:
       PRISMA_MANAGEMENT_URL: http://prisma:4466/management
       PRISMA_MANAGEMENT_API_SECRET: supersecret
       PORT: 4467
+      GITEA_WEBHOOK_SECRET: gitea-secret
+      GITEA_URL: http://gitea:3000
+      GITEA_MACHINE_USER: machine
+      GITEA_MACHINE_PASSWORD: Password123!
       

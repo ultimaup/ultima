@@ -6,13 +6,21 @@
   "dependencies": {
     "apollo-fetch": "^0.7.0",
     "apollo-server": "^2.11.0",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
     "fs-extra": "^8.1.0",
     "graphql": "^14.6.0",
     "jsonwebtoken": "^8.5.1",
+    "unzip-stream": "^0.3.0",
     "uuid": "^7.0.1"
   },
   "scripts": {
     "start": "node .",
-    "start:scratch": "yarn && yarn start"
+    "start:scratch": "yarn && yarn start",
+    "dev": "NODE_ENV=dev nodemon .",
+    "dev:scratch": "yarn && yarn dev"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
   }
 }
