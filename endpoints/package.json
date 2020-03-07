@@ -1,0 +1,23 @@
+{
+  "name": "functions",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "dockerode": "^3.1.0",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.0",
+    "fs-extra": "^8.1.0",
+    "node-fetch": "^2.6.0",
+    "uuid": "^7.0.1"
+  },
+  "scripts": {
+    "start": "node .",
+    "start:scratch": "yarn && yarn start",
+    "dev": "NODE_ENV=dev nodemon .",
+    "dev:scratch": "yarn && yarn dev"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}

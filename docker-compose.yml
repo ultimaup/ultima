@@ -75,4 +75,36 @@ services:
       GITEA_URL: http://gitea:3000
       GITEA_MACHINE_USER: machine
       GITEA_MACHINE_PASSWORD: Password123!
+  
+  dind:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - './endpoints/certs:/certs-output'
+    environment:
+      DOCKER_TLS_CERTDIR: /certs-output
+    expose:
+      - 2375
+      - 2376
+
+  endpoints:
+    build: ./endpoints
+    privileged: true
+    ports:
+      - '4470:4470'
+    depends_on:
+      - "db"
+      - "prisma"
+      - "dind"
+    volumes:
+      - './endpoints:/app'
+    working_dir: '/app'
+    command: ["yarn", "dev"]
+    environment:
+      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
+      PRISMA_MANAGEMENT_API_SECRET: supersecret
+      PORT: 4470
+      DOCKER_HOSTNAME: dind
+      DOCKER_HOST: tcp://dind:2376
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
       
