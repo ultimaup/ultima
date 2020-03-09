@@ -2,7 +2,6 @@ const fs = require('fs')
 const uuid =  require('uuid').v4
 const express = require('express')
 const bodyParser = require('body-parser')
-const path = require('path')
 const Docker = require('dockerode')
 const fetch = require('node-fetch')
 const requestProxy = require('express-http-proxy')
@@ -24,8 +23,8 @@ const getDeploymentObject = async id => {
 }
 
 const getBundle = async url => {
-	// cached
-	return path.resolve('./funcs/test.tar.gz')
+	// cached(?)
+	return fs.createReadStream('./funcs/test.tar.gz')
 }
 
 const app = express()

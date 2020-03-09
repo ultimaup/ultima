@@ -75,7 +75,7 @@ services:
       GITEA_URL: http://gitea:3000
       GITEA_MACHINE_USER: machine
       GITEA_MACHINE_PASSWORD: Password123!
-  
+
   dind:
     image: docker:dind
     privileged: true
@@ -107,4 +107,30 @@ services:
       DOCKER_HOSTNAME: dind
       DOCKER_HOST: tcp://dind:2376
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
-      
+
+  files:
+    image: minio/minio
+    ports:
+      - '4471:9000'
+    volumes:
+      - './tmp/files:/data'
+    command: ["server", "/data"]
+    environment:
+      PORT: 4471
+      MINIO_ACCESS_KEY: AKIAIOSFODNN7EXAMPLE
+      MINIO_SECRET_KEY: wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY
+
+  file-manager:
+    build: ./file-manager
+    ports:
+      - '4472:4472'
+    depends_on:
+      - "db"
+      - "files"
+    volumes:
+      - './file-manager:/app'
+    working_dir: '/app'
+    command: ["yarn", "dev"]
+    environment:
+      PORT: 4467
+      MC_HOST_minio: http://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY@files:9000
