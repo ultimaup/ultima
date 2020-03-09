@@ -1,7 +1,6 @@
 version: '3.1'
 
 services:
-
   db:
     image: postgres
     restart: always
@@ -31,7 +30,7 @@ services:
             password: example
             database: postgres
         managementApiSecret: supersecret
-  
+
   gitea:
     image: gitea/gitea:latest
     environment:
@@ -75,6 +74,10 @@ services:
       GITEA_URL: http://gitea:3000
       GITEA_MACHINE_USER: machine
       GITEA_MACHINE_PASSWORD: Password123!
+      BUILDER_BUCKET_ID: builder-bucket-key-id
+      BUILDER_BUCKET_SECRET: builder-bucket-secret-key
+      S3_ENDPOINT: http://files:9000
+      FILEMANAGER_ENDPOINT: http://file-manager:4472
 
   dind:
     image: docker:dind

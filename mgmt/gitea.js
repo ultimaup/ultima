@@ -76,9 +76,10 @@ const streamToBuf = stream => {
 const runTests = async ({ ref, after, repository, pusher }) => {
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
-	const codeUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
-	const res = await giteaFetch(codeUrl)
+	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
+	const res = await giteaFetch(codeZipUrl)
 
+	// handle "special" files special-y
 	res.body.pipe(unzip.Parse())
 		.on('entry', entry => {
 			const { path, type } = entry
@@ -112,9 +113,6 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 						description: 'updating schema',
 					}, 'success')
 				}).catch(console.error)
-
-				
-
 				return
 			}
 
@@ -123,11 +121,16 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 				return
 			}
 
-			// pipe to functions stuffs
+			// leave the rest
 
 			entry.autodrain()
 		})
 		.on('error', console.error)
+	
+	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
+	const tarStream = await giteaFetch(codeTarUrl)
+
+	
 }
 
 const router = new Router()

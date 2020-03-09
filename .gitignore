@@ -4,3 +4,4 @@ gitea
 endpoints/certs
 !gitea/gitea/public/*
 !gitea/gitea/conf/*
+file-manager/yarn-error.log
