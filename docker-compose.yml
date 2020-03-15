@@ -78,6 +78,11 @@ services:
       BUILDER_BUCKET_SECRET: builder-bucket-secret-key
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
+      PLATFORM_DB_TYPE: pg # knex db type
+      PLATFORM_DB_HOST: db:5432
+      PLATFORM_DB_NAME: platform #seemingly ignored
+      PLATFORM_DB_USER: platform
+      PLATFORM_DB_PASSWORD: platform
 
   dind:
     image: docker:dind

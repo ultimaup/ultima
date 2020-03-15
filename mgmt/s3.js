@@ -26,6 +26,10 @@ const s3 = new AWS.S3({
 	signatureVersion: 'v4',
 })
 
+ensureFileUserExists(BUILDER_BUCKET_ID, BUILDER_BUCKET_SECRET)
+	.then(console.log)
+	.catch(console.error)
+
 /* 
 	const { writeStream, promise } = uploadStream({ Key: 'yourfile.mp4' });
 	stream.pipe(writeStream)

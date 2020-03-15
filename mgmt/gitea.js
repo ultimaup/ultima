@@ -4,6 +4,7 @@ const fetch = require('node-fetch')
 const unzip = require('unzip-stream')
 
 const { ensurePrismaService } = require('./prisma')
+const { ensureEndpointDeployment } = require('./deployment')
 
 const {
 	GITEA_MACHINE_USER,
@@ -129,7 +130,8 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	
 	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 	const tarStream = await giteaFetch(codeTarUrl)
-
+	
+	// create builder endpoint deployment for user
 	
 }
 
