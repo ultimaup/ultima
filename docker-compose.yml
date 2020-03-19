@@ -76,6 +76,7 @@ services:
       GITEA_MACHINE_PASSWORD: Password123!
       BUILDER_BUCKET_ID: builder-bucket-key-id
       BUILDER_BUCKET_SECRET: builder-bucket-secret-key
+      ENDPOINTS_ENDPOINT: http://endpoints:4470
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
       PLATFORM_DB_TYPE: pg # knex db type
@@ -140,5 +141,5 @@ services:
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
-      PORT: 4467
+      PORT: 4472
       MC_HOST_minio: http://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY@files:9000

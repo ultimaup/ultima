@@ -12,8 +12,8 @@ CREATE DATABASE platform WITH OWNER platform TEMPLATE template0 ENCODING UTF8 LC
 
 
 in gitea
-	add default webhook 
-		http://mgmt/gitea-hook
+	add system webhook 
+		http://mgmt:4467/gitea-hook
 		gitea-secret
 	add admin user
 		machine

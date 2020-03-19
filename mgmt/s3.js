@@ -49,7 +49,13 @@ const getStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	return s3.getObject(params).createReadStream()
 }
 
+const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
+	const params = { Bucket, Key }
+	return s3.headObject(params).promise()
+}
+
 module.exports = {
 	uploadStream,
 	getStream,
+	headObject,
 }

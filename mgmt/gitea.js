@@ -2,9 +2,12 @@ const { Router } = require('express')
 const bodyParser = require('body-parser')
 const fetch = require('node-fetch')
 const unzip = require('unzip-stream')
+const fs = require('fs')
+const uuid = require('uuid').v4
 
 const { ensurePrismaService } = require('./prisma')
-const { ensureEndpointDeployment } = require('./deployment')
+const s3 = require('./s3')
+const Deployment = require('./db/Deployment')
 
 const {
 	GITEA_MACHINE_USER,
@@ -12,6 +15,8 @@ const {
 
 	GITEA_WEBHOOK_SECRET,
 	GITEA_URL,
+
+	ENDPOINTS_ENDPOINT,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -74,8 +79,24 @@ const streamToBuf = stream => {
 // 	description: 'hello world 3!',
 // }, 'success').then(console.log).catch(console.error)
 
+const ensureBuilderBundle = async lang => {
+	const builderKey = `builders/${lang}.tar.gz`
+	const existing = await s3.headObject({ Key: builderKey })
+	if (!existing) {
+		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
+
+		const readStream = fs.createReadStream(`./${builderKey}`)
+		readStream.pipe(writeStream)
+
+		await promise
+	}
+
+	return builderKey
+}
+
 const runTests = async ({ ref, after, repository, pusher }) => {
-	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
+	const invocationId = uuid()
+	console.log(invocationId, `gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 	const res = await giteaFetch(codeZipUrl)
@@ -84,14 +105,14 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	res.body.pipe(unzip.Parse())
 		.on('entry', entry => {
 			const { path, type } = entry
-			console.log('found', path)
+			// console.log('found', path)
 
 			let realPath = path.split('/')
 			realPath.shift()
 			realPath = realPath.join('/')
 
 			if (realPath === 'schema.graphql') {
-				console.log('processing schema.graphql')
+				console.log(invocationId, 'processing schema.graphql')
 				reportStatus(repository.full_name, after, {
 					targetUrl: 'https://google.com',
 					context: 'Datastore',
@@ -130,9 +151,56 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	
 	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 	const tarStream = await giteaFetch(codeTarUrl)
+
+	const lang = 'nodejs'
+
+	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder`
 	
-	// create builder endpoint deployment for user
+	console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
+	// ensure builder endpoint exists
+	await Deployment.ensure({
+		id: builderEndpointId,
+		stage: 'builder',
+		bundleLocation: await ensureBuilderBundle(lang),
+	})
+	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
+
+	// pipe tarStream to builder endpoint, response is stream of result
+	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}`, {
+		method: 'post',
+		body: tarStream,
+	})
+
+	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
+
+	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
+	builtBundleStream.pipe(writeStream)
 	
+	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
+	await promise
+	console.log(invocationId, `piped built result to to ${builtBundleKey}`)
+
+	const resultingBundleLocation = `${S3_ENDPOINT}/${builtBundleKey}`
+	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+
+	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+	await Deployment.ensure({
+		id: resultingEndpointId,
+		stage: ref,
+		bundleLocation: resultingBundleLocation,
+	})
+
+	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${builderEndpointId}`
+	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+
+	const firstRequest = await fetch(endpointUrl).then(r => r.json())
+	console.log(invocationId, `${endpointUrl} responded`)
+
+	console.log(invocationId, `complete`)
+
+	return {
+		endpointUrl,
+	}
 }
 
 const router = new Router()
