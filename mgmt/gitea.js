@@ -166,7 +166,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 
 	// pipe tarStream to builder endpoint, response is stream of result
-	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}`, {
+	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}?id=${invocationId}`, {
 		method: 'post',
 		body: tarStream,
 	})

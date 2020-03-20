@@ -77,6 +77,7 @@ services:
       BUILDER_BUCKET_ID: builder-bucket-key-id
       BUILDER_BUCKET_SECRET: builder-bucket-secret-key
       ENDPOINTS_ENDPOINT: http://endpoints:4470
+      
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
       PLATFORM_DB_TYPE: pg # knex db type
@@ -116,6 +117,16 @@ services:
       DOCKER_HOSTNAME: dind
       DOCKER_HOST: tcp://dind:2376
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+      PLATFORM_DB_TYPE: pg # knex db type
+      PLATFORM_DB_HOST: db:5432
+      PLATFORM_DB_NAME: platform #seemingly ignored
+      PLATFORM_DB_USER: platform
+      PLATFORM_DB_PASSWORD: platform
+
+      BUILDER_BUCKET_ID: builder-bucket-key-id
+      BUILDER_BUCKET_SECRET: builder-bucket-secret-key
+      S3_ENDPOINT: http://files:9000
 
   files:
     image: minio/minio

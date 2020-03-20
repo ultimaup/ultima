@@ -6,25 +6,23 @@ const Docker = require('dockerode')
 const fetch = require('node-fetch')
 const requestProxy = require('express-http-proxy')
 
+const Deployment = require('./db/Deployment')
+const s3 = require('./s3')
+
 const {
 	PORT = 3001,
 	DOCKER_HOSTNAME,
+	S3_ENDPOINT,
 } = process.env
 
-const getDeploymentObject = async id => {
-	return {
-		id,
-		stage: 'live',
-		bundleLocation: '',
-		env: {
-			SECRET_TOKEN: 'secret-token',
-		},
-	}
-}
-
 const getBundle = async url => {
-	// cached(?)
-	return fs.createReadStream('./funcs/test.tar.gz')
+	if (url.includes(S3_ENDPOINT)) {
+		const Key = url.split(S3_ENDPOINT)[1]
+
+		return s3.getStream({ Key })
+	}
+
+	throw new Error('unsupported url '+url)
 }
 
 const app = express()
@@ -126,7 +124,7 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 	console.log(deploymentId, 'starting request', requestId)
 
 	try {
-		const deployment = await getDeploymentObject(deploymentId)
+		const deployment = await Deployment.get(deploymentId)
 
 		// do we have a container for proxy deploymentId requests to?
 		const containerList = await getContainerByName(deploymentId)
