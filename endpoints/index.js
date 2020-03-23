@@ -12,17 +12,10 @@ const s3 = require('./s3')
 const {
 	PORT = 3001,
 	DOCKER_HOSTNAME,
-	S3_ENDPOINT,
 } = process.env
 
 const getBundle = async url => {
-	if (url.includes(S3_ENDPOINT)) {
-		const Key = url.split(S3_ENDPOINT)[1]
-
-		return s3.getStream({ Key })
-	}
-
-	throw new Error('unsupported url '+url)
+	return s3.getStream({ Key: url })
 }
 
 const app = express()

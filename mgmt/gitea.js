@@ -2,8 +2,10 @@ const { Router } = require('express')
 const bodyParser = require('body-parser')
 const fetch = require('node-fetch')
 const unzip = require('unzip-stream')
-const fs = require('fs')
+const tar = require('tar-fs')
+const path = require('path')
 const uuid = require('uuid').v4
+const { createGzip } = require('zlib')
 
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
@@ -17,6 +19,7 @@ const {
 	GITEA_URL,
 
 	ENDPOINTS_ENDPOINT,
+	S3_ENDPOINT,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -83,15 +86,14 @@ const ensureBuilderBundle = async lang => {
 	const builderKey = `builders/${lang}.tar.gz`
 
 	const existing = await s3.headObject({ Key: builderKey })
-	
-	if (!existing) {
-		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
 
-		const readStream = fs.createReadStream(`./${builderKey}`)
-		readStream.pipe(writeStream)
+	// if (!existing) {
+		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
+		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
+		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
-	}
+	// }
 
 	return builderKey
 }
@@ -150,14 +152,14 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			entry.autodrain()
 		})
 		.on('error', console.error)
-	
+
 	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 	const tarStream = await giteaFetch(codeTarUrl)
 
 	const lang = 'nodejs'
 
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder`
-	
+
 	console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
 	// ensure builder endpoint exists
 	await Deployment.ensure({
@@ -168,21 +170,23 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 
 	// pipe tarStream to builder endpoint, response is stream of result
-	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}?id=${invocationId}`, {
+	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}`, {
 		method: 'post',
 		body: tarStream,
+		headers: {
+			'x-parent-invocation-id': invocationId,
+		},
 	})
 
 	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 
 	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
-	builtBundleStream.pipe(writeStream)
+	builtBundleStream.body.pipe(writeStream)
 	
 	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
-	await promise
-	console.log(invocationId, `piped built result to to ${builtBundleKey}`)
+	const resultingBundleLocation = await promise
+	console.log(invocationId, `piped built result to to ${builtBundleKey}`, resultingBundleLocation)
 
-	const resultingBundleLocation = `${S3_ENDPOINT}/${builtBundleKey}`
 	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
 
 	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
@@ -192,11 +196,16 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		bundleLocation: resultingBundleLocation,
 	})
 
-	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${builderEndpointId}`
+	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
 	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
 
 	const firstRequest = await fetch(endpointUrl).then(r => r.json())
-	console.log(invocationId, `${endpointUrl} responded`)
+	console.log(invocationId, `${endpointUrl} responded`, firstRequest)
+
+	if (firstRequest.status === 'error') {
+		console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
+		return {}
+	}
 
 	console.log(invocationId, `complete`)
 

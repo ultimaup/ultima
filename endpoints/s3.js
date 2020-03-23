@@ -25,18 +25,25 @@ const uploadStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 
 	return {
 		writeStream: pass,
-		promise: s3.upload({ Bucket, Key, Body: pass }).promise(),
+		promise: s3.upload({ Bucket, Key, Body: pass }).promise().then(r => r.Location),
 	}
 }
 
 const getStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	const params = { Bucket, Key }
+	console.log(Key)
 	return s3.getObject(params).createReadStream()
 }
 
 const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	const params = { Bucket, Key }
-	return s3.headObject(params).promise()
+	return s3.headObject(params).promise().catch(e => {
+		if (e.code === 'NotFound') {
+			return false
+		}
+
+		throw e
+	})
 }
 
 module.exports = {

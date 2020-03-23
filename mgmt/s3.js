@@ -43,7 +43,7 @@ const uploadStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 
 	return {
 		writeStream: pass,
-		promise: s3.upload({ Bucket, Key, Body: pass }).promise(),
+		promise: s3.upload({ Bucket, Key, Body: pass }).promise().then(r => r.Location),
 	}
 }
 

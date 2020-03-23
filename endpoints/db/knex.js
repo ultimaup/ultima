@@ -1,4 +1,3 @@
-const path = require('path')
 const Knex = require('knex')
 
 const {
@@ -20,10 +19,5 @@ const knex = Knex({
 		database: PLATFORM_DB_NAME,
 	},
 })
-
-knex.migrate.latest()
-	.then((a) => {
-		console.log('migrations ran', a)
-	})
 
 module.exports = knex

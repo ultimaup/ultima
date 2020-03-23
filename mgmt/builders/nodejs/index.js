@@ -24,7 +24,7 @@ const restoreCache = async (cacheType, hash) => {
 	// TODO: actually do this
 }
 
-const installDeps = (wkdir) => {
+const installDeps = async (wkdir) => {
 	console.log('installing deps')
 
 	const useYarn = await fse.exists(path.resolve(wkdir, 'yarn.lock'))
@@ -39,7 +39,7 @@ const installDeps = (wkdir) => {
 
 		return lines
 	} else {
-		console.log('using npm')		
+		console.log('using npm')	
 		
 		if (await fse.exists(lockfileLocation)) {
 			const lockfileStream = fse.createReadStream(lockfileLocation)
@@ -93,9 +93,14 @@ const app = express()
 const { 
 	PORT,
 } = process.env
-app.post('/:endpointId', (req, res) => {
-	const { invocationId } = req.query
-	
+
+app.get('/health', (req, res) => {
+	res.json(true)
+})
+
+app.post('/:endpointId', async (req, res) => {
+	const { 'x-parent-invocation-id': invocationId } = req.headers
+	console.log('invoked from', invocationId)
 	const wkdir = `/tmp/${invocationId}`
 
 	req.on('end', () => {
@@ -104,14 +109,29 @@ app.post('/:endpointId', (req, res) => {
 
 	await extractStreamToDir(req, wkdir)
 
-	const installOutput = await installDeps(wkdir)
-	const buildOutput = await doBuild(wkdir)
-	const testOutput = await doTest(wkdir)
+	let installOutput
+	let buildOutput
+	let testOutput
+
+	try {
+		installOutput = await installDeps(wkdir)
+		buildOutput = await doBuild(wkdir)
+		testOutput = await doTest(wkdir)
+	} catch (e) {
+		console.error(e)
+	}
+
+	console.log([
+		installOutput,
+		buildOutput,
+		testOutput,
+	])
 
 	const tarStream = tar.pack(wkdir)
+	const gzipStream = createGzip()
 
-	// TODO: return 
-	tarStream.pipe(res)
+	// TODO: return as gzip
+	tarStream.pipe(gzipStream).pipe(res)
 })
 
 app.listen(PORT)
