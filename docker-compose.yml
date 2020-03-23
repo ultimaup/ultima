@@ -74,14 +74,15 @@ services:
       GITEA_URL: http://gitea:3000
       GITEA_MACHINE_USER: machine
       GITEA_MACHINE_PASSWORD: Password123!
-      BUILDER_BUCKET_ID: builder-bucket-key-id
-      BUILDER_BUCKET_SECRET: builder-bucket-secret-key
+      BUILDER_BUCKET_ID: builder-bucket-key-id-5
+      BUILDER_BUCKET_SECRET: builder-bucket-secret
       ENDPOINTS_ENDPOINT: http://endpoints:4470
       
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
       PLATFORM_DB_TYPE: pg # knex db type
-      PLATFORM_DB_HOST: db:5432
+      PLATFORM_DB_HOST: db
+      PLATFORM_DB_PORT: 5432
       PLATFORM_DB_NAME: platform #seemingly ignored
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
@@ -119,13 +120,14 @@ services:
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
 
       PLATFORM_DB_TYPE: pg # knex db type
-      PLATFORM_DB_HOST: db:5432
+      PLATFORM_DB_HOST: db
+      PLATFORM_DB_PORT: 5432
       PLATFORM_DB_NAME: platform #seemingly ignored
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
 
-      BUILDER_BUCKET_ID: builder-bucket-key-id
-      BUILDER_BUCKET_SECRET: builder-bucket-secret-key
+      BUILDER_BUCKET_ID: builder-bucket-key-id-5
+      BUILDER_BUCKET_SECRET: builder-bucket-secret
       S3_ENDPOINT: http://files:9000
 
   files:

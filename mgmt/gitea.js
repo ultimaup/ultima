@@ -234,4 +234,11 @@ router.post('/gitea-hook', (req, res) => {
 
 module.exports = app => {
 	app.use(router)
+
+	const ref = 'refs/heads/master'
+	const after = 'fee22e3227db192cfe1a80aed0f94c0d4f21df33'
+	const repository = 'test/todo'
+	const pusher = 'test'
+
+	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }

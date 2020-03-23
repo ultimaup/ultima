@@ -14,7 +14,10 @@ const ensureFileUserExists = (userId, secret) => (
 	// ensure our creds exist
 	fetch(`${FILEMANAGER_ENDPOINT}/${userId}`, {
 		method: 'post',
-		body: JSON.stringify({ secret })
+		body: JSON.stringify({ secret }),
+		headers: {
+			'content-type': 'application/json',
+		}
 	}).then(r => r.json())
 )
 

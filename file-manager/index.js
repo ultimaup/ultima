@@ -30,8 +30,8 @@ const generatePolicy = (bucketName) => ({
         {
             "Sid": "sid1",
             "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": `arn:aws:s3:::${bucketName}`
+            "Action": ["s3:*"],
+            "Resource":[`arn:aws:s3:::${bucketName}/*`]
         }
     ]
 })
@@ -80,6 +80,7 @@ app.post('/:userId', async (req, res) => {
 	const { userId } = req.params
 	const { secret } = req.body
 
+	console.log('ensuring user exists', userId, secret)
 	const user = await ensureUserExists(userId, secret)
 
 	res.json(user)
