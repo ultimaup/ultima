@@ -40,6 +40,8 @@ const listUsers = () => execCommand(`mc admin user list --json ${configName}`)
 
 const addUser = (user, password) => execCommand(`mc admin user add --json ${configName} ${user} ${password}`)
 
+const createBucket = (bucketName) => execCommand(`mc mb --json ${configName}/${bucketName}`)
+
 const setPolicyOnUser = (policyName, user) => execCommand(`mc admin policy set --json ${configName} ${policyName} user=${user}`)
 
 const addPolicy = (policyName, location) => execCommand(`mc admin policy add --json ${configName} ${policyName} ${location}`)
@@ -66,6 +68,7 @@ const ensureUserExists = async (userId, secret) => {
 		return existing
 	}
 
+	await createBucket(userId)
 	const [newUser] = await addUser(userId, secret)	
 	const policyName = await createPolicy(userId)
 

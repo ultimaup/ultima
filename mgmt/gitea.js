@@ -81,7 +81,9 @@ const streamToBuf = stream => {
 
 const ensureBuilderBundle = async lang => {
 	const builderKey = `builders/${lang}.tar.gz`
+
 	const existing = await s3.headObject({ Key: builderKey })
+	
 	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
 

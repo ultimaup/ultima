@@ -54,7 +54,13 @@ const getStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 
 const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	const params = { Bucket, Key }
-	return s3.headObject(params).promise()
+	return s3.headObject(params).promise().catch(e => {
+		if (e.code === 'NotFound') {
+			return false
+		}
+
+		throw e
+	})
 }
 
 module.exports = {
