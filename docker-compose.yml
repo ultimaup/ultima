@@ -156,3 +156,14 @@ services:
     environment:
       PORT: 4472
       MC_HOST_minio: http://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY@files:9000
+  
+  dev-endpoint:
+    image: node
+    ports:
+      - '4489:4489'
+    volumes:
+      - './dev-endpoint:/app'
+    working_dir: '/app'
+    command: ["yarn", "dev"]
+    environment: 
+      PORT: 4489

@@ -18,64 +18,86 @@ const initSession = async () => {
     return await res.json()
 }
 
-const pushToRemote = async (event, path, sessionId) => {
-    console.log(path, event, 'syncing')
-    const stream = event === 'add' ? fs.createReadStream(path) : null
- 
-    const res = await fetch(`${rootEndpoint}/file`, {
-        method: 'post',
-        body: stream,
-        headers: {
-            'x-event-type': event,
-            'x-event-path': path,
-            'x-session-id': sessionId,
-        },
-    })
+let inflight = 0
+let total = 0
+let completed = 0
 
-    const data = await res.json()
-    console.log(path, event, 'synced', data)
-  
-    return data
+const pushToRemote = async (event, path, sessionId, progressCallback) => {
+    total++
+    inflight++
+
+    progressCallback(completed, total)
+
+    try {
+        const stream = event === 'add' ? fs.createReadStream(path) : undefined
+        const res = await fetch(`${rootEndpoint}/file`, {
+            method: 'post',
+            body: stream,
+            headers: {
+                'x-event-type': event,
+                'x-event-path': path,
+                'x-session-id': sessionId,
+            },
+        })
+
+        const data = await res.json()
+    } catch (e) {
+        console.error(event, path, e)
+    }
+    
+    inflight--
+    completed++
+   
+    progressCallback(completed, total)
 }
 
-const init = async (config) => {
-    console.log('initializing...')
+const init = async (config, progressCallback, initCallback) => {
+    rootEndpoint = config.rootEndpoint
 
     const { sessionId } = await initSession()
 
     const watcher = chokidar.watch('.', {
         ignored: ['node_modules', '.git'],
+        persistent: true,
     })
 
     watcher.on('add', path => {
-        pushToRemote('add', path, sessionId)
+        pushToRemote('add', path, sessionId, progressCallback)
+    })
+
+    watcher.on('change', path => {
+        pushToRemote('change', path, sessionId, progressCallback)
     })
 
     watcher.on('addDir', path => {
-        pushToRemote('addDir', path, sessionId)
+        pushToRemote('addDir', path, sessionId, progressCallback)
     })
 
     watcher.on('unlink', () => {
-        pushToRemote('unlink', path, sessionId)
+        pushToRemote('unlink', path, sessionId, progressCallback)
     })
 
     watcher.on('unlinkDir', () => {
-        pushToRemote('unlinkDir', path, sessionId)
+        pushToRemote('unlinkDir', path, sessionId, progressCallback)
     })
 
-    console.log('initialized')
+    watcher.on('ready', () => {
+        initCallback()
+    })
+
+    process.on('SIGINT', () => {
+        console.log('shutting down...')
+
+        Promise.all([
+            watcher.close(),
+            disconnectAll(),
+        ]).then(() => {
+            console.log('done')
+            process.exit()
+        })
+    })
 }
 
-module.exports = {init}
-
-process.on('SIGINT', () => {
-    console.log('shutting down...')
-
-    Promise.all([
-        watcher.close(),
-        disconnectAll(),
-    ]).then(() => {
-        console.log('done')
-        process.exit()
-    })
-})
+module.exports = {
+    init,
+}
