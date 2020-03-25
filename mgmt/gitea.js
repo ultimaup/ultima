@@ -20,6 +20,7 @@ const {
 
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
+	BUILDER_BUCKET_ID,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -85,7 +86,7 @@ const streamToBuf = stream => {
 const ensureBuilderBundle = async lang => {
 	const builderKey = `builders/${lang}.tar.gz`
 
-	const existing = await s3.headObject({ Key: builderKey })
+	// const existing = await s3.headObject({ Key: builderKey })
 
 	// if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
@@ -95,7 +96,7 @@ const ensureBuilderBundle = async lang => {
 		await promise
 	// }
 
-	return builderKey
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
 }
 
 const runTests = async ({ ref, after, repository, pusher }) => {
@@ -158,7 +159,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	const lang = 'nodejs'
 
-	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder`
+	const builderEndpointId = `builder-${repository.full_name.split('/').join('-')}-${uuid()}`
 
 	console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
 	// ensure builder endpoint exists
@@ -170,13 +171,20 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 
 	// pipe tarStream to builder endpoint, response is stream of result
-	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}`, {
-		method: 'post',
-		body: tarStream,
+	const builtBundleStream = await fetch(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
+		method: 'POST',
+		body: tarStream.body,
 		headers: {
+			// 'content-type': 'application/octet-stream',
 			'x-parent-invocation-id': invocationId,
 		},
 	})
+
+	console.log(invocationId, `builder endpoint ${builderEndpointId} returned ${builtBundleStream.status}`)
+
+	if (builtBundleStream.status > 200) {
+		throw new Error('failed to start builder')
+	}
 
 	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 
@@ -199,7 +207,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
 	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
 
-	const firstRequest = await fetch(endpointUrl).then(r => r.json())
+	const firstRequest = await fetch(endpointUrl).then(r => r.text())
 	console.log(invocationId, `${endpointUrl} responded`, firstRequest)
 
 	if (firstRequest.status === 'error') {
@@ -247,7 +255,7 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = 'fee22e3227db192cfe1a80aed0f94c0d4f21df33'
+	const after = '05a816f6ebdb30d82ad65963532c94a325a359e0'
 	const repository = 'test/todo'
 	const pusher = 'test'
 

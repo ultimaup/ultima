@@ -1,7 +1,6 @@
 const fs = require('fs')
 const uuid =  require('uuid').v4
 const express = require('express')
-const bodyParser = require('body-parser')
 const Docker = require('dockerode')
 const fetch = require('node-fetch')
 const requestProxy = require('express-http-proxy')
@@ -12,10 +11,12 @@ const s3 = require('./s3')
 const {
 	PORT = 3001,
 	DOCKER_HOSTNAME,
+	BUILDER_BUCKET_ID,
 } = process.env
 
 const getBundle = async url => {
-	return s3.getStream({ Key: url })
+	const Key = url.split(BUILDER_BUCKET_ID)[1]
+	return s3.getStream({ Key })
 }
 
 const app = express()
@@ -24,8 +25,6 @@ const docker = new Docker({
   	cert: fs.readFileSync('./certs/client/cert.pem'),
   	key: fs.readFileSync('./certs/client/key.pem'),
 })
-
-app.use(bodyParser.json())
 
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
@@ -209,12 +208,14 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 		// proxy request, timing it
 		const hostname = await getContainerHostname(containerId)
 
-		console.log(requestId, 'proxying to', hostname)
+		console.log(requestId, 'proxying to', hostname, req.path)
 
 		const proxy = requestProxy(hostname, {
 			headers: {
 				requestId,
 			},
+			limit: '500mb',
+			parseReqBody: false,
 		})
 
 		return proxy(req, res, next)
