@@ -7,11 +7,9 @@
     "start": "nodemon .",
     "dev": "nodemon ."
   },
-  "devDependencies": {
-    "nodemon": "^2.0.2"
-  },
   "dependencies": {
     "fs-extra": "^9.0.0",
+    "nodemon": "^2.0.2",
     "uuid": "^7.0.2"
   }
 }
