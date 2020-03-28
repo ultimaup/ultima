@@ -1,0 +1,14 @@
+kind: pipeline
+name: default
+
+steps:
+- name: file-manager
+  image: node
+  commands:
+  - cd file-manager && yarn install --frozen-lockfile
+
+- name: mgmt
+  image: node
+  commands:
+  - cd mgmt && yarn install --frozen-lockfile
+  
