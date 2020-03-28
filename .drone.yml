@@ -2,8 +2,13 @@ kind: pipeline
 name: default
 
 steps:
-- name: test
+- name: file-manager
   image: node
   commands:
-  - npm install
-  - npm test
+  - cd file-manager && yarn install --frozen-lockfile
+
+- name: mgmt
+  image: node
+  commands:
+  - cd mgmt && yarn install --frozen-lockfile
+  
