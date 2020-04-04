@@ -1,6 +1,6 @@
 const express = require('express')
 const crypto = require('crypto')
-const fetch = require('node-fetch')
+const got = require('got')
 const argon2 = require('argon2')
 const { signV4 } = require('minio/dist/main/signing')
 const { makeDateLong } = require('minio/dist/main/helpers')
@@ -44,40 +44,42 @@ function decrypt(text, key) {
 	return decrypted.toString();
 }
 
-const minioFetch = (endpoint, payload, opts) => {
+const minioFetch = (endpoint) => {
 	const signedOpts = signRequest({
-		...opts,
 		path: endpoint,
-		headers: {},
+		headers: {
+			'user-agent': 'got/1.0',
+		},
+	}, '', { accessKey: MINIO_ACCESS_KEY, secretKey: MINIO_SECRET_KEY })
+
+	return got(`http://${MINIO_ENDPOINT}:${MINIO_PORT}${endpoint}`, signedOpts)
+}
+
+const minioFetchPost = (endpoint, payload) => {
+	const signedOpts = signRequest({
+		path: endpoint,
+		body: payload,
+		headers: {
+			'user-agent': 'got/1.0',
+		},
 	}, payload, { accessKey: MINIO_ACCESS_KEY, secretKey: MINIO_SECRET_KEY })
 
-	return fetch(`http://${MINIO_ENDPOINT}:${MINIO_PORT}${endpoint}`, signedOpts)
+	return got.post(`http://${MINIO_ENDPOINT}:${MINIO_PORT}${endpoint}`, signedOpts)
 }
 
 const region = 'us-east-1'
 const app = express()
 
-const minioGet = endpoint => minioFetch(endpoint, '', {
-	method: 'get',
-	headers: {
-		'user-agent': 'node-fetch/1.0',
-	},
-})
+const minioGet = endpoint => minioFetch(endpoint)
 
-const minioPost = (endpoint, body) => minioFetch(endpoint, JSON.stringify(body), {
-	method: 'post',
-	headers: {
-		'user-agent': 'node-fetch/1.0',
-	},
-	body: JSON.stringify(body),
-})
+const minioPost = (endpoint, body) => minioFetchPost(endpoint, JSON.stringify(body))
 
 const listUsers = () => minioGet('/minio/admin/v2/list-users').then(r => r.text()).then(async cipherText => {
 	const key = await argon2.hash(MINIO_SECRET_KEY)
 	return decrypt(cipherText, key)
 })
 
-// listUsers().then(console.log).catch(console.error)
+listUsers().then(console.log).catch(console.error)
 
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
