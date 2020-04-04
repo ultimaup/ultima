@@ -1,22 +1,7 @@
 const chokidar = require('chokidar')
-const { context } = require('fetch-h2')
 const fs = require('fs')
 
-let rootEndpoint
-
-const { fetch, disconnectAll, onPush } = context()
-
-onPush((origin, req, getResponse) => {
-    
-})
-
-const initSession = async () => {
-    const res = await fetch(`${rootEndpoint}/new-session`, {
-        method: 'post',
-    })
-    
-    return await res.json()
-}
+const client = require('./client')
 
 let inflight = 0
 let total = 0
@@ -29,8 +14,8 @@ const pushToRemote = async (event, path, sessionId, progressCallback) => {
     progressCallback(completed, total)
 
     try {
-        const stream = event === 'add' ? fs.createReadStream(path) : undefined
-        const res = await fetch(`${rootEndpoint}/file`, {
+        const stream = ['add', 'change'].includes(event) ? fs.createReadStream(path) : undefined
+        const res = await client.fetch(`/file`, {
             method: 'post',
             body: stream,
             headers: {
@@ -42,7 +27,7 @@ const pushToRemote = async (event, path, sessionId, progressCallback) => {
 
         const data = await res.json()
     } catch (e) {
-        console.error(event, path, e)
+        console.log('error pushing to remote:', event, path, e)
     }
     
     inflight--
@@ -51,11 +36,7 @@ const pushToRemote = async (event, path, sessionId, progressCallback) => {
     progressCallback(completed, total)
 }
 
-const init = async (config, progressCallback, initCallback) => {
-    rootEndpoint = config.rootEndpoint
-
-    const { sessionId } = await initSession()
-
+const init = async ({ sessionId }, progressCallback, initCallback) => {
     const watcher = chokidar.watch('.', {
         ignored: ['node_modules', '.git'],
         persistent: true,
@@ -90,7 +71,7 @@ const init = async (config, progressCallback, initCallback) => {
 
         Promise.all([
             watcher.close(),
-            disconnectAll(),
+            client.disconnectAll(),
         ]).then(() => {
             console.log('done')
             process.exit()

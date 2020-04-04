@@ -1,33 +1,23 @@
 const nodemon = require('nodemon')
 
-const start = ({ wkdir }, callback) => {
+const {
+    CHILD_PORT,
+    CHILD_DEBUG_PORT,
+} = process.env
+
+const start = ({ wkdir }) => {
     nodemon({
         script: '.',
         ext: 'js json',
-        stdout: false,
         cwd: wkdir,
-        nodeArgs: ['--inspect']
+        stdout: false,
+        env: {
+            PORT: CHILD_PORT,
+        },
+        nodeArgs: [`--inspect=0.0.0.0:${CHILD_DEBUG_PORT}`]
     })
 
-    nodemon.on('start', () => {
-        callback('start')
-    }).on('readable', function() {
-        callback('outputs', {
-            stdout: this.stdout,
-            stderr: this.stderr,
-        })
-    }).on('quit', () => {
-        callback('quit')
-    }).on('restart', (files) => {
-        callback('restart', files)
-    }).on('crash', () => {
-        callback('crash')
-    })
-
-    // e.g. restart or quit
-    const force = event => nodemon.emit(event)
-
-    return force
+    return nodemon
 }
 
 module.exports = start
