@@ -2,7 +2,7 @@ const fs = require('fs')
 const uuid =  require('uuid').v4
 const express = require('express')
 const Docker = require('dockerode')
-const fetch = require('node-fetch')
+const got = require('got')
 const requestProxy = require('express-http-proxy')
 
 const Deployment = require('./db/Deployment')
@@ -38,8 +38,8 @@ docker.pull('node:latest').then((stream) => {
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
-		const result = await fetch(healthcheckUrl)
-		return result.ok
+		const result = await got(healthcheckUrl)
+		return result.statusCode >= 200 && result.statusCode < 300
 	} catch (e) {
 		return false
 	}

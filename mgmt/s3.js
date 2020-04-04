@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const fetch = require('node-fetch')
+const got = require('got')
 const stream = require('stream')
 
 const {
@@ -12,13 +12,12 @@ const {
 
 const ensureFileUserExists = (userId, secret) => (
 	// ensure our creds exist
-	fetch(`${FILEMANAGER_ENDPOINT}/${userId}`, {
-		method: 'post',
+	got.post(`${FILEMANAGER_ENDPOINT}/${userId}`, {
 		body: JSON.stringify({ secret }),
 		headers: {
 			'content-type': 'application/json',
 		}
-	}).then(r => r.json())
+	}).json().then(r => r)
 )
 
 const s3 = new AWS.S3({
