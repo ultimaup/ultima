@@ -1,0 +1,15 @@
+{
+  "name": "dev-endpoint",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon .",
+    "dev": "nodemon ."
+  },
+  "dependencies": {
+    "fs-extra": "^9.0.0",
+    "nodemon": "^2.0.2",
+    "uuid": "^7.0.2"
+  }
+}

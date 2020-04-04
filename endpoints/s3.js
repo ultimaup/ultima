@@ -1,24 +1,11 @@
 const AWS = require('aws-sdk')
-const got = require('got')
 const stream = require('stream')
 
 const {
 	BUILDER_BUCKET_ID,
 	BUILDER_BUCKET_SECRET,
 	S3_ENDPOINT,
-
-	FILEMANAGER_ENDPOINT,
 } = process.env
-
-const ensureFileUserExists = (userId, secret) => (
-	// ensure our creds exist
-	got.post(`${FILEMANAGER_ENDPOINT}/${userId}`, {
-		body: JSON.stringify({ secret }),
-		headers: {
-			'content-type': 'application/json',
-		}
-	}).json().then(r => r)
-)
 
 const s3 = new AWS.S3({
 	accessKeyId: BUILDER_BUCKET_ID,
@@ -27,10 +14,6 @@ const s3 = new AWS.S3({
 	s3ForcePathStyle: true,
 	signatureVersion: 'v4',
 })
-
-ensureFileUserExists(BUILDER_BUCKET_ID, BUILDER_BUCKET_SECRET)
-	.then(console.log)
-	.catch(console.error)
 
 /* 
 	const { writeStream, promise } = uploadStream({ Key: 'yourfile.mp4' });
@@ -48,6 +31,7 @@ const uploadStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 
 const getStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	const params = { Bucket, Key }
+	console.log(Key)
 	return s3.getObject(params).createReadStream()
 }
 

@@ -30,8 +30,8 @@ const generatePolicy = (bucketName) => ({
         {
             "Sid": "sid1",
             "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": `arn:aws:s3:::${bucketName}`
+            "Action": ["s3:*"],
+            "Resource":[`arn:aws:s3:::${bucketName}/*`]
         }
     ]
 })
@@ -39,6 +39,8 @@ const generatePolicy = (bucketName) => ({
 const listUsers = () => execCommand(`mc admin user list --json ${configName}`)
 
 const addUser = (user, password) => execCommand(`mc admin user add --json ${configName} ${user} ${password}`)
+
+const createBucket = (bucketName) => execCommand(`mc mb --json ${configName}/${bucketName}`)
 
 const setPolicyOnUser = (policyName, user) => execCommand(`mc admin policy set --json ${configName} ${policyName} user=${user}`)
 
@@ -66,6 +68,7 @@ const ensureUserExists = async (userId, secret) => {
 		return existing
 	}
 
+	await createBucket(userId)
 	const [newUser] = await addUser(userId, secret)	
 	const policyName = await createPolicy(userId)
 
@@ -80,6 +83,7 @@ app.post('/:userId', async (req, res) => {
 	const { userId } = req.params
 	const { secret } = req.body
 
+	console.log('ensuring user exists', userId, secret)
 	const user = await ensureUserExists(userId, secret)
 
 	res.json(user)

@@ -1,0 +1,6 @@
+local dev
+    - sync files from dev
+    - run process in cloud
+    - restart process when files change
+    - pipe stdout/stderr back to dev
+    - proxy debugger

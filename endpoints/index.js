@@ -1,30 +1,22 @@
 const fs = require('fs')
 const uuid =  require('uuid').v4
 const express = require('express')
-const bodyParser = require('body-parser')
 const Docker = require('dockerode')
-const fetch = require('node-fetch')
+const got = require('got')
 const requestProxy = require('express-http-proxy')
+
+const Deployment = require('./db/Deployment')
+const s3 = require('./s3')
 
 const {
 	PORT = 3001,
 	DOCKER_HOSTNAME,
+	BUILDER_BUCKET_ID,
 } = process.env
 
-const getDeploymentObject = async id => {
-	return {
-		id,
-		stage: 'live',
-		bundleLocation: '',
-		env: {
-			SECRET_TOKEN: 'secret-token',
-		},
-	}
-}
-
 const getBundle = async url => {
-	// cached(?)
-	return fs.createReadStream('./funcs/test.tar.gz')
+	const Key = url.split(BUILDER_BUCKET_ID)[1]
+	return s3.getStream({ Key })
 }
 
 const app = express()
@@ -33,8 +25,6 @@ const docker = new Docker({
   	cert: fs.readFileSync('./certs/client/cert.pem'),
   	key: fs.readFileSync('./certs/client/key.pem'),
 })
-
-app.use(bodyParser.json())
 
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
@@ -48,8 +38,8 @@ docker.pull('node:latest').then((stream) => {
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
-		const result = await fetch(healthcheckUrl)
-		return result.ok
+		const result = await got(healthcheckUrl)
+		return result.statusCode >= 200 && result.statusCode < 300
 	} catch (e) {
 		return false
 	}
@@ -126,7 +116,7 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 	console.log(deploymentId, 'starting request', requestId)
 
 	try {
-		const deployment = await getDeploymentObject(deploymentId)
+		const deployment = await Deployment.get(deploymentId)
 
 		// do we have a container for proxy deploymentId requests to?
 		const containerList = await getContainerByName(deploymentId)
@@ -218,12 +208,15 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 		// proxy request, timing it
 		const hostname = await getContainerHostname(containerId)
 
-		console.log(requestId, 'proxying to', hostname)
+		console.log(requestId, 'proxying to', hostname, req.params[0])
 
 		const proxy = requestProxy(hostname, {
 			headers: {
 				requestId,
 			},
+			proxyReqPathResolver: (_) => '/' + req.params[0],
+			limit: '500mb',
+			parseReqBody: false,
 		})
 
 		return proxy(req, res, next)

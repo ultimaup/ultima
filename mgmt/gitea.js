@@ -1,9 +1,17 @@
 const { Router } = require('express')
 const bodyParser = require('body-parser')
-const fetch = require('node-fetch')
+const got = require('got')
 const unzip = require('unzip-stream')
+const tar = require('tar-fs')
+const path = require('path')
+const uuid = require('uuid').v4
+const { createGzip } = require('zlib')
+const stream = require('stream');
+const {promisify} = require('util');
 
 const { ensurePrismaService } = require('./prisma')
+const s3 = require('./s3')
+const Deployment = require('./db/Deployment')
 
 const {
 	GITEA_MACHINE_USER,
@@ -11,13 +19,43 @@ const {
 
 	GITEA_WEBHOOK_SECRET,
 	GITEA_URL,
+
+	ENDPOINTS_ENDPOINT,
+	S3_ENDPOINT,
+	BUILDER_BUCKET_ID,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
 
-const giteaFetch = (url, opts, asUser) => (
-	fetch(url, {
-		...opts,
+const giteaFetch = (url, asUser) => (
+	got(url, {
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+			Authorization: `Basic ${base64(`${GITEA_MACHINE_USER}:${GITEA_MACHINE_PASSWORD}`)}`,
+			...(asUser ? {
+				Sudo: asUser,
+			} : {}),
+		},
+	})
+)
+
+const giteaStream = (url, asUser) => (
+	got.stream(url, {
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+			Authorization: `Basic ${base64(`${GITEA_MACHINE_USER}:${GITEA_MACHINE_PASSWORD}`)}`,
+			...(asUser ? {
+				Sudo: asUser,
+			} : {}),
+		},
+	})
+)
+
+const giteaPost = (url, body, asUser) => (
+	got.post(url, {
+		body: body,
 		headers: {
 			Accept: 'application/json',
 			'Content-Type': 'application/json',
@@ -30,10 +68,7 @@ const giteaFetch = (url, opts, asUser) => (
 )
 
 const giteaApiReq = (endpoint, { method, body }) => (
-	giteaFetch(`${GITEA_URL}${endpoint}`, {
-		method,
-		body: JSON.stringify(body),
-	})
+	giteaPost(`${GITEA_URL}${endpoint}`, JSON.stringify(body))
 	.then(r => {
 		if (r.status > 399) {
 			throw new Error(`${r.status}`)
@@ -73,24 +108,42 @@ const streamToBuf = stream => {
 // 	description: 'hello world 3!',
 // }, 'success').then(console.log).catch(console.error)
 
+const pipeline = promisify(stream.pipeline);
+
+const ensureBuilderBundle = async lang => {
+	const builderKey = `builders/${lang}.tar.gz`
+
+	// const existing = await s3.headObject({ Key: builderKey })
+
+	// if (!existing) {
+		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
+		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
+		tarStream.pipe(createGzip()).pipe(writeStream)
+
+		await promise
+	// }
+
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
+}
+
 const runTests = async ({ ref, after, repository, pusher }) => {
-	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
+	const invocationId = uuid()
+	console.log(invocationId, `gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
-	const res = await giteaFetch(codeZipUrl)
 
 	// handle "special" files special-y
-	res.body.pipe(unzip.Parse())
+	giteaStream(codeZipUrl).pipe(unzip.Parse())
 		.on('entry', entry => {
 			const { path, type } = entry
-			console.log('found', path)
+			// console.log('found', path)
 
 			let realPath = path.split('/')
 			realPath.shift()
 			realPath = realPath.join('/')
 
 			if (realPath === 'schema.graphql') {
-				console.log('processing schema.graphql')
+				console.log(invocationId, 'processing schema.graphql')
 				reportStatus(repository.full_name, after, {
 					targetUrl: 'https://google.com',
 					context: 'Datastore',
@@ -126,11 +179,64 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			entry.autodrain()
 		})
 		.on('error', console.error)
-	
-	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
-	const tarStream = await giteaFetch(codeTarUrl)
 
+	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
+
+	const lang = 'nodejs'
+
+	const builderEndpointId = `builder-${repository.full_name.split('/').join('-')}-${uuid()}`
+
+	console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
+	// ensure builder endpoint exists
+	await Deployment.ensure({
+		id: builderEndpointId,
+		stage: 'builder',
+		bundleLocation: await ensureBuilderBundle(lang),
+	})
+	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
+	// pipe tarStream to builder endpoint, response is stream of result
+
+	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
+	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
+	await pipeline(giteaStream(codeTarUrl),
+		got.stream.post(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
+			headers: {
+				// 'content-type': 'application/octet-stream',
+				'x-parent-invocation-id': invocationId,
+			},
+		}),
+		writeStream
+		)
 	
+	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
+	const resultingBundleLocation = await promise
+	console.log(invocationId, `piped built result to to ${builtBundleKey}`, resultingBundleLocation)
+
+	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+
+	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+	await Deployment.ensure({
+		id: resultingEndpointId,
+		stage: ref,
+		bundleLocation: resultingBundleLocation,
+	})
+
+	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
+	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+
+	const firstRequest = await got(endpointUrl).then(r => r.body)
+	console.log(invocationId, `${endpointUrl} responded`, firstRequest)
+
+	if (firstRequest.status === 'error') {
+		console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
+		return {}
+	}
+
+	console.log(invocationId, `complete`)
+
+	return {
+		endpointUrl,
+	}
 }
 
 const router = new Router()
@@ -164,4 +270,11 @@ router.post('/gitea-hook', (req, res) => {
 
 module.exports = app => {
 	app.use(router)
+
+	const ref = 'refs/heads/master'
+	const after = '450597d46b164363b84b0aeca9111380f9a16b8c'
+	const repository = 'thunder/lol'
+	const pusher = 'test'
+
+	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }
