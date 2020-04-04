@@ -1,7 +1,9 @@
 const { program } = require('commander')
-const {cli} = require('cli-ux')
+const { cli } = require('cli-ux')
 
+const client = require('./client')
 const fileSync = require('./fileSync')
+const runner = require('./runner')
 
 program.version('0.0.1')
 program
@@ -26,11 +28,35 @@ const init = async () => {
     })
 
     await cli.action.start('initializing...')
-    let barVisible = false
 
+    const { sessionId } = await client.initSession({ rootEndpoint: program.server })
+
+    let barVisible = false
+    let runnerStarted = false
+
+    runner.on('stdout', (line) => {
+        cli.log(line.toString())
+    })
+    runner.on('stderr', (line) => {
+        cli.log(line.toString())
+    })
+    
+    runner.on('start', () => {
+        cli.log('start')
+    })
+    runner.on('quit', () => {
+        cli.log('quit')
+    })
+    runner.on('restart', (files) => {
+        cli.log('restart due to changed files: '+files.join(', '))
+    })
+    runner.on('crash', () => {
+        cli.log('crash')
+    })
+    
     try {
         await fileSync.init({
-            rootEndpoint: program.server,
+            sessionId,
         }, (completed, total) => {
             if (!barVisible) {
                 cli.action.stop()
@@ -39,7 +65,11 @@ const init = async () => {
 
             fileBar.update(completed)
             fileBar.setTotal(total)
-
+            if (total === completed && !runnerStarted) {
+                // start runner
+                runnerStarted = true
+                runner.start({ sessionId })
+            }
             if (total === completed && isInitialized) {
                 fileBar.stop()
                 cli.action.start('Watching for changes')

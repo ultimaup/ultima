@@ -167,3 +167,5 @@ services:
     command: ["yarn", "dev"]
     environment: 
       PORT: 4489
+      CHILD_PORT: 4501
+      CHILD_DEBUG_PORT: 4502
