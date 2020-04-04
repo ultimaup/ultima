@@ -208,12 +208,13 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 		// proxy request, timing it
 		const hostname = await getContainerHostname(containerId)
 
-		console.log(requestId, 'proxying to', hostname, req.path)
+		console.log(requestId, 'proxying to', hostname, req.params[0])
 
 		const proxy = requestProxy(hostname, {
 			headers: {
 				requestId,
 			},
+			proxyReqPathResolver: (_) => '/' + req.params[0],
 			limit: '500mb',
 			parseReqBody: false,
 		})
