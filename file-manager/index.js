@@ -42,6 +42,8 @@ const addUser = (user, password) => execCommand(`mcli admin user add --json ${co
 
 const createBucket = (bucketName) => execCommand(`mcli mb --json ${configName}/${bucketName}`)
 
+const makeBucketStaticHosting = (bucketName) => execCommand(`mcli policy set download ${configName}/${bucketName}`)
+
 const setPolicyOnUser = (policyName, user) => execCommand(`mcli admin policy set --json ${configName} ${policyName} user=${user}`)
 
 const addPolicy = (policyName, location) => execCommand(`mcli admin policy add --json ${configName} ${policyName} ${location}`)
@@ -61,7 +63,7 @@ const createPolicy = async (userId) => {
 }
 
 const ensureUserExists = async (userId, secret) => {
-	const users = await listUsers()
+	const users = (await listUsers() || [])
 
 	const existing = users.find(({accessKey}) => accessKey === userId)
 	if (existing) {
@@ -89,8 +91,13 @@ app.post('/:userId', async (req, res) => {
 	res.json(user)
 })
 
-app.post('/web_bucket', async (req, res) => {
+app.post('/web-bucket', async (req, res) => {
+	const { bucketName } = req.body
 
+	await createBucket(bucketName)
+	await makeBucketStaticHosting(bucketName)
+
+	res.json(bucketName)
 })
 
 app.listen({ port: PORT }, () => {
