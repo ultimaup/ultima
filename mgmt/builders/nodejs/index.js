@@ -157,7 +157,9 @@ app.post('/', async (req, res) => {
 	const tarStream = tar.pack(wkdir)
 	const gzipStream = createGzip()
 
-	tarStream.pipe(gzipStream).pipe(res)
+	tarStream.pipe(gzipStream).pipe(res).on('finish', () => {
+		process.exit()
+	})
 })
 
 console.log('nodejs builder started')
