@@ -132,6 +132,9 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
+	let hasAPI = true
+	let staticContentLocation = false
+
 	// handle "special" files special-y
 	giteaStream(codeZipUrl).pipe(unzip.Parse())
 		.on('entry', entry => {
@@ -141,6 +144,24 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			let realPath = path.split('/')
 			realPath.shift()
 			realPath = realPath.join('/')
+
+			if (realPath === 'optima.json') {
+				streamToBuf(entry).then(buf => {
+					return buf.toString('utf8')
+				})
+					.then(text => JSON.parse(text))
+					.then(config => {
+						if (config.staticContentLocation) {
+							staticContentLocation = config.staticContentLocation
+						}
+						if (config.hasAPI === false) {
+							hasAPI = false
+						}
+					})
+					.catch(e => {
+						console.error('failed to parse optima.json', e)
+					})
+			}
 
 			if (realPath === 'schema.graphql') {
 				console.log(invocationId, 'processing schema.graphql')
@@ -212,30 +233,42 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	const resultingBundleLocation = await promise
 	console.log(invocationId, `piped built result to to ${builtBundleKey}`, resultingBundleLocation)
 
-	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+	let endpointUrl
+	if (hasAPI) {
+		const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
 
-	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
-	await Deployment.ensure({
-		id: resultingEndpointId,
-		stage: ref,
-		bundleLocation: resultingBundleLocation,
-	})
+		console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+		await Deployment.ensure({
+			id: resultingEndpointId,
+			stage: ref,
+			bundleLocation: resultingBundleLocation,
+		})
 
-	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
-	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+		endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
+		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
 
-	const firstRequest = await got(endpointUrl).then(r => r.body)
-	console.log(invocationId, `${endpointUrl} responded`, firstRequest)
+		const firstRequest = await got(endpointUrl).then(r => r.body)
+		console.log(invocationId, `${endpointUrl} responded`, firstRequest)
 
-	if (firstRequest.status === 'error') {
-		console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
-		return {}
+		if (firstRequest.status === 'error') {
+			console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
+			return {}
+		}
 	}
+
+	let staticUrl
+	if (staticContentLocation) {
+		// get built result
+		// ensure web bucket exits
+		// upload /result/staticContentLocation to web bucket
+	}
+
 
 	console.log(invocationId, `complete`)
 
 	return {
 		endpointUrl,
+		staticUrl,
 	}
 }
 

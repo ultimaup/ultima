@@ -93,7 +93,8 @@ app.post('/:userId', async (req, res) => {
 
 app.post('/web-bucket', async (req, res) => {
 	const { bucketName } = req.body
-
+	
+	// TODO: check if bucket exists first
 	await createBucket(bucketName)
 	await makeBucketStaticHosting(bucketName)
 
