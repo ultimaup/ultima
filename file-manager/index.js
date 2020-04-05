@@ -36,15 +36,15 @@ const generatePolicy = (bucketName) => ({
     ]
 })
 
-const listUsers = () => execCommand(`mc admin user list --json ${configName}`)
+const listUsers = () => execCommand(`mcli admin user list --json ${configName}`)
 
-const addUser = (user, password) => execCommand(`mc admin user add --json ${configName} ${user} ${password}`)
+const addUser = (user, password) => execCommand(`mcli admin user add --json ${configName} ${user} ${password}`)
 
-const createBucket = (bucketName) => execCommand(`mc mb --json ${configName}/${bucketName}`)
+const createBucket = (bucketName) => execCommand(`mcli mb --json ${configName}/${bucketName}`)
 
-const setPolicyOnUser = (policyName, user) => execCommand(`mc admin policy set --json ${configName} ${policyName} user=${user}`)
+const setPolicyOnUser = (policyName, user) => execCommand(`mcli admin policy set --json ${configName} ${policyName} user=${user}`)
 
-const addPolicy = (policyName, location) => execCommand(`mc admin policy add --json ${configName} ${policyName} ${location}`)
+const addPolicy = (policyName, location) => execCommand(`mcli admin policy add --json ${configName} ${policyName} ${location}`)
 
 const createPolicy = async (userId) => {
 	const policy = generatePolicy(userId)
@@ -87,6 +87,10 @@ app.post('/:userId', async (req, res) => {
 	const user = await ensureUserExists(userId, secret)
 
 	res.json(user)
+})
+
+app.post('/web_bucket', async (req, res) => {
+
 })
 
 app.listen({ port: PORT }, () => {
