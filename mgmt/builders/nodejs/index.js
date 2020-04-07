@@ -138,9 +138,11 @@ app.post('/', async (req, res) => {
 	let testOutput
 
 	try {
-		installOutput = await installDeps(wkdir)
-		buildOutput = await doBuild(wkdir)
-		testOutput = await doTest(wkdir)
+		if (await fse.exists(path.resolve(wkdir, 'package.json'))) {
+			installOutput = await installDeps(wkdir)
+			buildOutput = await doBuild(wkdir)
+			testOutput = await doTest(wkdir)
+		}
 	} catch (e) {
 		console.error(e)
 	}

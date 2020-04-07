@@ -3,11 +3,13 @@ const bodyParser = require('body-parser')
 const got = require('got')
 const unzip = require('unzip-stream')
 const tar = require('tar-fs')
+const tarStream = require('tar-stream')
 const path = require('path')
 const uuid = require('uuid').v4
 const { createGzip } = require('zlib')
 const stream = require('stream');
 const {promisify} = require('util');
+const yaml = require('js-yaml');
 
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
@@ -135,71 +137,81 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	let hasAPI = true
 	let staticContentLocation = false
 
-	// handle "special" files special-y
-	giteaStream(codeZipUrl).pipe(unzip.Parse())
-		.on('entry', entry => {
-			const { path, type } = entry
-			// console.log('found', path)
+	await new Promise((resolve, reject) => {
+		let promises = []
+		// handle "special" files special-y
+		giteaStream(codeZipUrl)
+			.pipe(unzip.Parse())
+			.on('entry', entry => {
+				const { path, type } = entry
+				// console.log('found', path)
 
-			let realPath = path.split('/')
-			realPath.shift()
-			realPath = realPath.join('/')
+				let realPath = path.split('/')
+				realPath.shift()
+				realPath = realPath.join('/')
 
-			if (realPath === 'optima.json') {
-				streamToBuf(entry).then(buf => {
-					return buf.toString('utf8')
-				})
-					.then(text => JSON.parse(text))
-					.then(config => {
-						if (config.staticContentLocation) {
-							staticContentLocation = config.staticContentLocation
-						}
-						if (config.hasAPI === false) {
-							hasAPI = false
-						}
-					})
-					.catch(e => {
-						console.error('failed to parse optima.json', e)
-					})
-			}
+				if (realPath === 'ultima.yml') {
+					promises.push(
+						streamToBuf(entry)
+						.then(buf => {
+							return buf.toString('utf8')
+						})
+						.then(text => yaml.safeLoad(text))
+						.then(config => {
+							console.log(config)
+							if (config.web) {
+								staticContentLocation = config.web.builtPath
+							}
+							if (config.hasAPI === false) {
+								hasAPI = false
+							}
+						})
+						.catch(e => {
+							console.error('failed to parse ultima.yml', e)
+						})
+					)
+				}
 
-			if (realPath === 'schema.graphql') {
-				console.log(invocationId, 'processing schema.graphql')
-				reportStatus(repository.full_name, after, {
-					targetUrl: 'https://google.com',
-					context: 'Datastore',
-					description: 'updating schema',
-				}, 'pending')
-
-				streamToBuf(entry).then(buf => {
-					return buf.toString('utf8')
-				}).then(schema => {
-					return ensurePrismaService({
-						id: repository.full_name.split('/').join('-'), 
-						stage: ref.split('refs/heads/')[1], 
-						schema, 
-						dryRun: false,
-					})
-				}).then(() => {
-					return reportStatus(repository.full_name, after, {
+				if (realPath === 'schema.graphql') {
+					console.log(invocationId, 'processing schema.graphql')
+					reportStatus(repository.full_name, after, {
 						targetUrl: 'https://google.com',
 						context: 'Datastore',
 						description: 'updating schema',
-					}, 'success')
-				}).catch(console.error)
-				return
-			}
+					}, 'pending')
 
-			if (path === '.env.example') {
-				// send to env handler
-				return
-			}
+					streamToBuf(entry).then(buf => {
+						return buf.toString('utf8')
+					}).then(schema => {
+						return ensurePrismaService({
+							id: repository.full_name.split('/').join('-'), 
+							stage: ref.split('refs/heads/')[1], 
+							schema, 
+							dryRun: false,
+						})
+					}).then(() => {
+						return reportStatus(repository.full_name, after, {
+							targetUrl: 'https://google.com',
+							context: 'Datastore',
+							description: 'updating schema',
+						}, 'success')
+					}).catch(console.error)
+					return
+				}
 
-			// leave the rest
+				if (path === '.env.example') {
+					// send to env handler
+					return
+				}
 
-			entry.autodrain()
-		})
-		.on('error', console.error)
+				// leave the rest
+				entry.autodrain()
+			})
+			.on('error', reject)
+			.on('finish', () => {
+				resolve()
+			})
+	})
 
 	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
@@ -219,7 +231,38 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
-	await pipeline(giteaStream(codeTarUrl),
+
+	let staticUrl
+	if (staticContentLocation) {
+		const bucketName = `${repository.full_name.split('/').join('-')}-${after}`
+		console.log('uploading', staticContentLocation, 'to', bucketName)
+		await s3.ensureWebBucket(bucketName)
+
+		await new Promise((resolve, reject) => {
+			let promises = []
+			writeStream
+				.pipe(tarStream.extract())
+				.on('entry', (header, stream, next) => {
+					const path = header.name
+					console.log('found', path)
+					if (path.startsWith(staticContentLocation)) {
+						const realPath = path.split(staticContentLocation).join('')
+						const { writeStream, promise } = s3.uploadStream({ Key: realPath, Bucket: bucketName })
+						stream.pipe(writeStream)
+						promises.push(promise)
+					}
+	
+					next()
+				})
+				.on('error', reject)
+				.on('finish', () => {
+					Promise.all(promises).then(resolve)
+				})
+		})
+	}
+
+	await pipeline(
+		giteaStream(codeTarUrl),
 		got.stream.post(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
 			headers: {
 				// 'content-type': 'application/octet-stream',
@@ -227,7 +270,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			},
 		}),
 		writeStream
-		)
+	)
 	
 	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
 	const resultingBundleLocation = await promise
@@ -255,14 +298,6 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			return {}
 		}
 	}
-
-	let staticUrl
-	if (staticContentLocation) {
-		// get built result
-		// ensure web bucket exits
-		// upload /result/staticContentLocation to web bucket
-	}
-
 
 	console.log(invocationId, `complete`)
 
@@ -305,8 +340,8 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = '450597d46b164363b84b0aeca9111380f9a16b8c'
-	const repository = 'thunder/lol'
+	const after = '4f0010e3d1b3597a3acaf9e0aed5415b76df13d0'
+	const repository = 'test/basic-frontend'
 	const pusher = 'test'
 
 	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)

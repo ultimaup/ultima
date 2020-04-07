@@ -20,6 +20,16 @@ const ensureFileUserExists = (userId, secret) => (
 	}).json().then(r => r)
 )
 
+
+const ensureWebBucket = (bucketName) => (
+	got.post(`${FILEMANAGER_ENDPOINT}/web-bucket`, {
+		body: JSON.stringify({ bucketName }),
+		headers: {
+			'content-type': 'application/json',
+		}
+	}).json().then(r => r)
+)
+
 const s3 = new AWS.S3({
 	accessKeyId: BUILDER_BUCKET_ID,
 	secretAccessKey: BUILDER_BUCKET_SECRET,
@@ -66,4 +76,5 @@ module.exports = {
 	uploadStream,
 	getStream,
 	headObject,
+	ensureWebBucket,
 }
