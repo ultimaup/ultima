@@ -20,6 +20,6 @@ cd ..
 
 
 # Create backup
-tar -cvpJf build-${DRONE_COMMIT_SHA}.tar.xz --exclude build-${DRONE_COMMIT_SHA}.tar.xz .
+tar -cvpJf ../build-${DRONE_COMMIT_SHA}.tar.xz .
 
 # upload backup to somewhere
