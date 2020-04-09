@@ -39,4 +39,5 @@ curl -v -X PUT -T "../build-${DRONE_COMMIT_SHA}.tar.xz" \
           -H "Content-Type: ${content_type}" \
           -H "Authorization: AWS ${s3_key}:${signature}" \
           http://${host}:9000${resource}
-
+echo "http://${host}:9000${resource}"
+echo "${signature}"
