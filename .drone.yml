@@ -6,7 +6,11 @@ steps:
   image: node
   commands:
   - bash ./build.sh
-  
+  environment:
+    S3_ACCESS_KEY:
+      from_secret: S3_ACCESS_KEY
+    S3_ACCESS_SECRET:
+      from_secret: S3_ACCESS_SECRET
 trigger:
   event:
     exclude:
