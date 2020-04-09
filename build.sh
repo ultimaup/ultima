@@ -33,7 +33,7 @@ date=`date -R`
 _signature="PUT\n\n${content_type}\n${date}\n${resource}"
 signature=`echo -en ${_signature} | openssl sha1 -hmac ${s3_secret} -binary | base64`
 
-curl -v -X PUT -T "build-${DRONE_COMMIT_SHA}.tar.xz" \
+curl -v -X PUT -T "../build-${DRONE_COMMIT_SHA}.tar.xz" \
           -H "Host: $host" \
           -H "Date: ${date}" \
           -H "Content-Type: ${content_type}" \
