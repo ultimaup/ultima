@@ -23,3 +23,6 @@ cd ..
 tar -cvpJf ../build-${DRONE_COMMIT_SHA}.tar.xz .
 
 # upload backup to somewhere
+ip a
+ls -alh .
+ls -alh ../build-${DRONE_COMMIT_SHA}.tar.xz
