@@ -7,3 +7,7 @@ steps:
   commands:
   - bash ./build.sh
   
+trigger:
+  event:
+    exclude:
+    - pull_request
