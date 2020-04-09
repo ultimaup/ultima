@@ -24,8 +24,8 @@ tar -cvpJf ../build-${DRONE_COMMIT_SHA}.tar.xz .
 
 # upload backup to somewhere
 host=drone.ultima.re
-s3_key='secret key'
-s3_secret='secret token'
+s3_key='${S3_ACCESS_KEY}'
+s3_secret='${S3_ACCESS_SECRET}'
 
 resource="/build-artifacts/build-${DRONE_COMMIT_SHA}.tar.xz"
 content_type="application/octet-stream"
