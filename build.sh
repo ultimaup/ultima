@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ping -c 5 8.8.8.8
+
 # get dependencies
 cd endpoints
 yarn install --frozen-lockfile
