@@ -12,6 +12,7 @@ const {
 	PORT = 3001,
 	DOCKER_HOSTNAME,
 	BUILDER_BUCKET_ID,
+    IN_PROD = false,
 } = process.env
 
 const getBundle = async url => {
@@ -20,11 +21,16 @@ const getBundle = async url => {
 }
 
 const app = express()
-const docker = new Docker({
-	ca: fs.readFileSync('./certs/client/ca.pem'),
-  	cert: fs.readFileSync('./certs/client/cert.pem'),
-  	key: fs.readFileSync('./certs/client/key.pem'),
-})
+const docker = undefined
+if(!IN_PROD) {
+    docker = new Docker({
+	    ca: fs.readFileSync('./certs/client/ca.pem'),
+  	    cert: fs.readFileSync('./certs/client/cert.pem'),
+  	    key: fs.readFileSync('./certs/client/key.pem'),
+    })
+}else{
+    docker = new Docker()
+}
 
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
@@ -181,9 +187,9 @@ app.use('/:deploymentId/*', async (req, res, next) => {
 			console.log(requestId, 'created container', containerId)
 
 			console.log(requestId, 'downloading bundle url', deployment.bundleLocation)
-			
+
 			// will make this pipe from s3 or dev
-			const bundleStreamOrLocalLocation = await getBundle(deployment.bundleLocation) 
+			const bundleStreamOrLocalLocation = await getBundle(deployment.bundleLocation)
 
 			console.log(requestId, 'uploading bundle to /app')
 
