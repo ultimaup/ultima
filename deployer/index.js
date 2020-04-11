@@ -4,6 +4,7 @@ const tar = require('tar-fs');
 const lzma = require('lzma-native');
 const fs = require('fs');
 const stream = require('stream');
+const path = require('path');
 const { promisify } = require('util');
 
 const service = require('./services');
@@ -13,7 +14,7 @@ const pipeline = promisify(stream.pipeline);
 
 const { PORT=4480 } = process.env;
 
-const folder = `../platform-deploy`
+const folder = path.resolve('../..')
 
 app.post('/:name', (req, res) => {
 	console.log(`Received request for ${req.params.name}`);

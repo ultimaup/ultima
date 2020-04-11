@@ -8,7 +8,7 @@ const rimrafAsync = promisify(rimraf);
 
 const serviceNames = ['ultima-file-manager', 'ultima-endpoints', 'ultima-mgmt'];
 
-const staticFolder = '../platform-deploy';
+const staticFolder = path.resolve('../..');
 const staticPathName = `${staticFolder}/build-latest`;
 const InstallService = async (path) => {
 	let isAlreadyThere = true;
