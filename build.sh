@@ -18,9 +18,13 @@ cd ../..
 
 cd ..
 
+cd deployer
+yarn install --frozen-lockfile
+cd ..
+
 
 # Create backup
-tar -cvpJf ../build-${DRONE_COMMIT_SHA}.tar.xz --exclude .git .
+tar -cpJf ../build-${DRONE_COMMIT_SHA}.tar.xz --exclude .git .
 
 # upload backup to somewhere
 host=drone.ultima.re
