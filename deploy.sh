@@ -2,7 +2,7 @@
 
 mode=${DRONE_BRANCH}
 
-echo $mode
+echo "Going to deploy ${mode}"
 curl -X "POST"  http://ultima.re:4480/build-${DRONE_COMMIT_SHA}.tar.xz
 if [ $mode = "master" ]
 then
@@ -10,4 +10,6 @@ then
 elif [ $mode = "staging" ]
 then
         echo "is staging"
+else
+        echo "not necessary"
 fi
