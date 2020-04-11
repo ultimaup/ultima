@@ -21,7 +21,7 @@ const getBundle = async url => {
 }
 
 const app = express()
-const docker = undefined
+let docker = undefined
 if(!IN_PROD) {
     docker = new Docker({
 	    ca: fs.readFileSync('./certs/client/ca.pem'),
