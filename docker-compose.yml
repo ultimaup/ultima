@@ -77,10 +77,10 @@ services:
       BUILDER_BUCKET_ID: builder-bucket-key-id-7
       BUILDER_BUCKET_SECRET: builder-bucket-secret
       ENDPOINTS_ENDPOINT: http://endpoints:4470
-      
+
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
-      
+
       PLATFORM_DB_TYPE: pg # knex db type
       PLATFORM_DB_HOST: db
       PLATFORM_DB_PORT: 5432
@@ -89,6 +89,8 @@ services:
       PLATFORM_DB_PASSWORD: platform
 
       STATIC_ENDPOINT: http://static-web:4473
+      PUBLIC_ROUTE_ROOT: eu1.onultima.com
+      PUBLIC_ROUTE_ROOT_PROTOCOL: http
 
   dind:
     image: docker:dind
@@ -182,3 +184,13 @@ services:
     environment:
       MINIO_URL: http://files:9000
     command: /bin/bash -c "envsubst '$$MINIO_URL' < /etc/nginx/conf.d/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
+
+  proxy:
+    image: traefik:v2.2
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.file.directory=/config --providers.file.watch=true
+    volumes:
+      - './tmp/traefik/:/config'
+    ports:
+      - '4480:80'
+      - '4488:8080'

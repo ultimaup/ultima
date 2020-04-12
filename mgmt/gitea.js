@@ -16,6 +16,7 @@ const mime = require('mime-types')
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
+const Route = require('./db/Route')
 
 const {
 	GITEA_MACHINE_USER,
@@ -83,7 +84,7 @@ const giteaApiReq = (endpoint, { method, body }) => (
 	})
 	.then(r => r.json())
 )
- 
+
 const reportStatus = (fullName, hash, { targetUrl, context, description }, state) => {
 	return giteaApiReq(`/api/v1/repos/${fullName}/statuses/${hash}`, {
 		method: 'post',
@@ -199,7 +200,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					}).then(schema => {
 						return ensurePrismaService({
 							id: repository.full_name.split('/').join('-'), 
-							stage: ref.split('refs/heads/')[1], 
+							stage: ref.split('refs/heads/')[1],
 							schema, 
 							dryRun: false,
 						})
@@ -315,6 +316,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
 		await Deployment.ensure({
 			id: resultingEndpointId,
+			repoName: repository.full_name,
 			stage: ref,
 			bundleLocation: resultingBundleLocation,
 		})
@@ -331,11 +333,39 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		}
 	}
 
+	const branch = ref.split('refs/heads/')[1]
+	const [repo, user] = repository.full_name.split('/')
+
+	let endpointRouteUrl
+	if (endpointUrl) {
+		// add endpoint route
+		const endpointRoute = {
+			subdomain: `${branch}.${repo}.${user}`,
+			destination: endpointUrl,
+		}
+		endpointRouteUrl = await Route.set(endpointRoute)
+	}
+
+	if (staticUrl) {
+		// add static route
+		const staticRoute = {
+			subdomain: `static.${branch}.${repo}.${user}`,
+			destination: staticUrl,
+		}
+		staticRouteUrl = await Route.set(staticRoute)
+	}
+
 	console.log(invocationId, `complete`)
 
 	return {
 		endpointUrl,
+		endpointRouteUrl,
+
 		staticUrl,
+		staticRouteUrl,
+
+		repoName: repository.full_name,
+		branch,
 	}
 }
 
@@ -376,5 +406,5 @@ module.exports = app => {
 	const repository = 'josh/todo-frontend'
 	const pusher = 'josh'
 
-	// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }
