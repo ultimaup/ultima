@@ -15,12 +15,23 @@ const {
 
 const configName = Object.keys(process.env).find(k => k.startsWith('MC_HOST_')).split('MC_HOST_')[1]
 
+const tryJsonParse = (str) => {
+	try {
+		return JSON.parse(str)
+	} catch (e) {
+		//
+	}
+
+	return str
+}
+
 const execCommand = cmd => exec(cmd).then(({ stdout, stderr }) => {
-	return stdout.split('\n').filter(Boolean).map(line => JSON.parse(line))
+	return [...stdout.split('\n'), ...stderr.split('\n')]
+		.flat()
+		.map(tryJsonParse)
 }).catch(({ stdout }) => {
-	console.error(stdout)
+	return stdout
 }).catch(e => {
-	console.error(e)
 	throw e
 })
 
@@ -28,10 +39,13 @@ const generatePolicy = (bucketName) => ({
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "sid1",
+            "Sid": "",
             "Effect": "Allow",
             "Action": ["s3:*"],
-            "Resource":[`arn:aws:s3:::${bucketName}/*`]
+            "Resource":[
+				`arn:aws:s3:::${bucketName}/*`,
+				`arn:aws:s3:::${bucketName}-*/*`
+			]
         }
     ]
 })
@@ -48,18 +62,18 @@ const setPolicyOnUser = (policyName, user) => execCommand(`mcli admin policy set
 
 const addPolicy = (policyName, location) => execCommand(`mcli admin policy add --json ${configName} ${policyName} ${location}`)
 
-const createPolicy = async (userId) => {
-	const policy = generatePolicy(userId)
+const createPolicy = async (bucketName) => {
+	const policy = generatePolicy(bucketName)
 
 	// write policy file
-	const tmpDir = await fse.mkdirp(`/tmp/${userId}`)
-	const tmpLoc = path.resolve(tmpDir, `${userId}.json`)
+	const tmpDir = await fse.mkdirp(`/tmp/${bucketName}`)
+	const tmpLoc = path.resolve(tmpDir, `${bucketName}.json`)
 
 	await fse.writeJson(tmpLoc, policy)
 
-	await addPolicy(userId, tmpLoc)
+	await addPolicy(bucketName, tmpLoc)
 
-	return userId
+	return bucketName
 }
 
 const ensureUserExists = async (userId, secret) => {
@@ -81,6 +95,19 @@ const ensureUserExists = async (userId, secret) => {
 
 app.use(bodyParser.json())
 
+app.post('/web-bucket', async (req, res) => {
+	const { bucketName, ownerId } = req.body
+	const actualBucketName = `${ownerId}-${bucketName}`
+	console.log('web-bucket', { bucketName, ownerId, actualBucketName })
+	const cbResult = await createBucket(actualBucketName)
+	console.log('cbResult', cbResult)
+	if (!cbResult.error) { // res.error will probably be cos it's been created already
+		await makeBucketStaticHosting(actualBucketName)
+	}
+
+	res.json(actualBucketName)
+})
+
 app.post('/:userId', async (req, res) => {
 	const { userId } = req.params
 	const { secret } = req.body
@@ -89,17 +116,6 @@ app.post('/:userId', async (req, res) => {
 	const user = await ensureUserExists(userId, secret)
 
 	res.json(user)
-})
-
-app.post('/web-bucket', async (req, res) => {
-	const { bucketName } = req.body
-	
-	const cbResult = await createBucket(bucketName)
-	if (!cbResult.error) { // res.error will probably be cos it's been created already
-		await makeBucketStaticHosting(bucketName)
-	}
-
-	res.json(bucketName)
 })
 
 app.listen({ port: PORT }, () => {

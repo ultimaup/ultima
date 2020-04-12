@@ -10,6 +10,8 @@ const { createGzip } = require('zlib')
 const stream = require('stream');
 const {promisify} = require('util');
 const yaml = require('js-yaml');
+const gunzip = require('gunzip-maybe')
+const mime = require('mime-types')
 
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
@@ -128,6 +130,17 @@ const ensureBuilderBundle = async lang => {
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
 }
 
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
+}
+
+const repoRelative = (loc) => {
+	return path.resolve('/', loc).substring(1)
+}
+
 const runTests = async ({ ref, after, repository, pusher }) => {
 	const invocationId = uuid()
 	console.log(invocationId, `gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
@@ -160,7 +173,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 						.then(config => {
 							console.log(config)
 							if (config.web) {
-								staticContentLocation = config.web.builtPath
+								staticContentLocation = repoRelative(config.web.buildLocation)
 							}
 							if (config.hasAPI === false) {
 								hasAPI = false
@@ -232,35 +245,6 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
-	let staticUrl
-	if (staticContentLocation) {
-		const bucketName = `${repository.full_name.split('/').join('-')}-${after}`
-		console.log('uploading', staticContentLocation, 'to', bucketName)
-		await s3.ensureWebBucket(bucketName)
-
-		await new Promise((resolve, reject) => {
-			let promises = []
-			writeStream
-				.pipe(tarStream.extract())
-				.on('entry', (header, stream, next) => {
-					const path = header.name
-					console.log('found', path)
-					if (path.startsWith(staticContentLocation)) {
-						const realPath = path.split(staticContentLocation).join('')
-						const { writeStream, promise } = s3.uploadStream({ Key: realPath, Bucket: bucketName })
-						stream.pipe(writeStream)
-						promises.push(promise)
-					}
-	
-					next()
-				})
-				.on('error', reject)
-				.on('finish', () => {
-					Promise.all(promises).then(resolve)
-				})
-		})
-	}
-
 	await pipeline(
 		giteaStream(codeTarUrl),
 		got.stream.post(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
@@ -272,9 +256,56 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		writeStream
 	)
 	
-	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
+	console.log(invocationId, `piping built result to ${builtBundleKey}`)
 	const resultingBundleLocation = await promise
-	console.log(invocationId, `piped built result to to ${builtBundleKey}`, resultingBundleLocation)
+	console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
+
+	let staticUrl
+	if (staticContentLocation) {
+		const bucketName = after.substring(0,8)
+		const actualBucketName = await s3.ensureWebBucket(bucketName)
+		console.log('uploading', staticContentLocation, 'to', actualBucketName)
+
+		// TODO: use stream from earlier instead of fetching from s3 again
+		const builtBundleStream = s3.getStream({ Key: builtBundleKey })
+
+		await new Promise((resolve, reject) => {
+			let promises = []
+			
+			builtBundleStream
+				.pipe(gunzip())
+				.pipe(tarStream.extract())
+				.on('entry', (header, stream, next) => {
+					const loc = header.name
+					console.log('found', loc)
+					if (loc === staticContentLocation) {
+						return next()
+					}
+					if (loc.startsWith(staticContentLocation)) {
+						const realPath = loc.split(staticContentLocation).join('')
+						const { writeStream, promise } = s3.uploadStream({ 
+							Key: removeLeadingSlash(realPath), 
+							Bucket: actualBucketName,
+							ContentType: mime.lookup(realPath) || 'application/octet-stream',
+						})
+						stream.pipe(writeStream)
+						promises.push(promise)
+						promise.then(() => {
+							console.log('uploaded', realPath, 'to', actualBucketName)
+							next()
+						})
+					} else {
+						next()
+					}
+				})
+				.on('error', reject)
+				.on('finish', () => {
+					Promise.all(promises).then(resolve)
+				})
+		})
+		
+		staticUrl = actualBucketName
+	}
 
 	let endpointUrl
 	if (hasAPI) {
@@ -340,9 +371,9 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = '4f0010e3d1b3597a3acaf9e0aed5415b76df13d0'
-	const repository = 'test/basic-frontend'
-	const pusher = 'test'
+	const after = '705c008f4a77081cfc3a4f0eab0af1df5417bb96'
+	const repository = 'josh/todo-frontend'
+	const pusher = 'josh'
 
 	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }
