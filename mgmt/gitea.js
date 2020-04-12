@@ -27,6 +27,7 @@ const {
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
+	STATIC_ENDPOINT,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -303,8 +304,8 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					Promise.all(promises).then(resolve)
 				})
 		})
-		
-		staticUrl = actualBucketName
+
+		staticUrl = `${STATIC_ENDPOINT}/${actualBucketName}/`
 	}
 
 	let endpointUrl
@@ -375,5 +376,5 @@ module.exports = app => {
 	const repository = 'josh/todo-frontend'
 	const pusher = 'josh'
 
-	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+	// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }
