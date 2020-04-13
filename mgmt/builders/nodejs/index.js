@@ -4,6 +4,7 @@ const path = require('path')
 const tar = require('tar-fs')
 const gunzip = require('gunzip-maybe')
 const { createGzip } = require('zlib')
+const stream = require('stream')
 
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
@@ -20,6 +21,8 @@ const execCommand = (...cmd) => exec(...cmd)
 	// 	throw e
 	// })
 
+const pipeline = util.promisify(stream.pipeline)
+
 const restoreCache = async (cacheType, hash) => {
 	console.log(`restoring ${cacheType} cache for hash ${hash}`)
 
@@ -29,7 +32,7 @@ const restoreCache = async (cacheType, hash) => {
 const installDeps = async (wkdir) => {
 	console.log('installing deps')
 
-	const useYarn = await fse.exists(path.resolve(wkdir, 'yarn.lock'))
+	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
 
 	if (useYarn) {
 		console.log('using yarn')
@@ -42,7 +45,7 @@ const installDeps = async (wkdir) => {
 		return lines
 	} else {	
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
-		if (await fse.exists(lockfileLocation)) {
+		if (await fse.pathExists(lockfileLocation)) {
 			console.log('using npm ci')
 			const lockfileStream = fse.createReadStream(lockfileLocation)
 			const lockfileHash = await streamHash(lockfileStream)
@@ -138,7 +141,7 @@ app.post('/', async (req, res) => {
 	let testOutput
 
 	try {
-		if (await fse.exists(path.resolve(wkdir, 'package.json'))) {
+		if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
 			installOutput = await installDeps(wkdir)
 			buildOutput = await doBuild(wkdir)
 			testOutput = await doTest(wkdir)
@@ -159,9 +162,13 @@ app.post('/', async (req, res) => {
 	const tarStream = tar.pack(wkdir)
 	const gzipStream = createGzip()
 
-	tarStream.pipe(gzipStream).pipe(res).on('finish', () => {
-		process.exit()
-	})
+	await pipeline(
+		tarStream,
+		gzipStream,
+		res
+	)
+	
+	process.exit()
 })
 
 console.log('nodejs builder started')

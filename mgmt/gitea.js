@@ -16,6 +16,7 @@ const mime = require('mime-types')
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
+const route = require('./route')
 
 const {
 	GITEA_MACHINE_USER,
@@ -83,7 +84,7 @@ const giteaApiReq = (endpoint, { method, body }) => (
 	})
 	.then(r => r.json())
 )
- 
+
 const reportStatus = (fullName, hash, { targetUrl, context, description }, state) => {
 	return giteaApiReq(`/api/v1/repos/${fullName}/statuses/${hash}`, {
 		method: 'post',
@@ -149,7 +150,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
 	let hasAPI = true
-	let staticContentLocation = false
+	let staticContentLocation = undefined
 
 	await new Promise((resolve, reject) => {
 		let promises = []
@@ -164,7 +165,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 				realPath.shift()
 				realPath = realPath.join('/')
 
-				if (realPath === 'ultima.yml') {
+				if (realPath === '.ultima.yml') {
 					promises.push(
 						streamToBuf(entry)
 						.then(buf => {
@@ -181,7 +182,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 							}
 						})
 						.catch(e => {
-							console.error('failed to parse ultima.yml', e)
+							console.error('failed to parse .ultima.yml', e)
 						})
 					)
 				}
@@ -199,7 +200,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					}).then(schema => {
 						return ensurePrismaService({
 							id: repository.full_name.split('/').join('-'), 
-							stage: ref.split('refs/heads/')[1], 
+							stage: ref.split('refs/heads/')[1],
 							schema, 
 							dryRun: false,
 						})
@@ -270,27 +271,24 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		// TODO: use stream from earlier instead of fetching from s3 again
 		const builtBundleStream = s3.getStream({ Key: builtBundleKey })
 
-		await new Promise((resolve, reject) => {
-			let promises = []
-			
+		await new Promise((resolve, reject) => {			
 			builtBundleStream
 				.pipe(gunzip())
 				.pipe(tarStream.extract())
 				.on('entry', (header, stream, next) => {
 					const loc = header.name
 					console.log('found', loc)
-					if (loc === staticContentLocation) {
+					if (loc === staticContentLocation || header.type !== 'file') {
 						return next()
 					}
 					if (loc.startsWith(staticContentLocation)) {
-						const realPath = loc.split(staticContentLocation).join('')
+						const realPath = loc.substring(staticContentLocation.length)
 						const { writeStream, promise } = s3.uploadStream({ 
-							Key: removeLeadingSlash(realPath), 
+							Key: removeLeadingSlash(realPath),
 							Bucket: actualBucketName,
 							ContentType: mime.lookup(realPath) || 'application/octet-stream',
 						})
 						stream.pipe(writeStream)
-						promises.push(promise)
 						promise.then(() => {
 							console.log('uploaded', realPath, 'to', actualBucketName)
 							next()
@@ -300,9 +298,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					}
 				})
 				.on('error', reject)
-				.on('finish', () => {
-					Promise.all(promises).then(resolve)
-				})
+				.on('finish', resolve)
 		})
 
 		staticUrl = `${STATIC_ENDPOINT}/${actualBucketName}/`
@@ -315,6 +311,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
 		await Deployment.ensure({
 			id: resultingEndpointId,
+			repoName: repository.full_name,
 			stage: ref,
 			bundleLocation: resultingBundleLocation,
 		})
@@ -331,11 +328,39 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		}
 	}
 
+	const branch = ref.split('refs/heads/')[1]
+	const [user,repo] = repository.full_name.split('/')
+
+	let endpointRouteUrl
+	if (endpointUrl) {
+		// add endpoint route
+		const endpointRoute = {
+			subdomain: `${branch}.${repo}.${user}`,
+			destination: endpointUrl,
+		}
+		endpointRouteUrl = await route.set(endpointRoute)
+	}
+
+	if (staticUrl) {
+		// add static route
+		const staticRoute = {
+			subdomain: `static.${branch}.${repo}.${user}`,
+			destination: staticUrl,
+		}
+		staticRouteUrl = await route.set(staticRoute)
+	}
+
 	console.log(invocationId, `complete`)
 
 	return {
 		endpointUrl,
+		endpointRouteUrl,
+
 		staticUrl,
+		staticRouteUrl,
+
+		repoName: repository.full_name,
+		branch,
 	}
 }
 
@@ -372,7 +397,7 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = '705c008f4a77081cfc3a4f0eab0af1df5417bb96'
+	const after = '9f2e98b3dceee8fa6ebe05343e0c9891c3567251'
 	const repository = 'josh/todo-frontend'
 	const pusher = 'josh'
 
