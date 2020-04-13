@@ -88,9 +88,9 @@ services:
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
 
-      STATIC_ENDPOINT: http://static-web:4473
-      PUBLIC_ROUTE_ROOT: eu1.onultima.com
-      PUBLIC_ROUTE_ROOT_PROTOCOL: http
+      STATIC_ENDPOINT: http://web-files:80 #internal
+
+      ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
   dind:
     image: docker:dind
@@ -185,12 +185,35 @@ services:
       MINIO_URL: http://files:9000
     command: /bin/bash -c "envsubst '$$MINIO_URL' < /etc/nginx/conf.d/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
 
-  proxy:
+  router-mgmt:
+    image: node
+    ports: 
+      - '4487:4487'
+    volumes:
+      - './router:/app'
+      - './tmp/router:/configs'
+    working_dir: '/app'
+    command: ["yarn", "dev"]
+    environment:
+      PORT: 4487
+      
+      PLATFORM_DB_TYPE: pg # knex db type
+      PLATFORM_DB_HOST: db
+      PLATFORM_DB_PORT: 5432
+      PLATFORM_DB_NAME: platform #seemingly ignored
+      PLATFORM_DB_USER: platform
+      PLATFORM_DB_PASSWORD: platform
+
+      CONFIG_DIR: /configs
+
+      PUBLIC_ROUTE_ROOT: onultima.local
+      PUBLIC_ROUTE_ROOT_PROTOCOL: http
+
+  router:
     image: traefik:v2.2
-    # Enables the web UI and tells Traefik to listen to docker
     command: --api.insecure=true --providers.file.directory=/config --providers.file.watch=true
     volumes:
-      - './tmp/traefik/:/config'
+      - './tmp/router:/config'
     ports:
       - '4480:80'
       - '4488:8080'

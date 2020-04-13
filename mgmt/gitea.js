@@ -16,7 +16,7 @@ const mime = require('mime-types')
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
-const Route = require('./db/Route')
+const route = require('./route')
 
 const {
 	GITEA_MACHINE_USER,
@@ -334,7 +334,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	}
 
 	const branch = ref.split('refs/heads/')[1]
-	const [repo, user] = repository.full_name.split('/')
+	const [user,repo] = repository.full_name.split('/')
 
 	let endpointRouteUrl
 	if (endpointUrl) {
@@ -343,7 +343,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			subdomain: `${branch}.${repo}.${user}`,
 			destination: endpointUrl,
 		}
-		endpointRouteUrl = await Route.set(endpointRoute)
+		endpointRouteUrl = await route.set(endpointRoute)
 	}
 
 	if (staticUrl) {
@@ -352,7 +352,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			subdomain: `static.${branch}.${repo}.${user}`,
 			destination: staticUrl,
 		}
-		staticRouteUrl = await Route.set(staticRoute)
+		staticRouteUrl = await route.set(staticRoute)
 	}
 
 	console.log(invocationId, `complete`)
