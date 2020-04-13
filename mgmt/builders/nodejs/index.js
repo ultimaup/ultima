@@ -21,7 +21,7 @@ const execCommand = (...cmd) => exec(...cmd)
 	// 	throw e
 	// })
 
-const pipeline = promisify(stream.pipeline)
+const pipeline = util.promisify(stream.pipeline)
 
 const restoreCache = async (cacheType, hash) => {
 	console.log(`restoring ${cacheType} cache for hash ${hash}`)

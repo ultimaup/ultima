@@ -271,27 +271,24 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		// TODO: use stream from earlier instead of fetching from s3 again
 		const builtBundleStream = s3.getStream({ Key: builtBundleKey })
 
-		await new Promise((resolve, reject) => {
-			let promises = []
-			
+		await new Promise((resolve, reject) => {			
 			builtBundleStream
 				.pipe(gunzip())
 				.pipe(tarStream.extract())
 				.on('entry', (header, stream, next) => {
 					const loc = header.name
 					console.log('found', loc)
-					if (loc === staticContentLocation) {
+					if (loc === staticContentLocation || header.type !== 'file') {
 						return next()
 					}
 					if (loc.startsWith(staticContentLocation)) {
-						const realPath = loc.split(staticContentLocation).join('')
+						const realPath = loc.substring(staticContentLocation.length)
 						const { writeStream, promise } = s3.uploadStream({ 
-							Key: removeLeadingSlash(realPath), 
+							Key: removeLeadingSlash(realPath),
 							Bucket: actualBucketName,
 							ContentType: mime.lookup(realPath) || 'application/octet-stream',
 						})
 						stream.pipe(writeStream)
-						promises.push(promise)
 						promise.then(() => {
 							console.log('uploaded', realPath, 'to', actualBucketName)
 							next()
@@ -301,9 +298,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					}
 				})
 				.on('error', reject)
-				.on('finish', () => {
-					Promise.all(promises).then(resolve)
-				})
+				.on('finish', resolve)
 		})
 
 		staticUrl = `${STATIC_ENDPOINT}/${actualBucketName}/`
@@ -402,7 +397,7 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = '705c008f4a77081cfc3a4f0eab0af1df5417bb96'
+	const after = '9f2e98b3dceee8fa6ebe05343e0c9891c3567251'
 	const repository = 'josh/todo-frontend'
 	const pusher = 'josh'
 
