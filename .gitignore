@@ -6,5 +6,3 @@ endpoints/certs
 !gitea/gitea/conf/*
 file-manager/yarn-error.log
 *:Zone.Identifier
-route/config/*.toml
-!route/config/default.toml
