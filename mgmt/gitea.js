@@ -3,11 +3,15 @@ const bodyParser = require('body-parser')
 const got = require('got')
 const unzip = require('unzip-stream')
 const tar = require('tar-fs')
+const tarStream = require('tar-stream')
 const path = require('path')
 const uuid = require('uuid').v4
 const { createGzip } = require('zlib')
 const stream = require('stream');
 const {promisify} = require('util');
+const yaml = require('js-yaml');
+const gunzip = require('gunzip-maybe')
+const mime = require('mime-types')
 
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
@@ -23,6 +27,7 @@ const {
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
+	STATIC_ENDPOINT,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -126,59 +131,101 @@ const ensureBuilderBundle = async lang => {
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
 }
 
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
+}
+
+const repoRelative = (loc) => {
+	return path.resolve('/', loc).substring(1)
+}
+
 const runTests = async ({ ref, after, repository, pusher }) => {
 	const invocationId = uuid()
 	console.log(invocationId, `gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
-	// handle "special" files special-y
-	giteaStream(codeZipUrl).pipe(unzip.Parse())
-		.on('entry', entry => {
-			const { path, type } = entry
-			// console.log('found', path)
+	let hasAPI = true
+	let staticContentLocation = false
 
-			let realPath = path.split('/')
-			realPath.shift()
-			realPath = realPath.join('/')
+	await new Promise((resolve, reject) => {
+		let promises = []
+		// handle "special" files special-y
+		giteaStream(codeZipUrl)
+			.pipe(unzip.Parse())
+			.on('entry', entry => {
+				const { path, type } = entry
+				// console.log('found', path)
 
-			if (realPath === 'schema.graphql') {
-				console.log(invocationId, 'processing schema.graphql')
-				reportStatus(repository.full_name, after, {
-					targetUrl: 'https://google.com',
-					context: 'Datastore',
-					description: 'updating schema',
-				}, 'pending')
+				let realPath = path.split('/')
+				realPath.shift()
+				realPath = realPath.join('/')
 
-				streamToBuf(entry).then(buf => {
-					return buf.toString('utf8')
-				}).then(schema => {
-					return ensurePrismaService({
-						id: repository.full_name.split('/').join('-'), 
-						stage: ref.split('refs/heads/')[1], 
-						schema, 
-						dryRun: false,
-					})
-				}).then(() => {
-					return reportStatus(repository.full_name, after, {
+				if (realPath === 'ultima.yml') {
+					promises.push(
+						streamToBuf(entry)
+						.then(buf => {
+							return buf.toString('utf8')
+						})
+						.then(text => yaml.safeLoad(text))
+						.then(config => {
+							console.log(config)
+							if (config.web) {
+								staticContentLocation = repoRelative(config.web.buildLocation)
+							}
+							if (config.hasAPI === false) {
+								hasAPI = false
+							}
+						})
+						.catch(e => {
+							console.error('failed to parse ultima.yml', e)
+						})
+					)
+				}
+
+				if (realPath === 'schema.graphql') {
+					console.log(invocationId, 'processing schema.graphql')
+					reportStatus(repository.full_name, after, {
 						targetUrl: 'https://google.com',
 						context: 'Datastore',
 						description: 'updating schema',
-					}, 'success')
-				}).catch(console.error)
-				return
-			}
+					}, 'pending')
 
-			if (path === '.env.example') {
-				// send to env handler
-				return
-			}
+					streamToBuf(entry).then(buf => {
+						return buf.toString('utf8')
+					}).then(schema => {
+						return ensurePrismaService({
+							id: repository.full_name.split('/').join('-'), 
+							stage: ref.split('refs/heads/')[1], 
+							schema, 
+							dryRun: false,
+						})
+					}).then(() => {
+						return reportStatus(repository.full_name, after, {
+							targetUrl: 'https://google.com',
+							context: 'Datastore',
+							description: 'updating schema',
+						}, 'success')
+					}).catch(console.error)
+					return
+				}
 
-			// leave the rest
+				if (path === '.env.example') {
+					// send to env handler
+					return
+				}
 
-			entry.autodrain()
-		})
-		.on('error', console.error)
+				// leave the rest
+				entry.autodrain()
+			})
+			.on('error', reject)
+			.on('finish', () => {
+				resolve()
+			})
+	})
 
 	const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
@@ -198,7 +245,9 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 	const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
-	await pipeline(giteaStream(codeTarUrl),
+
+	await pipeline(
+		giteaStream(codeTarUrl),
 		got.stream.post(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
 			headers: {
 				// 'content-type': 'application/octet-stream',
@@ -206,36 +255,87 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			},
 		}),
 		writeStream
-		)
+	)
 	
-	console.log(invocationId, `piping built result to to ${builtBundleKey}`)
+	console.log(invocationId, `piping built result to ${builtBundleKey}`)
 	const resultingBundleLocation = await promise
-	console.log(invocationId, `piped built result to to ${builtBundleKey}`, resultingBundleLocation)
+	console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
 
-	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+	let staticUrl
+	if (staticContentLocation) {
+		const bucketName = after.substring(0,8)
+		const actualBucketName = await s3.ensureWebBucket(bucketName)
+		console.log('uploading', staticContentLocation, 'to', actualBucketName)
 
-	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
-	await Deployment.ensure({
-		id: resultingEndpointId,
-		stage: ref,
-		bundleLocation: resultingBundleLocation,
-	})
+		// TODO: use stream from earlier instead of fetching from s3 again
+		const builtBundleStream = s3.getStream({ Key: builtBundleKey })
 
-	const endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
-	console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+		await new Promise((resolve, reject) => {
+			let promises = []
+			
+			builtBundleStream
+				.pipe(gunzip())
+				.pipe(tarStream.extract())
+				.on('entry', (header, stream, next) => {
+					const loc = header.name
+					console.log('found', loc)
+					if (loc === staticContentLocation) {
+						return next()
+					}
+					if (loc.startsWith(staticContentLocation)) {
+						const realPath = loc.split(staticContentLocation).join('')
+						const { writeStream, promise } = s3.uploadStream({ 
+							Key: removeLeadingSlash(realPath), 
+							Bucket: actualBucketName,
+							ContentType: mime.lookup(realPath) || 'application/octet-stream',
+						})
+						stream.pipe(writeStream)
+						promises.push(promise)
+						promise.then(() => {
+							console.log('uploaded', realPath, 'to', actualBucketName)
+							next()
+						})
+					} else {
+						next()
+					}
+				})
+				.on('error', reject)
+				.on('finish', () => {
+					Promise.all(promises).then(resolve)
+				})
+		})
 
-	const firstRequest = await got(endpointUrl).then(r => r.body)
-	console.log(invocationId, `${endpointUrl} responded`, firstRequest)
+		staticUrl = `${STATIC_ENDPOINT}/${actualBucketName}/`
+	}
 
-	if (firstRequest.status === 'error') {
-		console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
-		return {}
+	let endpointUrl
+	if (hasAPI) {
+		const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+
+		console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+		await Deployment.ensure({
+			id: resultingEndpointId,
+			stage: ref,
+			bundleLocation: resultingBundleLocation,
+		})
+
+		endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
+		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+
+		const firstRequest = await got(endpointUrl).then(r => r.body)
+		console.log(invocationId, `${endpointUrl} responded`, firstRequest)
+
+		if (firstRequest.status === 'error') {
+			console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
+			return {}
+		}
 	}
 
 	console.log(invocationId, `complete`)
 
 	return {
 		endpointUrl,
+		staticUrl,
 	}
 }
 
@@ -272,9 +372,9 @@ module.exports = app => {
 	app.use(router)
 
 	const ref = 'refs/heads/master'
-	const after = '450597d46b164363b84b0aeca9111380f9a16b8c'
-	const repository = 'thunder/lol'
-	const pusher = 'test'
+	const after = '705c008f4a77081cfc3a4f0eab0af1df5417bb96'
+	const repository = 'josh/todo-frontend'
+	const pusher = 'josh'
 
-	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+	// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }

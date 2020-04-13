@@ -80,12 +80,15 @@ services:
       
       S3_ENDPOINT: http://files:9000
       FILEMANAGER_ENDPOINT: http://file-manager:4472
+      
       PLATFORM_DB_TYPE: pg # knex db type
       PLATFORM_DB_HOST: db
       PLATFORM_DB_PORT: 5432
       PLATFORM_DB_NAME: platform #seemingly ignored
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
+
+      STATIC_ENDPOINT: http://static-web:4473
 
   dind:
     image: docker:dind
@@ -169,3 +172,13 @@ services:
       PORT: 4489
       CHILD_PORT: 4501
       CHILD_DEBUG_PORT: 4502
+
+  web-files:
+    image: nginx
+    volumes:
+      - ./web-files/nginx.conf:/etc/nginx/conf.d/nginx.conf.template
+    ports:
+      - "4473:80"
+    environment:
+      MINIO_URL: http://files:9000
+    command: /bin/bash -c "envsubst '$$MINIO_URL' < /etc/nginx/conf.d/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"

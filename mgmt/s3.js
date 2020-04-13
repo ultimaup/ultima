@@ -20,6 +20,16 @@ const ensureFileUserExists = (userId, secret) => (
 	}).json().then(r => r)
 )
 
+
+const ensureWebBucket = (bucketName) => (
+	got.post(`${FILEMANAGER_ENDPOINT}/web-bucket`, {
+		body: JSON.stringify({ bucketName, ownerId: BUILDER_BUCKET_ID }),
+		headers: {
+			'content-type': 'application/json',
+		}
+	}).json().then(r => r)
+)
+
 const s3 = new AWS.S3({
 	accessKeyId: BUILDER_BUCKET_ID,
 	secretAccessKey: BUILDER_BUCKET_SECRET,
@@ -37,12 +47,12 @@ ensureFileUserExists(BUILDER_BUCKET_ID, BUILDER_BUCKET_SECRET)
 	stream.pipe(writeStream)
 	promise.then(console.log)
 */
-const uploadStream = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
+const uploadStream = ({ Bucket = BUILDER_BUCKET_ID, Key, ...rest }) => {
 	const pass = new stream.PassThrough()
 
 	return {
 		writeStream: pass,
-		promise: s3.upload({ Bucket, Key, Body: pass }).promise().then(r => r.Location),
+		promise: s3.upload({ Bucket, Key, Body: pass, ...rest }).promise().then(r => r.Location),
 	}
 }
 
@@ -66,4 +76,5 @@ module.exports = {
 	uploadStream,
 	getStream,
 	headObject,
+	ensureWebBucket,
 }

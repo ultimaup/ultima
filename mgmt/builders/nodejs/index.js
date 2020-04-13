@@ -138,9 +138,11 @@ app.post('/', async (req, res) => {
 	let testOutput
 
 	try {
-		installOutput = await installDeps(wkdir)
-		buildOutput = await doBuild(wkdir)
-		testOutput = await doTest(wkdir)
+		if (await fse.exists(path.resolve(wkdir, 'package.json'))) {
+			installOutput = await installDeps(wkdir)
+			buildOutput = await doBuild(wkdir)
+			testOutput = await doTest(wkdir)
+		}
 	} catch (e) {
 		console.error(e)
 	}
@@ -157,7 +159,9 @@ app.post('/', async (req, res) => {
 	const tarStream = tar.pack(wkdir)
 	const gzipStream = createGzip()
 
-	tarStream.pipe(gzipStream).pipe(res)
+	tarStream.pipe(gzipStream).pipe(res).on('finish', () => {
+		process.exit()
+	})
 })
 
 console.log('nodejs builder started')
