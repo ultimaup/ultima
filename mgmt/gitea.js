@@ -150,7 +150,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
 	let hasAPI = true
-	let staticContentLocation = false
+	let staticContentLocation = undefined
 
 	await new Promise((resolve, reject) => {
 		let promises = []
@@ -165,7 +165,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 				realPath.shift()
 				realPath = realPath.join('/')
 
-				if (realPath === 'ultima.yml') {
+				if (realPath === '.ultima.yml') {
 					promises.push(
 						streamToBuf(entry)
 						.then(buf => {
@@ -182,7 +182,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 							}
 						})
 						.catch(e => {
-							console.error('failed to parse ultima.yml', e)
+							console.error('failed to parse .ultima.yml', e)
 						})
 					)
 				}
