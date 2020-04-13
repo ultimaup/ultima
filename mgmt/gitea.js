@@ -401,5 +401,5 @@ module.exports = app => {
 	const repository = 'josh/todo-frontend'
 	const pusher = 'josh'
 
-	runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+	// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
 }
