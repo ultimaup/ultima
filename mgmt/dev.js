@@ -23,15 +23,15 @@ router.use(bodyParser.json())
 const ensureDevelopmentBundle = async lang => {
 	const key = `development/${lang}.tar.gz`
 
-	// const existing = await s3.headObject({ Key: key })
+	const existing = await s3.headObject({ Key: key })
 
-	// if (!existing) {
+	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: key })
 		const tarStream = tar.pack(path.resolve(__dirname, 'development', lang))
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
-	// }
+	}
 
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
