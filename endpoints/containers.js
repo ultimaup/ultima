@@ -251,8 +251,6 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 	}
 }
 
-getContainerHostname('7d19503c6462').then(console.log).catch(console.error)
-
 module.exports = {
 	ensureContainerForDeployment,
 }
