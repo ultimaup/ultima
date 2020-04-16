@@ -28,7 +28,6 @@ const {
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
-	STATIC_ENDPOINT,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -301,7 +300,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 				.on('finish', resolve)
 		})
 
-		staticUrl = `${STATIC_ENDPOINT}/${actualBucketName}/`
+		staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 	}
 
 	let endpointUrl
