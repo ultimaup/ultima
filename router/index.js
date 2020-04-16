@@ -16,7 +16,6 @@ const {
     PUBLIC_ROUTE_ROOT_PORT,
 
     MGMT_ENDPOINT,
-    ENDPOINTS_ENDPOINT,
     TRAEFIK_ENDPOINT,
 } = process.env
 
@@ -74,7 +73,6 @@ const genConfig = ({ source, destination }) => {
 const defaultConfigs = () => {
     return [
         { source: `mgmt.${PUBLIC_ROUTE_ROOT}`, destination: MGMT_ENDPOINT },
-        { source: `endpoints.${PUBLIC_ROUTE_ROOT}`, destination: 'http://127.0.0.1:4480', forwardAuth: `${ENDPOINTS_ENDPOINT}/traefik` },
     ]
 }
 
@@ -106,8 +104,6 @@ const ensurePropogation = async key => {
 
     return exists
 }
-
-ensurePropogation(sourceToKey('5a429c6c-36f1-4a39-ac26-bdf7962a1ed3.dev.onultima.local')).then(console.log).catch(console.error)
 
 app.post('/route', async (req, res) => {
     let { subdomain, source, destination } = req.body
