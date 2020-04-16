@@ -344,6 +344,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		const staticRoute = {
 			subdomain: `static.${branch}.${repo}.${user}`,
 			destination: staticUrl,
+			extensions: ['index.html'],
 		}
 		staticRouteUrl = await route.set(staticRoute)
 	}
