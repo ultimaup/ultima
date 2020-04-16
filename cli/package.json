@@ -8,6 +8,7 @@
     "cli-ux": "^5.4.5",
     "commander": "^5.0.0",
     "envinfo": "^7.5.0",
-    "fetch-h2": "^2.4.5"
+    "fetch-h2": "^2.4.5",
+    "socket.io-client": "^2.3.0"
   }
 }

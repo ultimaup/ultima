@@ -119,15 +119,15 @@ const pipeline = promisify(stream.pipeline);
 const ensureBuilderBundle = async lang => {
 	const builderKey = `builders/${lang}.tar.gz`
 
-	// const existing = await s3.headObject({ Key: builderKey })
+	const existing = await s3.headObject({ Key: builderKey })
 
-	// if (!existing) {
+	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
 		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
-	// }
+	}
 
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
 }
@@ -316,14 +316,13 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			bundleLocation: resultingBundleLocation,
 		})
 
-		endpointUrl = `${ENDPOINTS_ENDPOINT}/${resultingEndpointId}/`
 		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+		container = await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`, { json: true }).then(r => r.body)
+		endpointUrl = container.hostname
+		console.log(invocationId, `deployed to`, hostname)
 
-		const firstRequest = await got(endpointUrl).then(r => r.body)
-		console.log(invocationId, `${endpointUrl} responded`, firstRequest)
-
-		if (firstRequest.status === 'error') {
-			console.error(invocationId, endpointUrl, 'deployment failed', firstRequest.message)
+		if (!endpointUrl) {
+			console.error(invocationId, endpointUrl, 'deployment failed')
 			return {}
 		}
 	}
@@ -392,6 +391,7 @@ router.post('/gitea-hook', (req, res) => {
 
 	return res.json('internal error')
 })
+
 
 module.exports = app => {
 	app.use(router)

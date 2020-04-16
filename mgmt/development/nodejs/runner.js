@@ -1,8 +1,8 @@
 const nodemon = require('nodemon')
 
 const {
-    CHILD_PORT,
-    CHILD_DEBUG_PORT,
+    CHILD_PORT = 4490,
+    CHILD_DEBUG_PORT = 4491,
 } = process.env
 
 const start = ({ wkdir }) => {

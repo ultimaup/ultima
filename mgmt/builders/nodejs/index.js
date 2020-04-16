@@ -8,59 +8,9 @@ const stream = require('stream')
 
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
-
-const streamHash = require('./hash')
-
-const execCommand = (...cmd) => exec(...cmd)
-	// .then(({ stdout, stderr }) => {
-	// 	return stdout.split('\n').filter(Boolean).map(line => JSON.parse(line))
-	// }).catch(({ stdout }) => {
-	// 	console.error(stdout)
-	// }).catch(e => {
-	// 	console.error(e)
-	// 	throw e
-	// })
+const installDeps = require('./installDeps')
 
 const pipeline = util.promisify(stream.pipeline)
-
-const restoreCache = async (cacheType, hash) => {
-	console.log(`restoring ${cacheType} cache for hash ${hash}`)
-
-	// TODO: actually do this
-}
-
-const installDeps = async (wkdir) => {
-	console.log('installing deps')
-
-	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
-
-	if (useYarn) {
-		console.log('using yarn')
-		const lockfileStream = fse.createReadStream(path.resolve(wkdir, 'yarn.lock'))
-		const lockfileHash = await streamHash(lockfileStream)
-		await restoreCache('yarn', lockfileHash)
-		
-		const lines = await execCommand('yarn install --frozen-lockfile --non-interactive --json', { cwd: wkdir })
-
-		return lines
-	} else {	
-		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
-		if (await fse.pathExists(lockfileLocation)) {
-			console.log('using npm ci')
-			const lockfileStream = fse.createReadStream(lockfileLocation)
-			const lockfileHash = await streamHash(lockfileStream)
-			await restoreCache('npm', lockfileHash)
-			const lines = await execCommand('npm ci --json', { cwd: wkdir })
-
-			return lines
-		} else {
-			console.log('using npm install')
-			const lines = await execCommand('npm install --json', { cwd: wkdir })
-
-			return lines
-		}
-	}
-}
 
 const extractStreamToDir = async (stream, dir) => {
 

@@ -2,7 +2,6 @@ const fse = require('fs-extra')
 const path = require('path')
 
 const fileHandler = async (type, location, sessionId, stream) => {
-    console.log(sessionId, type, location)
     const wkdir = path.resolve('/tmp', sessionId)
     const absPath = path.resolve(wkdir, location)
 
@@ -37,8 +36,6 @@ const fileHandler = async (type, location, sessionId, stream) => {
             await fse.remove(absPath)
             break
     }
-
-    console.log(sessionId, type, location)
 
     return true
 }

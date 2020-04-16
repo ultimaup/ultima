@@ -2,38 +2,39 @@ const chokidar = require('chokidar')
 const fs = require('fs')
 
 const client = require('./client')
+const runner = require('./runner')
 
 let inflight = 0
 let total = 0
 let completed = 0
 
-const pushToRemote = async (event, path, sessionId, progressCallback) => {
-    total++
-    inflight++
+const pushToRemote = (event, path, sessionId, progressCallback) => {
+    runner.whenConnected(async () => {
+        total++
+        inflight++
 
-    progressCallback(completed, total)
+        progressCallback(completed, total)
 
-    try {
-        const stream = ['add', 'change'].includes(event) ? fs.createReadStream(path) : undefined
-        const res = await client.fetch(`/file`, {
-            method: 'post',
-            body: stream,
-            headers: {
-                'x-event-type': event,
-                'x-event-path': path,
-                'x-session-id': sessionId,
-            },
-        })
-
-        const data = await res.json()
-    } catch (e) {
-        console.log('error pushing to remote:', event, path, e)
-    }
+        try {
+            const stream = ['add', 'change'].includes(event) ? fs.createReadStream(path) : undefined
+            await client.fetch(`/file`, {
+                method: 'post',
+                body: stream,
+                headers: {
+                    'x-event-type': event,
+                    'x-event-path': path,
+                    'x-session-id': sessionId,
+                },
+            })
+        } catch (e) {
+            console.error('error pushing to remote:', event, path, e)
+        }
+        
+        inflight--
+        completed++
     
-    inflight--
-    completed++
-   
-    progressCallback(completed, total)
+        progressCallback(completed, total)
+    })
 }
 
 const init = async ({ sessionId }, progressCallback, initCallback) => {

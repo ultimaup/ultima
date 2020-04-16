@@ -1,54 +1,63 @@
 const EventEmitter = require('events')
-const client = require('./client')
+const io = require('socket.io-client')
 
 class RunnerEmitter extends EventEmitter {}
 
 const runnerEmitter = new RunnerEmitter()
 
-let sid
+let socket
 
-const start = ({ sessionId }) => {
-    sid = sessionId
+const connect = endpointUrl => {
+    socket = io(endpointUrl)
+    
+    socket.on('error', (err) => {
+        console.error(err)
+    })
 
-    return client.fetch('/session', {
-        method: 'post',
-        headers: {
-            'x-session-id': sessionId,
-        },
+    socket.on('connect', () => {
+        runnerEmitter.emit('connect')
+    })
+
+    socket.on('event', ({ event, data }) => {
+        runnerEmitter.emit(event, data)
+    })
+
+    socket.on('disconnect', () => {
+        runnerEmitter.emit('disconnect')
+    })
+
+    return new Promise((resolve) => {
+        socket.once('connect', resolve)
     })
 }
 
-client.on('push', async ({ origin, req, getResponse }) => {
-   const path = req.url
+const start = ({ sessionId }) => {
+    socket.emit('session', { sessionId })
 
-    if (path.startsWith('/session')) {
-        const res = await getResponse()
-        if (path.endsWith('/stdout')) {
-            const readStream = await res.readable()
-            readStream.on('data', data => runnerEmitter.emit('stdout', data))
-        }
-        if (path.endsWith('/stderr')) {
-            const readStream = await res.readable()
-            readStream.on('data', data => runnerEmitter.emit('stderr', data))
-        }
-        if (path.endsWith('/event')) {
-            try {
-                const { event, data } = await res.json()
-                runnerEmitter.emit(event, data)
-            } catch (e) {
-                console.error(e)
-            }
-        }
-    }
-})
+    socket.on('disconnect', () => {
+        socket.once('connect', () => {
+            socket.emit('session', { sessionId })
+        })
+    })
+}
 
 runnerEmitter.on('force', (event) => {
-    client.fetch(`/session/${sessionId}/${event}`, {
-        method: 'post',
-    })
+    socket.emit('force', event)
 })
 
 module.exports = {
     on: (...args) => runnerEmitter.on(...args),
+    connect,
+    whenConnected: (cb) => {
+        if (socket) {
+            if (socket.connected) {
+                cb()
+            } else {
+                socket.once('connect', db)
+            }
+        } else {
+            throw new Error('tried to use socket before initialization')
+        }
+    },
     start,
 }

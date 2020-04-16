@@ -14,11 +14,12 @@ Deployment.get = async (id) => {
 
 	return {
 		...deployment,
-		env: deployment.env ? JSON.parse(env) : {},
+		env: deployment.env ? JSON.parse(deployment.env) : {},
+		ports: deployment.ports ? JSON.parse(deployment.ports) : [],
 	}
 }
 
-Deployment.ensure = async ({ id, stage, bundleLocation, repoName, env }) => {
+Deployment.ensure = async ({ id, stage, bundleLocation, repoName, ports, env }) => {
 	const existing = await Deployment.get(id)
 
 	if (existing) {
@@ -29,6 +30,7 @@ Deployment.ensure = async ({ id, stage, bundleLocation, repoName, env }) => {
 			stage,
 			repoName,
 			bundleLocation,
+			ports: JSON.stringify(ports),
 			env: JSON.stringify(env),
 		}
 

@@ -4,32 +4,25 @@ const { cli } = require('cli-ux')
 const client = require('./client')
 const fileSync = require('./fileSync')
 const runner = require('./runner')
+const API = require('./api')
 
 program.version('0.0.1')
 program
-    .option('-s, --server <value>', 'Set server URL', 'http2://localhost:4489')
+    .option('-s, --server <value>', 'Set server URL', 'http://mgmt.onultima.local:4480')
 
 program.parse(process.argv)
 
 const init = async () => {
-    // await cli.prompt('Username')
-    // await cli.prompt('Password', { type: 'hide' })
-    
-    // await cli.action.start('logging in...')
+    const api = API.init(program.server)
 
-    // await cli.wait(2000)
-
-    // await cli.action.stop()
-
-    const fileBar = cli.progress({
-        format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total}',
-        barCompleteChar: '\u2588',
-        barIncompleteChar: '\u2591'
-    })
+    const server = await api.getDeploymentUrl()
+    console.log(server)
 
     await cli.action.start('initializing...')
 
-    const { sessionId } = await client.initSession({ rootEndpoint: program.server })
+    const { sessionId } = await client.initSession({
+        rootEndpoint: server.url
+    })
 
     let barVisible = false
     let runnerStarted = false
@@ -52,6 +45,20 @@ const init = async () => {
     })
     runner.on('crash', () => {
         cli.log('crash')
+    })
+    runner.on('connect', () => {
+        cli.log('connected to development instance')
+    })
+    runner.on('disconnect', () => {
+        cli.log('connection to development instance lost, will reconnect...')
+    })
+
+    await runner.connect(server.url)
+
+    const fileBar = cli.progress({
+        format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total}',
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591'
     })
     
     try {
