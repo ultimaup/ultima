@@ -165,8 +165,6 @@ const init = async () => {
 
     console.log(`ensured ${configs.length} configs`)
 
-    await ensureConfig({ source: 'static.master.todo-frontend.josh.onultima.local', destination: 'http://files:9000/builder-bucket-key-id-7-9f2e98b3/', extensions: ['index.html'] })
-
     app.listen({ port: PORT }, () => {
         console.log(`🚀  Server ready at ${PORT}`)
     })
