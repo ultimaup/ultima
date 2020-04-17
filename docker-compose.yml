@@ -88,8 +88,6 @@ services:
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
 
-      STATIC_ENDPOINT: http://web-files:80 #internal
-
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
   dind:
@@ -161,16 +159,6 @@ services:
     environment:
       PORT: 4472
       MC_HOST_minio: http://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY@files:9000
-
-  web-files:
-    image: nginx
-    volumes:
-      - ./web-files/nginx.conf:/etc/nginx/conf.d/nginx.conf.template
-    ports:
-      - "4473:80"
-    environment:
-      MINIO_URL: http://files:9000
-    command: /bin/bash -c "envsubst '$$MINIO_URL' < /etc/nginx/conf.d/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
 
   router-mgmt:
     image: node
