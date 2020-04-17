@@ -1,0 +1,9 @@
+<script>
+jQuery.getJSON('/assets/asset-manifest.json', ( data ) => {
+    Object.values(data.files)
+        .filter(e => e.endsWith('.js'))
+        .forEach(e => {
+            jQuery.getScript(e)
+        })
+})
+</script>

@@ -14,7 +14,7 @@ Route.set = async ({ source, destination, extensions = [] }) => {
 	} else {
 		await Route.query().insert({ source, destination, extensions: JSON.stringify(extensions) }).returning('source')
 	}
-    
+
     return {
 		source,
 		destination,

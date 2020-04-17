@@ -46,9 +46,11 @@ services:
       - APP_NAME=Platform
       #iflive - RUN_MODE=prod
       # - ROOT_URL=publicurl.com
+      - GITEA_CUSTOM=/custom
     restart: always
     volumes:
-      - ./gitea:/data
+      - ./tmp/gitea:/data
+      - ./gitea:/custom
     ports:
       - "4469:3000"
       - "222:22"
@@ -89,6 +91,12 @@ services:
       PLATFORM_DB_PASSWORD: platform
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
+
+      GITHUB_CLIENT_ID: 4d6bceadb4045ef17d06
+      GITHUB_CLIENT_SECRET: e3400a359cfbb8337dcbf61a48cd15faf2d69501
+      GITEA_COOKIE_NAME: sid
+      JWT_SECRET: 9KvXNgRVquPnkKkSDN
+      AUTH_REDIRECT: http://build.onultima.local/auth/complete
 
   dind:
     image: docker:dind
@@ -188,6 +196,20 @@ services:
       MGMT_ENDPOINT: http://mgmt:4467
       ENDPOINTS_ENDPOINT: http://endpoints:4470
       TRAEFIK_ENDPOINT: http://router:8080
+      GITEA_ENDPOINT: http://gitea:3000
+      FRONTEND_ENDPOINT: http://frontend:4491
+
+  frontend:
+    image: node
+    ports: 
+      - '4491:4491'
+    volumes:
+      - './frontend:/app'
+    working_dir: '/app'
+    command: ["yarn", "start"]
+    environment:
+      PORT: 4491
+      CI: "true" # https://github.com/facebook/create-react-app/issues/8688#issuecomment-602084087
 
   router:
     image: traefik:v2.2

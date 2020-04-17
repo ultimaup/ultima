@@ -12,6 +12,7 @@ const {promisify} = require('util');
 const yaml = require('js-yaml');
 const gunzip = require('gunzip-maybe')
 const mime = require('mime-types')
+const {CookieJar} = require('tough-cookie')
 
 const { ensurePrismaService } = require('./prisma')
 const s3 = require('./s3')
@@ -24,6 +25,7 @@ const {
 
 	GITEA_WEBHOOK_SECRET,
 	GITEA_URL,
+	GITEA_COOKIE_NAME,
 
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
@@ -32,8 +34,8 @@ const {
 
 const base64 = str => Buffer.from(str).toString('base64')
 
-const giteaFetch = (url, asUser) => (
-	got(url, {
+const giteaFetch = (endpoint, opts, asUser) => {
+	const conf = {
 		headers: {
 			Accept: 'application/json',
 			'Content-Type': 'application/json',
@@ -41,9 +43,13 @@ const giteaFetch = (url, asUser) => (
 			...(asUser ? {
 				Sudo: asUser,
 			} : {}),
+			...(opts.headers || {}),
 		},
-	})
-)
+		...opts,
+	}
+
+	return got(`${GITEA_URL}${endpoint}`, conf)
+}
 
 const giteaStream = (url, asUser) => (
 	got.stream(url, {
@@ -83,6 +89,62 @@ const giteaApiReq = (endpoint, { method, body }) => (
 	})
 	.then(r => r.json())
 )
+
+
+const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) => {
+    try {
+        await giteaFetch('/api/v1/user', {}, username)
+        return true
+    } catch (e) {
+        if (!e.message.includes('404')) {
+            throw e
+        }
+    }
+
+    // register
+    await giteaFetch('/api/v1/admin/users', {
+        method: 'post',
+        body: JSON.stringify({
+            email,
+            "full_name": name,
+            "login_name": username,
+            username,
+            avatar_url: imageUrl,
+            "must_change_password": false,
+            "password": id,
+            "send_notify": false,
+            "source_id": 0,
+        })
+    })
+
+    await giteaFetch('/api/v1/user', {}, username)
+}
+
+const getGiteaSession = async (username, password) => {
+    const cookieJar = new CookieJar()
+
+    await giteaFetch('/user/login', { cookieJar, headers: { Authorization: undefined } })
+
+    const _csrf = cookieJar.toJSON().cookies.find(({ key }) => key === '_csrf').value
+    const sessionId = cookieJar.toJSON().cookies.find(({ key }) => key === GITEA_COOKIE_NAME).value
+
+    const loggedIn = await got.post(`${GITEA_URL}/user/login`, {
+        cookieJar,
+        form: {
+            "user_name": username,
+            password,
+            _csrf,
+        },
+        followRedirect: false,
+    })
+
+    if (loggedIn.statusCode < 300) {
+        return sessionId
+    } else {
+        return null
+    }
+}
+
 
 const reportStatus = (fullName, hash, { targetUrl, context, description }, state) => {
 	return giteaApiReq(`/api/v1/repos/${fullName}/statuses/${hash}`, {
@@ -395,13 +457,17 @@ router.post('/gitea-hook', (req, res) => {
 })
 
 
-module.exports = app => {
-	app.use(router)
-
-	const ref = 'refs/heads/master'
-	const after = '9f2e98b3dceee8fa6ebe05343e0c9891c3567251'
-	const repository = 'josh/todo-frontend'
-	const pusher = 'josh'
-
-	// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+module.exports = {
+	router: app => {
+		app.use(router)
+	
+		const ref = 'refs/heads/master'
+		const after = '9f2e98b3dceee8fa6ebe05343e0c9891c3567251'
+		const repository = 'josh/todo-frontend'
+		const pusher = 'josh'
+	
+		// runTests({ ref, after, repository: { full_name: repository }, pusher: { login: pusher } }).then(console.log).catch(console.error)
+	},
+	ensureGiteaUserExists,
+	getGiteaSession,
 }

@@ -17,6 +17,8 @@ const {
 
     MGMT_ENDPOINT,
     TRAEFIK_ENDPOINT,
+    GITEA_ENDPOINT,
+    FRONTEND_ENDPOINT,
 } = process.env
 
 const app = express()
@@ -35,10 +37,10 @@ const parseUrl = url => {
     }
 }
 
-const sourceToKey = source => source.split('.').join('-').split('/').join('-')
+const sourceToKey = (source, extensions) => source.split('.').join('-').split('/').join('-') + (extensions ? extensions.length : 0)
 
 const genConfig = ({ source, destination, extensions = [] }) => {
-    const key = sourceToKey(source)
+    const key = sourceToKey(source, extensions)
     const url = parseUrl(destination) // URL doesn't support http2 or hostnames
 
     const { host, protocol, pathname } = url
@@ -53,7 +55,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
         sourceHost = sourceHostPart
     }
 
-    if (extensions.includes('index.html')) {
+    if (extensions && extensions.includes('index.html')) {
         return (
             `[http]
                 [http.routers]
@@ -89,7 +91,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 `[http]
     [http.routers]
         [http.routers.${key}]
-            rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}"
+            rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}${extensions && extensions.includes('root') ? '&& Path(\`/\`)' : ''}"
             ${(prefix) ? `middlewares = ["${key}"]`: ''}
             service = "${key}"${prefix ? `
     [http.middlewares]
@@ -105,11 +107,17 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 const defaultConfigs = () => {
     return [
         { source: `mgmt.${PUBLIC_ROUTE_ROOT}`, destination: MGMT_ENDPOINT },
+        
+        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root'] },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/assets`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/sockjs-node`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
     ]
 }
 
-const ensureConfig = async ({ source, destination, extensions }) => {
-    const key = sourceToKey(source)
+const ensureConfig = async ({ source, destination, extensions = [] }) => {
+    const key = sourceToKey(source, extensions)
     const fileName = path.resolve(CONFIG_DIR, `${key}.toml`)
     const config = genConfig({ source, destination, extensions })
     await fse.outputFile(fileName, config)
@@ -151,7 +159,6 @@ app.post('/route', async (req, res) => {
 
 const init = async () => {
     console.log('server starting')
-
     const configs = await Route.query()
 
     console.log(`ensuring ${configs.length} configs...`)
