@@ -1,12 +1,17 @@
 const http = require('http');
 const { PORT } = process.env
+const express = require('express')
 
 const server = http.createServer((req, res) => {
   res.end('hello world');
 });
 
-server.on('clientError', (err, socket) => {
-  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-});
-console.log('server starting 12347')
-server.listen(PORT);
+const app = express()
+
+app.use((req, res) => {
+  res.json('hello world')
+})
+
+app.listen(PORT, () => {
+  console.log('server started', PORT)
+})

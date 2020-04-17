@@ -161,19 +161,6 @@ services:
     environment:
       PORT: 4472
       MC_HOST_minio: http://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY@files:9000
-  
-  dev-endpoint:
-    image: node
-    ports:
-      - '4489:4489'
-    volumes:
-      - './dev-endpoint:/app'
-    working_dir: '/app'
-    command: ["yarn", "dev"]
-    environment: 
-      PORT: 4489
-      CHILD_PORT: 4501
-      CHILD_DEBUG_PORT: 4502
 
   web-files:
     image: nginx
@@ -208,10 +195,15 @@ services:
 
       PUBLIC_ROUTE_ROOT: onultima.local
       PUBLIC_ROUTE_ROOT_PROTOCOL: http
+      PUBLIC_ROUTE_ROOT_PORT: 4480
+
+      MGMT_ENDPOINT: http://mgmt:4467
+      ENDPOINTS_ENDPOINT: http://endpoints:4470
+      TRAEFIK_ENDPOINT: http://router:8080
 
   router:
     image: traefik:v2.2
-    command: --api.insecure=true --providers.file.directory=/config --providers.file.watch=true
+    command: --api.insecure=true --providers.file.directory=/config --providers.file.watch=true --api=true
     volumes:
       - './tmp/router:/config'
     ports:

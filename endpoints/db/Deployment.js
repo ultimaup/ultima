@@ -14,7 +14,8 @@ Deployment.get = async (id) => {
 
 	return {
 		...deployment,
-		env: deployment.env ? JSON.parse(env) : {},
+		env: deployment.env ? JSON.parse(deployment.env) : {},
+		ports: deployment.ports ? JSON.parse(deployment.ports) : [],
 	}
 }
 
