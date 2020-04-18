@@ -1,4 +1,5 @@
 <script>
+__webpack_public_path__ = '/assets/'
 jQuery.getJSON('/assets/asset-manifest.json', ( data ) => {
     Object.values(data.files)
         .filter(e => e.endsWith('.js'))
