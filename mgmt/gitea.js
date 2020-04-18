@@ -319,7 +319,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
 		endpointUrl = container.hostname
 		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
-		console.log(invocationId, `deployed to`, hostname)
+		console.log(invocationId, `deployed to`, endpointUrl)
 
 		if (!endpointUrl) {
 			console.error(invocationId, endpointUrl, 'deployment failed')
