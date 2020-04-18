@@ -6,7 +6,7 @@ const {promisify} = require('util');
 
 const rimrafAsync = promisify(rimraf);
 
-const serviceNames = ['ultima-file-manager', 'ultima-endpoints', 'ultima-mgmt'];
+const serviceNames = ['ultima-file-manager', 'ultima-endpoints', 'ultima-mgmt', 'ultima-router-mgmt'];
 
 const staticFolder = path.resolve('../..');
 const staticPathName = `${staticFolder}/build-latest`;

@@ -11,6 +11,11 @@ cd file-manager
 yarn install --frozen-lockfile
 cd ..
 
+echo "Getting router-mgmt deps"
+cd router
+yarn install --frozen-lockfile
+cd ..
+
 echo "Getting mgmt deps"
 cd mgmt
 yarn install --frozen-lockfile
