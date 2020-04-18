@@ -316,7 +316,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 			bundleLocation: resultingBundleLocation,
 		})
 
-		container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
+		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
 		endpointUrl = container.hostname
 		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
 		console.log(invocationId, `deployed to`, hostname)
