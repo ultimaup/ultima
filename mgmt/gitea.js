@@ -90,19 +90,8 @@ const giteaApiReq = (endpoint, { method, body }) => (
 	.then(r => r.json())
 )
 
-
-const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) => {
-    try {
-        await giteaFetch('/api/v1/user', {}, username)
-        return true
-    } catch (e) {
-        if (!e.message.includes('404')) {
-            throw e
-        }
-    }
-
-    // register
-    await giteaFetch('/api/v1/admin/users', {
+const registerUser = ({ id, username, imageUrl, name, email }) => (
+	giteaFetch('/api/v1/admin/users', {
         method: 'post',
         body: JSON.stringify({
             email,
@@ -116,6 +105,24 @@ const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) =>
             "source_id": 0,
         })
     })
+)
+
+const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) => {
+    try {
+        await giteaFetch('/api/v1/user', {}, username)
+        return true
+    } catch (e) {
+        if (!e.message.includes('404')) {
+			console.error('gitea registration check failed', e)
+            throw e
+        }
+    }
+	try {
+		await registerUser({ id, username, imageUrl, name, email })
+	} catch (e) {
+		console.error('gitea registration failed', e)
+		throw e
+	}
 
     await giteaFetch('/api/v1/user', {}, username)
 }
@@ -136,9 +143,9 @@ const getGiteaSession = async (username, password) => {
             _csrf,
         },
         followRedirect: false,
-    })
-
-    if (loggedIn.statusCode < 300) {
+	})
+	
+    if (loggedIn.statusCode === 302) {
         return sessionId
     } else {
         return null

@@ -1,13 +1,24 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+@font-face {
+  font-family: 'Steradian';
+  src: url('./fonts/Steradian-Rg.woff2') format('woff2'),
+      url('./fonts/Steradian-Rg.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@font-face {
+  font-family: 'Steradian';
+  src: url('./fonts/Steradian-Bd.woff2') format('woff2'),
+      url('./fonts/Steradian-Bd.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Steradian';
+  src: url('./fonts/Steradian-Lt.woff2') format('woff2'),
+      url('./fonts/Steradian-Lt.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
 }

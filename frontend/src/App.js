@@ -1,26 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react'
+import { BrowserRouter, Route, Switch } from 'react-router-dom'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+import FullPageLayout from './layouts/FullPage'
 
-export default App;
+import Home from './routes/Home'
+import Login from './routes/Login'
+import SlackRedirect from './components/SlackRedirect'
+
+const App = () => (
+    <FullPageLayout>
+        <BrowserRouter>
+            <Switch>
+                <Route path="/community" component={SlackRedirect} />
+                <Route path="/user/login" component={Login} />
+                <Route path="/" component={Home} />
+            </Switch>
+        </BrowserRouter>
+    </FullPageLayout>
+)
+
+export default App

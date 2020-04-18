@@ -1,4 +1,4 @@
-const { fetch } = require('got-fetch')
+const fetch = require('node-fetch')
 
 const {
     GITHUB_CLIENT_ID,

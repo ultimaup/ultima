@@ -96,7 +96,7 @@ services:
       GITHUB_CLIENT_SECRET: e3400a359cfbb8337dcbf61a48cd15faf2d69501
       GITEA_COOKIE_NAME: sid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
-      AUTH_REDIRECT: http://build.onultima.local/auth/complete
+      AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
 
   dind:
     image: docker:dind
@@ -210,6 +210,7 @@ services:
     environment:
       PORT: 4491
       CI: "true" # https://github.com/facebook/create-react-app/issues/8688#issuecomment-602084087
+      REACT_APP_MGMT_ENDPOINT: http://mgmt.onultima.local:4480
 
   router:
     image: traefik:v2.2

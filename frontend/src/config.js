@@ -1,0 +1,1 @@
+export const mgmtEndpoint = process.env.REACT_APP_MGMT_ENDPOINT

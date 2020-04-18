@@ -11,6 +11,7 @@ const {
 
 const {
     AUTH_REDIRECT,
+    GITHUB_CLIENT_ID,
 } = process.env
 
 const router = new Router()
@@ -26,6 +27,9 @@ router.get('/auth/github-redirect', async (req, res) => {
     const { access_token } = auth
     const { avatar_url: imageUrl, login: username, name, email } = await githubGet('https://api.github.com/user', access_token)
 
+    if (!username) {
+        throw new Error('invalid code')
+    }
     // create or get user
     const user = await User.ensure({
         username,
@@ -35,14 +39,19 @@ router.get('/auth/github-redirect', async (req, res) => {
     })
 
     // get token for user
-    const token = jwt.sign(user)
+    const token = await jwt.sign(user.toJSON())
 
     // ensure gitea user
     await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
 
     const giteaSessionId = await getGiteaSession(username, user.id)
 
-    const redirectUrl = `${AUTH_REDIRECT}${querystring.encode({
+    console.log({
+        token,
+        giteaSessionId
+    })
+
+    const redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
         token,
         giteaSessionId,
     })}`
