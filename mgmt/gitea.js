@@ -340,6 +340,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		endpointRouteUrl = await route.set(endpointRoute)
 	}
 
+	let staticRouteUrl	
 	if (staticUrl) {
 		// add static route
 		const staticRoute = {
