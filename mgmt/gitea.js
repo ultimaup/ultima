@@ -333,7 +333,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		// TODO: use stream from earlier instead of fetching from s3 again
 		const builtBundleStream = s3.getStream({ Key: builtBundleKey })
 
-		await new Promise((resolve, reject) => {			
+		await new Promise((resolve, reject) => {		
 			builtBundleStream
 				.pipe(gunzip())
 				.pipe(tarStream.extract())
