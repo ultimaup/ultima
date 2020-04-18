@@ -240,6 +240,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		stage: 'builder',
 		bundleLocation: await ensureBuilderBundle(lang),
 	})
+	const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
 	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 	// pipe tarStream to builder endpoint, response is stream of result
 
@@ -248,7 +249,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	await pipeline(
 		giteaStream(codeTarUrl),
-		got.stream.post(`${ENDPOINTS_ENDPOINT}/${builderEndpointId}/`, {
+		got.stream.post(container.hostname, {
 			headers: {
 				// 'content-type': 'application/octet-stream',
 				'x-parent-invocation-id': invocationId,
