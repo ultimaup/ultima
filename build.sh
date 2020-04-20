@@ -28,7 +28,7 @@ yarn install --frozen-lockfile
 echo "Getting builder/nodejs deps"
 cd builders/nodejs
 npm ci
-cd ..
+cd ../..
 
 echo "Getting development/nodejs deps"
 cd development/nodejs
