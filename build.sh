@@ -46,6 +46,8 @@ echo "Building frontend"
 
 cd frontend
 yarn build
+rm -rf node_modules
+yarn add express
 cd ..
 
 echo "Creating tarball"
