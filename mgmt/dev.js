@@ -9,7 +9,7 @@ const got = require('got')
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
 const route = require('./route')
-const jwt = require('./jwt')
+const { headersToUser } = require('./jwt')
 
 const {
 	S3_ENDPOINT,
@@ -37,32 +37,12 @@ const ensureDevelopmentBundle = async lang => {
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
 
-router.use(async (req, res, next) => {
-    if (req.headers.authorization) {
-        const token = req.headers.authorization.split('Bearer ')[1]
-        if (!token) {
-            res.status(403).json({
-                status: 'error',
-                message: 'unauthorized',
-            })
-        } else {
-            try {
-                const user = await jwt.verify(token)
-                req.user = user
-            } catch (e) {
-                //
-                console.error(e)
-            }
-            if (req.user) {
-                next()
-            } else {
-                res.status(403).json({
-                    status: 'error',
-                    message: 'unauthorized',
-                })
-            }
-        }
-    } else {
+
+router.use('/dev-session', async (req, res, next) => {
+    try {
+        req.user = headersToUser(req)
+        next()
+    } catch (e) {
         res.status(403).json({
             status: 'error',
             message: 'unauthorized',

@@ -12,7 +12,12 @@ app.get('/ensure-deployment/:deploymentId', async (req, res) => {
     const requestId = uuid()
     const { deploymentId } = req.params
 
-    const container = await ensureContainerForDeployment({ requestId }, deploymentId)
+    let container
+    try {
+        container = await ensureContainerForDeployment({ requestId }, deploymentId)
+    } catch (e) {
+        console.error(e)
+    }
     if (container) {
         res.json(container)
     } else {

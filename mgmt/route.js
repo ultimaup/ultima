@@ -3,9 +3,9 @@ const {
     ROUTER_MGMT_ENDPOINT,
 } = process.env
 
-const set = ({ source, subdomain, destination, extensions }) => (
+const set = ({ source, subdomain, destination, deploymentId, extensions }) => (
     got.post(`${ROUTER_MGMT_ENDPOINT}/route`, {
-		json: { source, subdomain, destination, extensions },
+		json: { source, subdomain, destination, extensions, deploymentId },
 	}).json()
 )
 

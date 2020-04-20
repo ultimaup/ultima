@@ -118,6 +118,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-session`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/cli`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/graphql`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
     ]
@@ -153,11 +154,11 @@ const ensurePropogation = async key => {
 }
 
 app.post('/route', async (req, res) => {
-    let { subdomain, source, destination, extensions } = req.body
+    let { subdomain, source, destination, extensions, deploymentId } = req.body
     source = source || `${subdomain}.${PUBLIC_ROUTE_ROOT}`
 
     await ensureConfig({ source, destination, extensions })
-    await Route.set({ source, destination, extensions })
+    await Route.set({ source, destination, extensions, deploymentId })
 
     await ensurePropogation(sourceToKey(source))
 

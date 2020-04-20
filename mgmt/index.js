@@ -1,9 +1,11 @@
 const express = require('express')
 
-const projects = require('./projects')
+// const projects = require('./projects')
 const {router: gitea} = require('./gitea')
 const dev = require('./dev')
 const auth = require('./auth')
+
+const graphql = require('./graphql')
 
 const migrate = require('./db/migrate')
 
@@ -13,11 +15,12 @@ const {
 
 const app = express()
 
-projects(app)
+// projects(app)
 gitea(app)
 auth(app)
 dev(app)
 migrate().catch(console.error)
+graphql(app)
 
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
