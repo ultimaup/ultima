@@ -28,11 +28,11 @@ yarn install --frozen-lockfile
 echo "Getting builder/nodejs deps"
 cd builders/nodejs
 npm ci
-cd ../..
+cd ..
 
 echo "Getting development/nodejs deps"
 cd development/nodejs
-yarn install --frozen-lockfile
+npm ci
 cd ../..
 
 cd ..
@@ -47,7 +47,7 @@ echo "Building frontend"
 cd frontend
 yarn build
 rm -rf node_modules
-npm install express
+yarn add express
 cd ..
 
 echo "Creating tarball"

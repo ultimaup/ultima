@@ -28,7 +28,25 @@ const verify = token => {
     })
 }
 
+const headersToUser = async (req) => {
+    if (req.headers.authorization) {
+        const token = req.headers.authorization.split('Bearer ')[1]
+        if (!token) {
+            throw new Error('unauthorized')
+        } else {
+            try {
+                return await verify(token) 
+            } catch (e) {
+                throw new Error('unauthorized')
+            }
+        }
+    } else {
+        throw new Error('unauthorized')
+    }
+}
+
 module.exports = {
     sign,
     verify,
+    headersToUser,
 }

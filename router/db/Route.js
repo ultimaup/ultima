@@ -6,13 +6,13 @@ class Route extends Model {
 	}
 }
 
-Route.set = async ({ source, destination, extensions = [] }) => {
+Route.set = async ({ source, destination, deploymentId, extensions = [] }) => {
 	const existing = await Route.query().where({ source }).first()
 
 	if (existing) {
-		await Route.query().update({ destination, extensions: JSON.stringify(extensions) }).where({ source })
+		await Route.query().update({ destination, deploymentId, extensions: JSON.stringify(extensions) }).where({ source })
 	} else {
-		await Route.query().insert({ source, destination, extensions: JSON.stringify(extensions) }).returning('source')
+		await Route.query().insert({ source, destination, deploymentId, extensions: JSON.stringify(extensions) }).returning('source')
 	}
 
     return {

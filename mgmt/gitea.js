@@ -353,7 +353,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 					}
 					if (loc.startsWith(staticContentLocation)) {
 						const realPath = loc.substring(staticContentLocation.length)
-						const { writeStream, promise } = s3.uploadStream({ 
+						const { writeStream, promise } = s3.uploadStream({
 							Key: removeLeadingSlash(realPath),
 							Bucket: actualBucketName,
 							ContentType: mime.lookup(realPath) || 'application/octet-stream',
@@ -375,23 +375,29 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 	}
 
 	let endpointUrl
+	let resultingEndpointId
 	if (hasAPI) {
-		const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+		resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
 
 		console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
 		await Deployment.ensure({
 			id: resultingEndpointId,
 			repoName: repository.full_name,
+			hash: after,
 			stage: ref,
 			bundleLocation: resultingBundleLocation,
 		})
+		try {
+			const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
+			endpointUrl = container.hostname
+		} catch (e) {
+			console.error(e)
+		}
 
-		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
-		endpointUrl = container.hostname
-		console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
-		console.log(invocationId, `deployed to`, endpointUrl)
-
-		if (!endpointUrl) {
+		if (endpointUrl) {
+			console.log(invocationId, `created deployment ${resultingEndpointId} available on ${endpointUrl}, requesting...`)
+			console.log(invocationId, `deployed to`, endpointUrl)
+		} else {
 			console.error(invocationId, endpointUrl, 'deployment failed')
 			return {}
 		}
@@ -406,17 +412,19 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 		const endpointRoute = {
 			subdomain: `${branch}.${repo}.${user}`,
 			destination: endpointUrl,
+			deploymentId: resultingEndpointId,
 		}
 		endpointRouteUrl = await route.set(endpointRoute)
 	}
 
-	let staticRouteUrl	
+	let staticRouteUrl
 	if (staticUrl) {
 		// add static route
 		const staticRoute = {
 			subdomain: `static.${branch}.${repo}.${user}`,
 			destination: staticUrl,
 			extensions: ['index.html'],
+			deploymentId: `${repository.full_name.split('/').join('-')}-${after}`,
 		}
 		staticRouteUrl = await route.set(staticRoute)
 	}

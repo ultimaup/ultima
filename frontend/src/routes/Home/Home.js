@@ -62,7 +62,9 @@ const Home = () => (
         <div className="link-list">
             <span>Developers</span>
             <a href="#" className="disabled">Documentation</a>
-            <a id="login">Log in</a>
+            <a id="login" onClick={() => {
+              alert('message @josh "wh1t3rab1t" on the slack for special access')
+            }}>Log in</a>
         </div>
         <div className="link-list">
             <span>About</span>
