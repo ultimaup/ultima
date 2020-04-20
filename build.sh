@@ -32,7 +32,7 @@ cd ../..
 
 echo "Getting development/nodejs deps"
 cd development/nodejs
-npm ci
+yarn install --frozen-lockfile
 cd ../..
 
 cd ..
