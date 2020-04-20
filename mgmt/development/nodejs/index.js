@@ -115,8 +115,16 @@ const createSession = async sessionId => {
     return session
 }
 
+let connections = 0
+let dieTimeout
+
 io.on('connection', (socket) => {
     console.log('socket connection')
+    connections++
+
+    if (dieTimeout) {
+        clearTimeout(dieTimeout)
+    }
 
     socket.on('session', async ({ sessionId }) => {
         console.log(sessionId, 'session start')
@@ -134,6 +142,17 @@ io.on('connection', (socket) => {
         socket.on('force', command => {
             sessions[sessionId].emit(command)
         })
+    })
+
+    socket.on('disconnect', () => {
+        connections--
+
+        dieTimeout = setTimeout(() => {
+            if (connections === 0) {
+                console.log('dying due to lack of attention :(')
+                process.exit()
+            }
+        }, 1000 * 60)
     })
 })
 
