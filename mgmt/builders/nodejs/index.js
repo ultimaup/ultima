@@ -61,62 +61,66 @@ app.get('/health', (req, res) => {
 app.post('/', async (req, res) => {
 	const { 'x-parent-invocation-id': invocationId } = req.headers
 	console.log('invoked from', invocationId)
-	let wkdir = `/tmp/${invocationId}`
-
-	req.on('end', () => {
-		console.log(invocationId, 'bundle upload complete')
-	})
-
 	try {
-		await extractStreamToDir(req, wkdir)
-	} catch (e) {
-		console.error(e)
-		return res.status(500).json(e)
-	}
+		let wkdir = `/tmp/${invocationId}`
 
-	console.log(invocationId, 'extracted')
+		req.on('end', () => {
+			console.log(invocationId, 'bundle upload complete')
+		})
 
-	const files = await fse.readdir(wkdir)
-	
-	// if wkdir only has one directory, cd into it
-	if (files.length === 1) {
-		wkdir = path.resolve(wkdir, files[0])
-	}
-
-	const filesBefore = await fse.readdir(wkdir)
-	console.log(filesBefore)
-	
-	let installOutput
-	let buildOutput
-	let testOutput
-
-	try {
-		if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-			installOutput = await installDeps(wkdir)
-			buildOutput = await doBuild(wkdir)
-			testOutput = await doTest(wkdir)
+		try {
+			await extractStreamToDir(req, wkdir)
+		} catch (e) {
+			console.error(e)
+			return res.status(500).json(e)
 		}
+
+		console.log(invocationId, 'extracted')
+
+		const files = await fse.readdir(wkdir)
+		
+		// if wkdir only has one directory, cd into it
+		if (files.length === 1) {
+			wkdir = path.resolve(wkdir, files[0])
+		}
+
+		const filesBefore = await fse.readdir(wkdir)
+		console.log(filesBefore)
+		
+		let installOutput
+		let buildOutput
+		let testOutput
+
+		try {
+			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
+				installOutput = await installDeps(wkdir)
+				buildOutput = await doBuild(wkdir)
+				testOutput = await doTest(wkdir)
+			}
+		} catch (e) {
+			console.error(e)
+		}
+
+		console.log([
+			installOutput,
+			buildOutput,
+			testOutput,
+		])
+
+		const filesAfter = await fse.readdir(wkdir)
+		console.log(filesAfter)
+
+		const tarStream = tar.pack(wkdir)
+		const gzipStream = createGzip()
+
+		await pipeline(
+			tarStream,
+			gzipStream,
+			res
+		)
 	} catch (e) {
 		console.error(e)
 	}
-
-	console.log([
-		installOutput,
-		buildOutput,
-		testOutput,
-	])
-
-	const filesAfter = await fse.readdir(wkdir)
-	console.log(filesAfter)
-
-	const tarStream = tar.pack(wkdir)
-	const gzipStream = createGzip()
-
-	await pipeline(
-		tarStream,
-		gzipStream,
-		res
-	)
 	
 	process.exit()
 })
