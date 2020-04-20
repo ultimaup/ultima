@@ -21,6 +21,12 @@ const LoginContainer = styled.div`
     justify-content: center;
 `
 
+export const LoginBtn = () => (
+    <a href="/auth/github">
+        <StyledLoginButton />
+    </a>
+)
+
 const Login = () => {
     const [auth, setAuth] = useState(null)
 
@@ -53,9 +59,7 @@ const Login = () => {
                 auth ? (
                     'loading...'
                 ) : (
-                    <a href="/auth/github">
-                        <StyledLoginButton />
-                    </a>
+                    <LoginBtn />
                 )
             }
         </LoginContainer>

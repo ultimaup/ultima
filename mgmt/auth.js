@@ -56,6 +56,11 @@ router.get('/auth/github-redirect', async (req, res) => {
     res.redirect(302, redirectUrl)
 })
 
+router.get('/auth/logout', (req, res) => {
+    res.cookie(GITEA_COOKIE_NAME, null, { httpOnly: true, maxAge: 0 })
+    res.redirect(302, '/')
+})
+
 module.exports = app => {
     app.use(router)
 }

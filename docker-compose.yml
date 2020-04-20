@@ -211,8 +211,7 @@ services:
     environment:
       PORT: 4491
       CI: "true" # https://github.com/facebook/create-react-app/issues/8688#issuecomment-602084087
-      REACT_APP_MGMT_ENDPOINT: http://mgmt.onultima.local:4480
-      REACT_APP_GITEA_COOKIE_NAME: sid
+      REACT_APP_CLI_NPM_PKG: "@ultimaup/cli"
 
   router:
     image: traefik:v2.2

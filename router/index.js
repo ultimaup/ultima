@@ -116,6 +116,8 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/user/login`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/dev-session`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/cli`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
     ]
