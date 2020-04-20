@@ -6,6 +6,7 @@ const {
 const app = express()
 
 app.use(express.static('build'))
+app.use('/assets',express.static('build'))
 
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
