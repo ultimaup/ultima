@@ -41,7 +41,7 @@ const Body = styled.div`
             margin-bottom: 0;
         }
     }
-    e {
+    i {
         user-select: none;
         margin-right: 8px;
         color: #003B00;
@@ -69,7 +69,7 @@ const Chrome = styled.div`
 
 const CLI = () => {
     const token = localStorage.getItem('token')
-    const pkg = process.env.REACT_APP_CLI_NPM_PKG
+    const pkg = "@ultimaup/cli"
 
     if (!token) {
         window.location.href = '/user/login?redirect_to=/cli'
@@ -87,9 +87,9 @@ const CLI = () => {
                 </Chrome>
                 <Body>
                     {!token && <LoginBtn />}
-                    <code><e>$</e>npm i -g {pkg}</code>
-                    <code><e>$</e>ultima login {token}</code>
-                    <code><e>$</e>ultima dev</code>
+                    <code><i>$</i>npm i -g {pkg}</code>
+                    <code><i>$</i>ultima login {token}</code>
+                    <code><i>$</i>ultima dev</code>
                 </Body>
             </Terminal>
         </Container>
