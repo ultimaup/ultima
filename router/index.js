@@ -21,6 +21,7 @@ const {
     FRONTEND_ENDPOINT,
 
     GITEA_COOKIE_NAME,
+    CERT_RESOLVER,
 } = process.env
 
 const app = express()
@@ -64,7 +65,9 @@ const genConfig = ({ source, destination, extensions = [] }) => {
                     [http.routers.${key}]
                         rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}"
                         ${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}
-                        service = "${key}"${prefix ? `
+                        service = "${key}"${CERT_RESOLVER ? `
+                        [http.routers.${key}.tls]
+                            certResolver = "${CERT_RESOLVER}"` : ''}${prefix ? `
                 [http.middlewares]
                     [http.middlewares.${key}]
                         [http.middlewares.${key}.addPrefix]
@@ -95,7 +98,9 @@ const genConfig = ({ source, destination, extensions = [] }) => {
         [http.routers.${key}]
             rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}${extensions && extensions.includes('root') ? '&& Path(\`/\`)' : ''}${extensions && extensions.includes('logged-in') ? `&& HeadersRegexp(\`Cookie\`, \`${GITEA_COOKIE_NAME}=\`)` : ''}"
             ${(prefix) ? `middlewares = ["${key}"]`: ''}
-            service = "${key}"${prefix ? `
+            service = "${key}"${CERT_RESOLVER ? `
+            [http.routers.${key}.tls]
+                certResolver = "${CERT_RESOLVER}"` : ''}${prefix ? `
     [http.middlewares]
         [http.middlewares.${key}.addPrefix]
             prefix = "${prefix}"` : ''}
