@@ -1,0 +1,455 @@
+@import url('https://rsms.me/inter/inter.css');
+#ultima-root  { font-family: 'Inter', sans-serif; }
+@supports (font-variation-settings: normal) {
+    #ultima-root  { font-family: 'Inter var', sans-serif; }
+}
+
+.animated {
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+@-webkit-keyframes bounceInUp {
+    from,
+    60%,
+    75%,
+    90%,
+    to {
+      -webkit-animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+      animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+  
+    from {
+      opacity: 0;
+      -webkit-transform: translate3d(0, 3000px, 0);
+      transform: translate3d(0, 3000px, 0);
+    }
+  
+    60% {
+      opacity: 1;
+      -webkit-transform: translate3d(0, -20px, 0);
+      transform: translate3d(0, -20px, 0);
+    }
+  
+    75% {
+      -webkit-transform: translate3d(0, 10px, 0);
+      transform: translate3d(0, 10px, 0);
+    }
+  
+    90% {
+      -webkit-transform: translate3d(0, -5px, 0);
+      transform: translate3d(0, -5px, 0);
+    }
+  
+    to {
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+    }
+}
+  
+@keyframes bounceInUp {
+    from,
+    60%,
+    75%,
+    90%,
+    to {
+      -webkit-animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+      animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+  
+    from {
+      opacity: 0;
+      -webkit-transform: translate3d(0, 3000px, 0);
+      transform: translate3d(0, 3000px, 0);
+    }
+  
+    60% {
+      opacity: 1;
+      -webkit-transform: translate3d(0, -20px, 0);
+      transform: translate3d(0, -20px, 0);
+    }
+  
+    75% {
+      -webkit-transform: translate3d(0, 10px, 0);
+      transform: translate3d(0, 10px, 0);
+    }
+  
+    90% {
+      -webkit-transform: translate3d(0, -5px, 0);
+      transform: translate3d(0, -5px, 0);
+    }
+  
+    to {
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+    }
+}
+  
+.bounceInUp {
+    -webkit-animation-name: bounceInUp;
+    animation-name: bounceInUp;
+}
+  
+
+body, a {
+    color: #181818;
+}
+
+#ultima-root h1, #ultima-root h2 {
+    font-family: Steradian;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 72px;
+    line-height: 111%;
+    /* identical to box height, or 80px */
+
+    letter-spacing: -0.035em;
+}
+
+#ultima-root h2 {
+    font-size: 36px;
+}
+
+#ultima-root p {
+    font-size: 18px;
+    line-height: 155.5%;
+    /* or 28px */
+
+    letter-spacing: -0.035em;
+}
+
+.logo {
+    display: inline-flex;
+}
+
+.logo-img {
+    width: 30px;
+    height: 30px;
+    background-image: url('./logo-circle.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.logo-text {
+    font-family: Steradian;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 22px;
+    line-height: 29px;
+    /* identical to box height */
+
+    letter-spacing: -0.035em;
+    color: #1a1a1a;
+}
+
+.logo .logo-text {
+    margin-left: 16px;
+}
+
+.slack-logo {
+    width: 24px;
+    height: 24px;
+    background: url('slack-logo.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.button {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    line-height: 155.5%;
+    /* identical to box height, or 25px */
+
+    letter-spacing: -0.035em;
+
+    color: #1A1A1A;
+
+    display: flex;
+    padding: 12px;
+    width: 260px;
+    height: 50px;
+
+    border: 1px solid rgba(26, 26, 26, 0.1);
+    box-sizing: border-box;
+    border-radius: 5px;
+    text-decoration: none;
+    background: #F9F9F9;
+}
+
+.button:hover {
+    background: rgba(249, 249, 249, 0.85);
+}
+
+.grid {
+    max-width: 1000px;
+    margin: auto;
+    width: 100%;
+    padding: 0 32px;
+    box-sizing: border-box;
+}
+
+.section {
+    padding: 128px 0;
+}
+
+.button .slack-logo {
+    margin-right: 12px;
+}
+.top {
+    overflow: hidden;
+    background: transparent;
+}
+.top h1 {
+    margin-bottom: 12px;
+}
+
+.top p {
+    margin-bottom: 34px;
+    max-width: 474px;
+}
+
+.top .grid {
+    position: relative;
+}
+
+.top .grid:after {
+    content: ' ';
+    position: absolute;
+    right: -50%;
+    top: -50%;
+    z-index: -1;
+    opacity: 0.1;
+    background: url('./logo-circle.svg');
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: contain;
+    
+    height: 350%;
+    width: 350%;
+}
+
+.ready {
+    padding: 79px 0;
+    background: #F9F9F9;
+}
+
+.ready .grid {
+    display: flex;
+    justify-content: space-between;
+}
+
+.nav {
+    height: 68px;
+    display: flex;
+    background: #F9F9F9;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.nav .logo {
+    margin-right: 94px;
+}
+
+.nav a {
+    text-decoration: none;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 17px;
+    /* identical to box height */
+
+    letter-spacing: -0.035em;
+
+    color: #1A1A1A;
+
+    opacity: 0.5;
+
+    margin-right: 39px;
+}
+
+.nav .grid {
+    display: flex;
+    align-items: center;
+}
+
+.footer {
+    padding: 50px 0;
+}
+
+.footer .grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.footer .logo {
+    margin-right: 109px;
+}
+
+.link-list {
+    margin-right: 79px;
+}
+
+.link-list span {
+    font-weight: bold;
+    font-size: 12px;
+    line-height: 15px;
+    /* identical to box height */
+
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+
+    opacity: 0.5;
+
+    margin-bottom: 30px;
+}
+
+.link-list a {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 17px;
+    /* identical to box height */
+
+    display: flex;
+    align-items: center;
+    letter-spacing: -0.035em;
+
+    color: #1A1A1A;
+
+    opacity: 0.5;
+
+    text-decoration: none;
+
+    margin-bottom: 17px;
+}
+
+a {
+    cursor: pointer;
+}
+a:hover {
+    opacity: 1;
+}
+
+.chat-bubble {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    
+    width: 61px;
+    height: 61px;
+    
+    background: #FFFFFF;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
+
+    border-radius: 100%;
+
+    background: url('slack-logo.svg');
+    background-size: 31px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: #F9F9F9;
+}
+
+a.disabled {
+    pointer-events: none;
+    opacity: 0.1;
+}
+
+.usps {
+    display: flex;
+    margin-top: 32px;
+}
+
+.usps li:not(:first-of-type) {
+    margin-left: 51px;
+}
+
+.usps li {
+    display: flex;
+
+    font-size: 14px;
+    line-height: 155.5%;
+    /* identical to box height, or 22px */
+
+    display: flex;
+    align-items: center;
+    letter-spacing: -0.025em;
+}
+.usps li svg {
+    margin-right: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #313131;
+        color: #F9F9F9;
+    }
+    a {
+        color: #F9F9F9;
+    }
+    .ready, .nav {
+        background: #191919;
+    }
+
+    .nav a, .link-list a {
+        color: #F9F9F9;
+    }
+
+    .logo-img {
+        background-image: url('./logo-circle-white.svg');
+    }
+    .logo-text {
+        color: #F9F9F9;
+    }
+    .top .grid:after {
+        opacity: 0.3;
+    }
+}
+
+@media (max-width: 870px) {
+    .ready .grid {
+        flex-direction: column;
+    }
+    .ready .grid .button {
+        margin: auto;
+        margin-top: 32px;
+    }
+}
+
+@media (max-width: 420px) {
+    .nav .logo {
+        margin-right: 18px;
+    }
+    .nav a {
+        margin-right: 0;
+    }
+    .nav .grid {
+       justify-content: space-between;
+    }
+    .nav {
+        text-transform: capitalize;
+    }
+
+    /* .footer .grid {
+        flex-direction: column;
+    } */
+    .footer .logo, .footer .link-list {
+        /* margin-right: 0; */
+        margin-bottom: 36px;
+    }
+    .mobile-hide {
+        display: none;
+    }
+}
+
+@media (max-width: 320px) {
+    .grid {
+        padding: 0 16px;
+    }
+}

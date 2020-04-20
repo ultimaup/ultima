@@ -49,7 +49,7 @@ app.post('/:name', (req, res) => {
 		extract,
 	).then(() => {
 		console.log('deployed build to folder');
-		service.InstallService(`${folder}/${req.params.name}`);
+		await service.InstallService(`${folder}/${req.params.name}`);
 		res.sendStatus(201);
 	}).catch(err => console.error);
 })

@@ -9,6 +9,7 @@ const got = require('got')
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
 const route = require('./route')
+const jwt = require('./jwt')
 
 const {
 	S3_ENDPOINT,
@@ -36,11 +37,44 @@ const ensureDevelopmentBundle = async lang => {
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
 
+router.use(async (req, res, next) => {
+    if (req.headers.authorization) {
+        const token = req.headers.authorization.split('Bearer ')[1]
+        if (!token) {
+            res.status(403).json({
+                status: 'error',
+                message: 'unauthorized',
+            })
+        } else {
+            try {
+                const user = await jwt.verify(token)
+                req.user = user
+            } catch (e) {
+                //
+                console.error(e)
+            }
+            if (req.user) {
+                next()
+            } else {
+                res.status(403).json({
+                    status: 'error',
+                    message: 'unauthorized',
+                })
+            }
+        }
+    } else {
+        res.status(403).json({
+            status: 'error',
+            message: 'unauthorized',
+        })
+    }
+})
+
 router.post('/dev-session', async (req, res) => {
     const invocationId = uuid()
     const lang = 'nodejs'
-    
-    const user = 'josh'
+
+    const user = req.user.username
 
     const devEndpointId = `dev-${user}-${uuid()}`
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
@@ -60,20 +94,22 @@ router.post('/dev-session', async (req, res) => {
     console.log(invocationId, 'got internal url', endpointUrl)
     const internalUrl = endpointUrl.split('http://').join('h2c://')
 
+    const sid = `${invocationId.split('-')[0]}-${user}`
+
     const endpointRoute = {
-        subdomain: `${invocationId}.dev`,
+        subdomain: `${sid}.dev`,
         destination: internalUrl,
     }
 
     const url = await route.set(endpointRoute)
 
     const debugUrl = await route.set({
-        subdomain: `debug.${invocationId}.dev`,
+        subdomain: `debug.${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
     })
 
     const appUrl = await route.set({
-        subdomain: `app.${invocationId}.dev`,
+        subdomain: `app.${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
     })
 

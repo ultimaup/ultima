@@ -1,13 +1,15 @@
 const { fetch } = require('fetch-h2')
 
-const init = (rootEndpoint) => {
+const init = (rootEndpoint, token) => {
     const apiFetch = (endpoint, ...args) => {
-        console.log(`${rootEndpoint}${endpoint}`)
         return fetch(`${rootEndpoint}${endpoint}`, ...args)
     }
 
     const getDeploymentUrl = () => apiFetch('/dev-session', {
         method: 'post',
+        headers: token ? {
+            Authorization: `Bearer ${token}`,
+        } : {},
     }).then(r => r.json())
 
     return {

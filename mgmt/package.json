@@ -8,6 +8,7 @@
     "apollo-server": "^2.11.0",
     "aws-sdk": "^2.635.0",
     "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
     "fs-extra": "^8.1.0",
     "got": "^10.7.0",
@@ -22,6 +23,7 @@
     "pg": "^7.18.2",
     "tar-fs": "^2.0.0",
     "tar-stream": "^2.1.2",
+    "tough-cookie": "^3.0.0",
     "unzip-stream": "^0.3.0",
     "uuid": "^7.0.1"
   },

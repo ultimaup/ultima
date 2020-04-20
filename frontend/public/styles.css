@@ -1,0 +1,121 @@
+@import url('https://rsms.me/inter/inter.css');
+html { font-family: 'Inter', sans-serif; }
+@supports (font-variation-settings: normal) {
+  html { font-family: 'Inter var', sans-serif; }
+}
+
+body {
+    color: #1D1D1D;
+}
+
+h1 {
+    font-style: normal;
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 22px;
+    /* identical to box height */
+
+    text-align: center;
+    letter-spacing: -0.045em;
+
+}
+
+.logo {
+    width: 384px;
+    height: 82px;
+    background: url('logo.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+a {
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 22px;
+    /* identical to box height */
+
+    text-align: center;
+    letter-spacing: -0.045em;
+    text-decoration-line: underline;
+    color: #1D1D1D;
+}
+
+a.big {
+    padding: 15px 44px;
+    text-decoration: none;
+    border-radius: 10px;
+    background: #1D1D1D;
+    /* identical to box height */
+
+    text-align: center;
+    letter-spacing: -0.045em;
+
+    color: #FFFFFF;
+
+    max-width: 307px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    padding-top: 200px;
+    box-sizing: border-box;
+}
+
+.content > div {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.content .logo {
+    margin-bottom: 50px;
+}
+
+.content h1 {
+    margin-bottom: 79px;
+}
+
+.content a.big {
+    margin-bottom: 62px;
+}
+
+.after-midnight {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1A1A1A;
+        color: white;
+    }
+    a {
+        color: white;
+    }
+    a.big {
+        color: #1D1D1D;
+        background: #FFFFFF;
+    }
+}
+
+@media (max-width: 800px) {
+    html, body, .content {
+        height: 100%;
+    }
+    .content {
+        padding-top: 64px;
+        padding-bottom: 32px;
+        box-sizing: border-box;
+    }
+    .content .logo {
+        width: calc(100% - 16px);
+        margin-bottom: 64px;
+    }
+    .content a.big {
+        margin-bottom: 32px;
+    }
+}
