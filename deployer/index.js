@@ -16,7 +16,7 @@ const { PORT=4480 } = process.env;
 
 const folder = path.resolve('../..')
 
-app.post('/:name', (req, res) => {
+app.post('/:name', async (req, res) => {
 	console.log(`Received request for ${req.params.name}`);
 	if(fs.existsSync(`${folder}/${req.params.name}`))
 	{
@@ -43,15 +43,20 @@ app.post('/:name', (req, res) => {
 		res.sendStatus(500);
 	});
 
-	pipeline(
-		tarStream,
-		decompress,
-		extract,
-	).then(() => {
+	
+	try {
+		await pipeline(
+			tarStream,
+			decompress,
+			extract,
+		)
 		console.log('deployed build to folder');
 		await service.InstallService(`${folder}/${req.params.name}`);
 		res.sendStatus(201);
-	}).catch(err => console.error);
+	} catch (e) {
+		console.error(e);
+		res.sendStatus(500);
+	}
 })
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
