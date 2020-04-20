@@ -17,6 +17,19 @@ const LoginContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    background: #181818;
+
+    h1 {
+        font-size: 48px;
+        margin-bottom: 24px;
+    }
+
+    p {
+        margin-bottom: 68px;
+    }
 `
 
 export const LoginBtn = () => (
@@ -53,6 +66,8 @@ const Login = () => {
 
     return (
         <LoginContainer>
+            <h1>Sign into Ultima</h1>
+            <p>Welcome to the alpha.</p>
             {
                 auth ? (
                     'loading...'
