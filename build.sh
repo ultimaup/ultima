@@ -16,12 +16,22 @@ cd router
 yarn install --frozen-lockfile
 cd ..
 
+echo "Getting frontend deps"
+cd frontend
+yarn install --frozen-lockfile
+cd ..
+
 echo "Getting mgmt deps"
 cd mgmt
 yarn install --frozen-lockfile
 
 echo "Getting builder/nodejs deps"
 cd builders/nodejs
+npm ci
+cd ..
+
+echo "Getting development/nodejs deps"
+cd development/nodejs
 npm ci
 cd ../..
 
@@ -30,6 +40,12 @@ cd ..
 echo "Getting deployer deps"
 cd deployer
 yarn install --frozen-lockfile
+cd ..
+
+echo "Building frontend"
+
+cd frontend
+yarn build
 cd ..
 
 echo "Creating tarball"
