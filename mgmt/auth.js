@@ -12,6 +12,7 @@ const {
 const {
     AUTH_REDIRECT,
     GITHUB_CLIENT_ID,
+    GITEA_COOKIE_NAME,
 } = process.env
 
 const router = new Router()
@@ -44,16 +45,12 @@ router.get('/auth/github-redirect', async (req, res) => {
     // ensure gitea user
     await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
 
-    const giteaSessionId = await getGiteaSession(username, user.id)
+    const sessionId = await getGiteaSession(username, user.id)
 
-    console.log({
-        token,
-        giteaSessionId
-    })
+    res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
 
     const redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
         token,
-        giteaSessionId,
     })}`
 
     res.redirect(302, redirectUrl)

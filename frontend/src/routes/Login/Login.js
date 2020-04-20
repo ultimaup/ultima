@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 import { mgmtEndpoint } from '../../config'
@@ -15,10 +15,51 @@ const StyledLoginButton = styled(LoginButton)`
     cursor: pointer;
 `
 
-const Login = () => (
-    <StyledLoginButton onClick={() => {
-        window.open(`${mgmtEndpoint}/auth/github`)
-    }}>login with github</StyledLoginButton>
-)
+const LoginContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`
+
+const Login = () => {
+    const [auth, setAuth] = useState(null)
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirect_to')
+        if (redirectTo) {
+            window.localStorage.setItem('authRedirect', redirectTo)
+        }
+
+        const token = urlParams.get('token')
+
+        if (token) {
+            setAuth({ token })
+        }
+    }, [])
+
+    useEffect(() => {
+        if (auth) {
+            const redirectTo = window.localStorage.getItem('authRedirect') || '/'
+            window.localStorage.removeItem('authRedirect')
+            window.localStorage.setItem('token', auth.token)
+            window.location.href = redirectTo
+        }
+    }, [auth])
+
+    return (
+        <LoginContainer>
+            {
+                auth ? (
+                    'loading...'
+                ) : (
+                    <a href="/auth/github">
+                        <StyledLoginButton />
+                    </a>
+                )
+            }
+        </LoginContainer>
+    )
+}
 
 export default Login

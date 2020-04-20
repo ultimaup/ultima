@@ -19,6 +19,8 @@ const {
     TRAEFIK_ENDPOINT,
     GITEA_ENDPOINT,
     FRONTEND_ENDPOINT,
+
+    GITEA_COOKIE_NAME,
 } = process.env
 
 const app = express()
@@ -91,7 +93,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 `[http]
     [http.routers]
         [http.routers.${key}]
-            rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}${extensions && extensions.includes('root') ? '&& Path(\`/\`)' : ''}"
+            rule = "Host(\`${sourceHost}\`)${sourcePath ? ` && PathPrefix(\`/${sourcePath}\`)` : ''}${extensions && extensions.includes('root') ? '&& Path(\`/\`)' : ''}${extensions && extensions.includes('logged-in') ? `&& HeadersRegexp(\`Cookie\`, \`${GITEA_COOKIE_NAME}=\`)` : ''}"
             ${(prefix) ? `middlewares = ["${key}"]`: ''}
             service = "${key}"${prefix ? `
     [http.middlewares]
@@ -107,12 +109,14 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 const defaultConfigs = () => {
     return [
         { source: `mgmt.${PUBLIC_ROUTE_ROOT}`, destination: MGMT_ENDPOINT },
-        
+
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/assets`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/sockjs-node`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/user/login`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
     ]
 }

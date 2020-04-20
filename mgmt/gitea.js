@@ -109,7 +109,8 @@ const registerUser = ({ id, username, imageUrl, name, email }) => (
 
 const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) => {
     try {
-        await giteaFetch('/api/v1/user', {}, username)
+		const r = await giteaFetch('/api/v1/user', {}, username)
+		console.log(r)
         return true
     } catch (e) {
         if (!e.message.includes('404')) {

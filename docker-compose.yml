@@ -198,6 +198,7 @@ services:
       TRAEFIK_ENDPOINT: http://router:8080
       GITEA_ENDPOINT: http://gitea:3000
       FRONTEND_ENDPOINT: http://frontend:4491
+      GITEA_COOKIE_NAME: sid
 
   frontend:
     image: node
@@ -211,6 +212,7 @@ services:
       PORT: 4491
       CI: "true" # https://github.com/facebook/create-react-app/issues/8688#issuecomment-602084087
       REACT_APP_MGMT_ENDPOINT: http://mgmt.onultima.local:4480
+      REACT_APP_GITEA_COOKIE_NAME: sid
 
   router:
     image: traefik:v2.2
