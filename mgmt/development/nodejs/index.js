@@ -146,13 +146,14 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connections--
-
-        dieTimeout = setTimeout(() => {
-            if (connections === 0) {
-                console.log('dying due to lack of attention :(')
-                process.exit()
-            }
-        }, 1000 * 60)
+        if (connections === 0) {
+            dieTimeout = setTimeout(() => {
+                if (connections === 0) {
+                    console.log('dying due to lack of attention :(')
+                    process.exit()
+                }
+            }, 1000 * 60)
+        }
     })
 })
 
