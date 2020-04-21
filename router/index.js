@@ -19,6 +19,7 @@ const {
     TRAEFIK_ENDPOINT,
     GITEA_ENDPOINT,
     FRONTEND_ENDPOINT,
+    KIBANA_ENDPOINT,
 
     GITEA_COOKIE_NAME,
     CERT_RESOLVER,
@@ -123,6 +124,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-session`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/cli`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/kibana`, destination: KIBANA_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/graphql`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },

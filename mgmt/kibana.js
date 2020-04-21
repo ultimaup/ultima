@@ -19,7 +19,13 @@ const client = got.extend({
 const ensureKibanaUser = async ({ email, username, fullName, password }) => {
     const existing = await getUser(username)
     if (existing) {
-        return true
+        return {
+            user: existing,
+            sid: await getSession({
+                username,
+                password,
+            })
+        }
     }
 
     const indexPattern = `logstash-${username}-*`
@@ -52,7 +58,28 @@ const ensureKibanaUser = async ({ email, username, fullName, password }) => {
         throw e
     })
 
-    return getUser(username)
+    const sid = await getSession({
+        username,
+        password,
+    })
+
+    const user = await getUser(username)
+
+    return {
+        sid,
+        user,
+    }
+}
+
+const getSession = async ({ username, password }) => {
+    const res = await client.post('internal/security/login', {
+        json: {
+            username,
+            password,
+        }
+    })
+
+    return res.headers['set-cookie'][0].split(';')[0].split('sid=')[1]
 }
 
 const getUser = username => (
