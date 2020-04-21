@@ -71,7 +71,7 @@ services:
 
       GITHUB_CLIENT_ID: 4d6bceadb4045ef17d06
       GITHUB_CLIENT_SECRET: e3400a359cfbb8337dcbf61a48cd15faf2d69501
-      GITEA_COOKIE_NAME: sid
+      GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
       
@@ -80,7 +80,7 @@ services:
 
       ES_USERNAME: elastic
       ES_PASSWORD: Password123!
-      KIBANA_ENDPOINT: http://kibana:5601
+      KIBANA_ENDPOINT: http://kibana:5601/kibana
 
   dind:
     image: docker:dind
@@ -181,7 +181,8 @@ services:
       TRAEFIK_ENDPOINT: http://router:8080
       GITEA_ENDPOINT: http://gitea:3000
       FRONTEND_ENDPOINT: http://frontend:4491
-      GITEA_COOKIE_NAME: sid
+      GITEA_COOKIE_NAME: sessionid
+      KIBANA_ENDPOINT: http://kibana:5601
 
   frontend:
     image: node
@@ -239,3 +240,5 @@ services:
       - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
       - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=Password123!
       - XPACK_SECURITY_ENCRYPTIONKEY=something_at_least_32_characterssomething_at_least_32_characters
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
