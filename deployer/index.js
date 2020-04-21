@@ -1,7 +1,7 @@
 const express = require('express');
 const s3 = require('./s3');
 const tar = require('tar-fs');
-const lzma = require('lzma-native');
+const zlib = require('zlib');
 const fs = require('fs');
 const stream = require('stream');
 const path = require('path');
@@ -26,7 +26,7 @@ app.post('/:name', async (req, res) => {
 		return;
 	}
 	const extract = tar.extract(`${folder}/${req.params.name}`);
-	const decompress = lzma.createDecompressor();
+	const decompress = zlib.createGunzip();
 	const tarStream = s3.getStream({Bucket: 'build-artifacts', Key: req.params.name });
 
 	tarStream.on('error', err => {
