@@ -215,7 +215,7 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 					Type: 'gelf',
 					Config: {
 						'gelf-address': GELF_ADDRESS,
-						tag: deploymentId,
+						tag: deployment.repoName.split('/').join('-'),
 					},
 				},
 			},

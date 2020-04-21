@@ -8,6 +8,7 @@ const {
     githubCodeToAuth,
     githubGet,
 } = require('./github')
+const kibana = require('./kibana')
 
 const {
     AUTH_REDIRECT,
@@ -44,6 +45,9 @@ router.get('/auth/github-redirect', async (req, res) => {
 
     // ensure gitea user
     await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
+
+    // ensure kibana user
+    await ensureKibanaUser({ email, username, fullName: name, password: user.id })
 
     const sessionId = await getGiteaSession(username, user.id)
 

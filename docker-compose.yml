@@ -78,6 +78,10 @@ services:
       PUBLIC_ROUTE_ROOT_PROTOCOL: http
       PUBLIC_ROUTE_ROOT_PORT: 4480
 
+      ES_USERNAME: elastic
+      ES_PASSWORD: Password123!
+      KIBANA_ENDPOINT: http://kibana:5601
+
   dind:
     image: docker:dind
     privileged: true
