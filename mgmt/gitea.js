@@ -301,7 +301,7 @@ const runTests = async ({ ref, after, repository, pusher }) => {
 
 	const lang = 'nodejs'
 
-	const builderEndpointId = `builder-${repository.full_name.split('/').join('-')}-${uuid()}`
+	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${uuid()}`
 
 	console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
 	// ensure builder endpoint exists
