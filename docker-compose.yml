@@ -11,26 +11,6 @@ services:
     environment:
       POSTGRES_PASSWORD: example
 
-  prisma:
-    image: prismagraphql/prisma:1.34
-    restart: always
-    ports:
-      - '4466:4466'
-    depends_on:
-      - "db"
-    environment:
-      PRISMA_CONFIG: |
-        port: 4466
-        databases:
-          default:
-            connector: postgres
-            host: db
-            port: 5432
-            user: postgres
-            password: example
-            database: postgres
-        managementApiSecret: supersecret
-
   gitea:
     image: gitea/gitea:latest
     environment:
@@ -63,14 +43,11 @@ services:
       - '4467:4467'
     depends_on:
       - "db"
-      - "prisma"
     volumes:
       - './mgmt:/app'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
-      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
-      PRISMA_MANAGEMENT_API_SECRET: supersecret
       PORT: 4467
       GITEA_WEBHOOK_SECRET: gitea-secret
       GITEA_URL: http://gitea:3000
@@ -119,15 +96,12 @@ services:
       - '4470:4470'
     depends_on:
       - "db"
-      - "prisma"
       - "dind"
     volumes:
       - './endpoints:/app'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
-      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
-      PRISMA_MANAGEMENT_API_SECRET: supersecret
       PORT: 4470
       DOCKER_HOSTNAME: dind
       DOCKER_HOST: tcp://dind:2376
