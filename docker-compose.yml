@@ -69,8 +69,8 @@ services:
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
-      GITHUB_CLIENT_ID: replace-with-your-client-id
-      GITHUB_CLIENT_SECRET: replace-with-your-client-secret
+      GITHUB_CLIENT_ID: 4d6bceadb4045ef17d06
+      GITHUB_CLIENT_SECRET: e3400a359cfbb8337dcbf61a48cd15faf2d69501
       GITEA_COOKIE_NAME: sid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
@@ -117,6 +117,8 @@ services:
       BUILDER_BUCKET_ID: builder-bucket-key-id-7
       BUILDER_BUCKET_SECRET: builder-bucket-secret
       S3_ENDPOINT: http://files:9000
+
+      GELF_ADDRESS: udp://logstash:12201
 
   files:
     image: minio/minio
@@ -197,3 +199,27 @@ services:
     ports:
       - '4480:80'
       - '4488:8080'
+
+  elasticsearch:
+    image: elasticsearch:7.6.2
+    volumes:
+      - ./tmp/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+
+  logstash:
+    image: logstash:7.6.2
+    depends_on: 
+      - elasticsearch
+    ports:
+      - 12201:12201/udp
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+
+  kibana:
+    image: kibana:7.6.2
+    depends_on:
+      - elasticsearch
+    ports:
+      - 4492:5601

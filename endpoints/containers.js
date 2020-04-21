@@ -9,7 +9,8 @@ const s3 = require('./s3')
 const {
 	DOCKER_HOSTNAME,
 	BUILDER_BUCKET_ID,
-    IN_PROD = false,
+	IN_PROD = false,
+	GELF_ADDRESS,
 } = process.env
 
 // TODO: kill inactive containers after a while
@@ -79,8 +80,8 @@ const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
 	const container = docker.getContainer(containerId)
 
 	await container.start()
-	const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
-	container.modem.demuxStream(logStream, process.stdout, process.stderr)
+	// const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
+	// container.modem.demuxStream(logStream, process.stdout, process.stderr)
 
 	const {hostname} = await getContainerHostname(containerId)
 	const endpoint = '/health'
@@ -202,12 +203,21 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 			WorkingDir: '/app',
 			name: deploymentId,
 			ExposedPorts,
+			AttachStdout: false,
+			AttachStderr: false,
 			Env: Object.entries({
 				...deployment.env,
 				...portEnvs,
 			}).map(([k, v]) => `${k}=${v}`),
 			HostConfig: {
 				PortBindings,
+				LogConfig: {
+					Type: 'gelf',
+					Config: {
+						'gelf-address': GELF_ADDRESS,
+						tag: deploymentId,
+					},
+				},
 			},
 		}
 
