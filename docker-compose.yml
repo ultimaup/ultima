@@ -206,7 +206,8 @@ services:
       - ./tmp/elasticsearch:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=Password123!
 
   logstash:
     image: logstash:7.6.2
@@ -216,6 +217,11 @@ services:
       - 12201:12201/udp
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    environment: 
+      XPACK.MONITORING.ENABLED: "true"
+      XPACK.MONITORING.ELASTICSEARCH.HOSTS: "[\"http://elasticsearch:9200\"]"
+      XPACK.MONITORING.ELASTICSEARCH.USERNAME: elastic
+      XPACK.MONITORING.ELASTICSEARCH.PASSWORD: Password123!
 
   kibana:
     image: kibana:7.6.2
@@ -223,3 +229,9 @@ services:
       - elasticsearch
     ports:
       - 4492:5601
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=Password123!
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=Password123!
+      - XPACK_SECURITY_ENCRYPTIONKEY=something_at_least_32_characterssomething_at_least_32_characters
