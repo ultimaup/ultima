@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const querystring = require('querystring')
+const cookieParser = require('cookie-parser')
 
 const User = require('./db/User')
 const jwt = require('./jwt')
@@ -53,6 +54,7 @@ router.get('/auth/github-redirect', async (req, res) => {
 
     res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
     res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
+    res.cookie('ultima_token', token, { httpOnly: true })
 
     const redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
         token,
@@ -63,7 +65,32 @@ router.get('/auth/github-redirect', async (req, res) => {
 
 router.get('/auth/logout', (req, res) => {
     res.cookie(GITEA_COOKIE_NAME, null, { httpOnly: true, maxAge: 0 })
+    res.cookie('sid', null, { httpOnly: true, path: '/kibana',  maxAge: 0 })
+    res.cookie('ultima_token', null, { httpOnly: true,  maxAge: 0 })
+
     res.redirect(302, '/')
+})
+
+router.use('/kibana', cookieParser())
+
+router.get('/kibana/*', async (req, res) => {    
+    const { ultima_token } = req.cookies
+
+    if (ultima_token) {
+        try {
+            const { email, username, name, id } = await jwt.verify(ultima_token)
+    
+            const { sid } = await ensureKibanaUser({ email, username, fullName: name, password: id })
+            res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
+            if (req.query.next) {
+                res.redirect(302, req.query.next)
+            }
+        } catch (e) {
+            
+        }
+    }
+
+    res.redirect(302, req.query.next ? `/user/login?redirect_to=${req.query.next}` : '/user/login')
 })
 
 module.exports = app => {

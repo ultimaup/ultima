@@ -19,10 +19,20 @@ const gitea = () => {
     const deploymentInfoContainer = document.getElementById('ultima-deployment-info')
 
     if (deploymentInfoContainer) {
+        const url = window.location.pathname
+        
+        let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
+        if (_ === '_edit') {
+            branch = __
+        }
+        if (!branch) {
+            branch = 'master'
+        }
+
         ReactDOM.render(
             <React.StrictMode>
                 <ApolloProvider client={client}>
-                    <DeploymentInfo />
+                    <DeploymentInfo owner={owner} repoName={repoName} branch={branch} />
                 </ApolloProvider>
             </React.StrictMode>,
             deploymentInfoContainer
@@ -37,7 +47,7 @@ const gitea = () => {
                 <ApolloProvider client={client}>
                     <BrowserRouter>
                         <Switch>
-                            <Route path="/:owner/:repoName/activity/deployments" component={Deployments} />
+                            <Route path="/:owner/:repoName/activity/deployments/:actionId?" component={Deployments} />
                             <Route path="/:owner/:repoName/activity/logs" component={Logs} />
                         </Switch>
                     </BrowserRouter>

@@ -93,7 +93,8 @@ const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) =>
 			console.error('gitea registration check failed', e)
             throw e
         }
-    }
+	}
+
 	try {
 		await registerUser({ id, username, imageUrl, name, email })
 	} catch (e) {
