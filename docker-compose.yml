@@ -47,6 +47,8 @@ services:
       - './mgmt:/app'
     working_dir: '/app'
     command: ["yarn", "dev"]
+    env_file:
+      - secrets.env
     environment:
       PORT: 4467
       GITEA_WEBHOOK_SECRET: gitea-secret
@@ -69,8 +71,6 @@ services:
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
-      GITHUB_CLIENT_ID: replace-with-your-client-id
-      GITHUB_CLIENT_SECRET: replace-with-your-client-secret
       GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
