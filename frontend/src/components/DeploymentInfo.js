@@ -60,7 +60,9 @@ const DeploymentInfo = () => {
     const [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
     
     const { loading, error, deployments } = useDeployments({ owner, repoName, branch })
-    
+    if (error) {
+        console.error(error)
+    }
     let liveDeployment
     if (deployments) {
         liveDeployment = [...deployments].sort((a,b) => b.createdAt - a.createdAt).find(d => !!d.url)

@@ -42,6 +42,10 @@ const ensureKibanaUser = async ({ email, username, fullName, password }) => {
         console.error(`error updating space config`)
         throw e
     })
+    await setDarkMode(spaceId).catch(e => {
+        console.error(`error setting space to dark mode`)
+        throw e
+    })
     const roleName = `${username}-role`
     await createRole(roleName, indexPattern, spaceId).catch(e => {
         console.error(`error creating role`)
@@ -200,6 +204,16 @@ const createUser = ({
             enabled: true,
         }
     }).json()
+)
+
+const setDarkMode = (spaceId) => (
+    client.post(`s/${spaceId}/api/kibana/settings`, {
+        json: {
+            changes: {
+                'theme:darkMode': true,
+            },
+        },
+    })
 )
 
 module.exports = {

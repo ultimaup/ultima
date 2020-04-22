@@ -1,0 +1,14 @@
+{{template "base/head" .}}
+<div class="repository commits">
+	{{template "repo/header" .}}
+	<div class="ui container">
+		{{if (not .IsEmptyRepo)}}
+            <div id="logsDeployments"></div>
+        {{end}}
+
+        {{if (.IsEmptyRepo)}}
+            <h2>Nothing here yet</h2>
+        {{end}}
+	</div>
+</div>
+{{template "base/footer" .}}
