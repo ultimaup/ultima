@@ -8,6 +8,32 @@ import { useActions, useAction } from '../../hooks/useActions'
 import { Badge } from '../../components/Badge'
 import { LogFrame } from '../Logs/Logs'
 
+const StatusDot = styled.div`
+    background: #2AA827;
+    width: 8px;
+    height: 8px;
+    border-radius: 100%;
+
+    opacity: 1;
+    ${({ complete }) => !complete && css`
+        @keyframes flickerAnimation { /* flame pulses */
+            0%   { opacity:1; }
+            50%  { opacity:0; }
+            100% { opacity:1; }
+        }
+
+        animation: flickerAnimation 1s infinite;
+    `}
+    ${({ status }) => {
+        if (status === 'error') {
+            return css`
+                background: #E01E5A;
+            `
+        }
+
+        return ''
+    }}
+`
 
 const ActionContainer = styled.div`
     display: flex;
@@ -24,6 +50,10 @@ const ActionContainer = styled.div`
     ${props => props.type === 'error' && css`
         border: 1px solid #E01E5A;
     `}
+
+    ${StatusDot} {
+        margin-right: 8px;
+    }
 `
 
 const AddonContainer = styled.div`
@@ -137,6 +167,17 @@ const Logs = styled(LogFrame)`
     }
 `
 
+const DeployedUrl = styled(ActionContainer)`
+    color: #2AA827;
+    background: #292929;
+    border: 1px solid #2AA827;
+    font-size: 16px;
+    text-align: center;
+`
+
+const Description = styled.span`
+    font-weight: 300;
+`
 
 const Action = ({ type, title, description, createdAt, completedAt, metadata, branch, hash, href }) => {
     const data = JSON.parse(metadata)
@@ -176,12 +217,13 @@ const Action = ({ type, title, description, createdAt, completedAt, metadata, br
 
     return (
         <>
-            <ActionContainer type={type}>
+            <ActionContainer>
+                <StatusDot status={type} complete={!!completedAt} />
                 <Body>
                     <strong>
-                    {type === 'error' ? 'Failed ' : ''}{title}
+                    {type === 'error' ? 'Failed ' : ''}{title.replace(/^\w/, c => c.toUpperCase())}
                     </strong>&nbsp;
-                    {description}
+                    <Description>{description}</Description>
                 </Body>
                 <Timings>
                     <span title={completedAt}>{completedAt ? `completed in ${moment(completedAt).diff(createdAt, 'seconds')} seconds` : null}</span>
@@ -193,6 +235,12 @@ const Action = ({ type, title, description, createdAt, completedAt, metadata, br
                 <AddonContainer>
                     <Logs owner={owner} tag={data.logTag} />
                 </AddonContainer>
+            )}
+            {data && data.endpointRouteUrl && (
+                <DeployedUrl>API Deployed to&nbsp;<a href={data.endpointRouteUrl}>{data.endpointRouteUrl}</a></DeployedUrl>
+            )}
+            {data && data.staticRouteUrl && (
+                <DeployedUrl>Deployed static content to <a href={data.staticRouteUrl}>{data.staticRouteUrl}</a></DeployedUrl>
             )}
         </>
     )

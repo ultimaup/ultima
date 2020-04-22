@@ -93,14 +93,18 @@ const markActionComplete = async (id, updates = {}) => {
 	})
 }
 
-const logAction = async (parentId, { type, title, description, data }) => {
+const logAction = async (parentId, { type, title, description, data, completedAt }) => {
 	const id = uuid()
-	await Action.query().insert({
+	const action = {
 		id,
 		parentId,
 		type, title, description,
 		metadata: data ? JSON.stringify(data) : data,
-	})
+	}
+	if (completedAt) {
+		action.completedAt = new Date()
+	}
+	await Action.query().insert(action)
 	return id
 }
 
@@ -184,15 +188,15 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let hasAPI = true
 		let staticContentLocation = undefined
 		if (!config) {
-			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app' })
+			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
 			if (config.web) {
 				staticContentLocation = repoRelative(config.web.buildLocation)
-				logAction(parentActionId, { type: 'debug', title: 'static website found', description: `will host resulting ${staticContentLocation} folder` })
+				logAction(parentActionId, { type: 'debug', title: 'static website found', description: `will host resulting ${staticContentLocation} folder`, completedAt: true })
 			}
 			if (config.hasAPI === false) {
 				hasAPI = false
-				logAction(parentActionId, { type: 'debug', title: 'not hosting an API', description: `hasAPI key found to be false` })
+				logAction(parentActionId, { type: 'debug', title: 'not hosting an API', description: `hasAPI key found to be false`, completedAt: true })
 			}
 		}
 
