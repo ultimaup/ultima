@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+import { useEffect } from 'react'
 
 const actionFields = `
 id
@@ -33,7 +34,12 @@ const GET_ACTION = gql`
 `
 
 export const useActions = ({ owner, repoName, parentId }) => {
-    const { loading, error, data } = useQuery(GET_ACTIONS, { variables: { owner, repoName, parentId } })
+    const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ACTIONS, { variables: { owner, repoName, parentId } })
+
+    useEffect(() => {
+        startPolling(3000)
+        return stopPolling
+    }, [])
 
     return {
         loading,
@@ -44,7 +50,12 @@ export const useActions = ({ owner, repoName, parentId }) => {
 
 
 export const useAction = (id) => {
-    const { loading, error, data } = useQuery(GET_ACTION, { variables: { id }, skip: !id })
+    const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ACTION, { variables: { id }, skip: !id })
+
+    useEffect(() => {
+        startPolling(1000)
+        return stopPolling
+    }, [])
 
     return {
         loading,
