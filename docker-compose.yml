@@ -69,8 +69,8 @@ services:
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
-      GITHUB_CLIENT_ID: 4d6bceadb4045ef17d06
-      GITHUB_CLIENT_SECRET: e3400a359cfbb8337dcbf61a48cd15faf2d69501
+      GITHUB_CLIENT_ID: replace-with-your-client-id
+      GITHUB_CLIENT_SECRET: replace-with-your-client-secret
       GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
