@@ -32,9 +32,10 @@ const doBuild = async (wkdir) => {
 	const packageInfo = await fse.readJSON(path.resolve(wkdir, 'package.json'))
 
 	if (packageInfo.scripts.build) {
-		return await exec('npm run build', { cwd: wkdir })
+		console.log('running `npm run build`')
+		return await exec('npm run build', { cwd: wkdir, stdio: 'inherit' })
 	} else {
-		console.log('no build step found, skipping...')
+		console.log('no build step found in package.json, skipping...')
 	}
 }
 
@@ -42,9 +43,10 @@ const doTest = async (wkdir) => {
 	const packageInfo = await fse.readJSON(path.resolve(wkdir, 'package.json'))
 
 	if (packageInfo.scripts.test) {
-		return await exec('npm run test', { cwd: wkdir })
+		console.log('running `npm run test`')
+		return await exec('npm run test', { cwd: wkdir, stdio: 'inherit' })
 	} else {
-		console.log('no test step found, skipping...')
+		console.log('no test step found in package.json, skipping...')
 	}
 }
 
@@ -60,12 +62,13 @@ app.get('/health', (req, res) => {
 
 app.post('/', async (req, res) => {
 	const { 'x-parent-invocation-id': invocationId } = req.headers
-	console.log('invoked from', invocationId)
+	console.log('invoked from deployment', invocationId)
+
 	try {
 		let wkdir = `/tmp/${invocationId}`
 
 		req.on('end', () => {
-			console.log(invocationId, 'bundle upload complete')
+			console.log('bundle upload complete')
 		})
 
 		try {
@@ -75,7 +78,7 @@ app.post('/', async (req, res) => {
 			return res.status(500).json(e)
 		}
 
-		console.log(invocationId, 'extracted')
+		console.log('bundle extracted')
 
 		const files = await fse.readdir(wkdir)
 		
@@ -85,30 +88,20 @@ app.post('/', async (req, res) => {
 		}
 
 		const filesBefore = await fse.readdir(wkdir)
-		console.log(filesBefore)
-		
-		let installOutput
-		let buildOutput
-		let testOutput
+		console.log('bundle contains files: ', filesBefore)
 
 		try {
 			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-				installOutput = await installDeps(wkdir)
-				buildOutput = await doBuild(wkdir)
-				testOutput = await doTest(wkdir)
+				await installDeps(wkdir)
+				await doBuild(wkdir)
+				await doTest(wkdir)
 			}
 		} catch (e) {
 			console.error(e)
 		}
 
-		console.log([
-			installOutput,
-			buildOutput,
-			testOutput,
-		])
-
 		const filesAfter = await fse.readdir(wkdir)
-		console.log(filesAfter)
+		console.log('built output contains files:', filesAfter)
 
 		const tarStream = tar.pack(wkdir)
 		const gzipStream = createGzip()
