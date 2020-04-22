@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import styled, { css } from 'styled-components'
-import { useParams } from 'react-router-dom'
+import { HashRouter, Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
 import Octicon, {GitBranch} from '@primer/octicons-react'
 
@@ -66,7 +66,7 @@ const AddonContainer = styled.div`
     border-bottom-right-radius: 3px;
 `
 
-const ActionLink = styled(ActionContainer).attrs(() => ({ as: 'a' }))`
+const ActionLink = styled(ActionContainer).attrs(() => ({ as: Link }))`
     :hover {
         color: white;
     }
@@ -179,9 +179,8 @@ const Description = styled.span`
     font-weight: 300;
 `
 
-const Action = ({ type, title, description, createdAt, completedAt, metadata, branch, hash, href }) => {
+const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, to }) => {
     const data = JSON.parse(metadata)
-    const { owner } = useParams()
 
     if (!title) {
         let commit
@@ -194,7 +193,7 @@ const Action = ({ type, title, description, createdAt, completedAt, metadata, br
         }
 
         return (
-            <ActionLink href={href}>
+            <ActionLink to={to}>
                 <Status>
                     {completedAt ? (type === 'error' ? <Badge variant="danger">Failed</Badge> : <Badge variant="success">Success</Badge>) : <BadgeSpinner variant="warning">Deploying <Spinner /></BadgeSpinner>}
                 </Status>
@@ -246,23 +245,10 @@ const Action = ({ type, title, description, createdAt, completedAt, metadata, br
     )
 }
 
-const Deployments = () => {
-    const [parentId, setParentId] = useState(window.location.hash.split('#')[1] || undefined)
-
-    useEffect(() => {
-        const onHashChange = () => {
-            setParentId(window.location.hash.split('#')[1] || undefined)
-        }
-        window.addEventListener('hashchange', onHashChange, false)
-
-        return () => {
-            window.removeEventListener('hashchange', onHashChange, false)
-        }
-    }, [])
-
-    const { owner, repoName } = useParams()
-    const { loading, error, actions } = useActions({ owner, repoName, parentId })
+const ActionDetails = ({ owner }) => {
+    const { parentId } = useParams()
     const { action } = useAction(parentId)
+    const { loading, error, actions } = useActions({ parentId })
 
     if (loading) {
         return <p>Loading...</p>
@@ -281,9 +267,47 @@ const Deployments = () => {
         <ActionsContainer>
             {action && <Action {...action} />}
             {actions.map(action => (
-                <Action key={action.id} {...action} href={`#${action.id}`} />
+                <Action key={action.id} {...action} owner={owner} />
             ))}
         </ActionsContainer>
+    )
+}
+
+const ActionList = ({ owner, repoName }) => {
+    const { loading, error, actions } = useActions({ owner, repoName })
+
+    if (loading) {
+        return <p>Loading...</p>
+    }
+
+    if (error) {
+        console.error(error)
+        return <p>an error occurred loading deployments</p>
+    }
+
+    if (!actions.length) {
+        return <p>nothing yet</p>
+    }
+
+    return (
+        <ActionsContainer>
+            {actions.map(action => (
+                <Action key={action.id} {...action} to={`/${action.id}`} />
+            ))}
+        </ActionsContainer>
+    )
+}
+
+const Deployments = () => {
+    const { owner, repoName } = useParams()
+
+    return (
+        <HashRouter>
+            <Switch>
+                <Route path="/:parentId" component={props => <ActionDetails owner={owner} repoName={repoName} {...props} />} />
+                <Route path="/" component={props => <ActionList owner={owner} repoName={repoName} {...props} />} />
+            </Switch>
+        </HashRouter>
     )
 }
 
