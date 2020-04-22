@@ -18,7 +18,7 @@ const {
 const router = new Router()
 
 router.get('/auth/github', async (req, res) => {
-    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`)
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user%20user:email`)
 })
 
 router.get('/auth/github-redirect', async (req, res) => {
@@ -26,10 +26,21 @@ router.get('/auth/github-redirect', async (req, res) => {
     const auth = await githubCodeToAuth(code)
 
     const { access_token } = auth
-    const { avatar_url: imageUrl, login: username, name, email } = await githubGet('https://api.github.com/user', access_token)
-
+    let { avatar_url: imageUrl, login: username, name, email } = await githubGet('https://api.github.com/user', access_token)
+    
     if (!username) {
         throw new Error('invalid code')
+    }
+
+    if (!email) {
+        // try get their primary private email
+        try {
+            const emails = await githubGet('https://api.github.com/user/emails', access_token)
+            const primaryEmail = emails.find(e => e.primary)
+            email = primaryEmail.email
+        } catch (e) {
+            //
+        }
     }
     // create or get user
     const user = await User.ensure({
