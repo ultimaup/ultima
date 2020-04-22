@@ -13,6 +13,12 @@ const {
 const typeDefs = gql`
     scalar DateTime
 
+    type User {
+        id: ID
+        imageUrl: String
+        username: String
+    }
+
     type Deployment {
         id: ID
         createdAt: DateTime
