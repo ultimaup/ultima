@@ -81,6 +81,7 @@ services:
       ES_USERNAME: elastic
       ES_PASSWORD: Password123!
       KIBANA_ENDPOINT: http://kibana:5601/kibana
+      ADMIN_USERNAME: joshbalfour
 
   dind:
     image: docker:dind

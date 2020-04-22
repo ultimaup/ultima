@@ -2,13 +2,20 @@ const { ApolloServer, gql } = require('apollo-server-express')
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
+const User = require('./db/User')
 
 const { headersToUser } = require('./jwt')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
+
+    ADMIN_USERNAME,
 } = process.env
+
+const admins = [
+    ADMIN_USERNAME,
+]
 
 const typeDefs = gql`
     scalar DateTime
@@ -17,6 +24,7 @@ const typeDefs = gql`
         id: ID
         imageUrl: String
         username: String
+        activated: Boolean
     }
 
     type Deployment {
@@ -47,6 +55,11 @@ const typeDefs = gql`
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
+        getUsers: [User]
+    }
+
+    type Mutation {
+        activateUser(id: ID, activated: Boolean): User
     }
 `
 
@@ -94,6 +107,22 @@ const resolvers = {
             }
 
             return action
+        },
+        getUsers: async (parent, {}, context) => {
+            if (!context.user || !admins.includes(context.user.username)) {
+                if (context.user.username) {
+                    console.error('getUsers access attempt by ', context.user.username)
+                }
+                throw new Error('unauthorized')
+            }
+
+            return await User.query()
+        },
+    },
+    Mutation: {
+        activateUser: async (parent, { id, activated }, context) => {
+            await User.query().update({ activated }).where('id', id)
+            return await User.query().findById(id)
         },
     },
 }
