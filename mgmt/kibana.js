@@ -16,7 +16,9 @@ const client = got.extend({
     },
 })
 
-const ensureKibanaUser = async ({ email, username, fullName, password }) => {
+const ensureKibanaUser = async ({ email, username: user, fullName, password }) => {
+    const username = user.toLowerCase()
+
     const existing = await getUser(username)
     if (existing) {
         return {
@@ -67,11 +69,9 @@ const ensureKibanaUser = async ({ email, username, fullName, password }) => {
         password,
     })
 
-    const user = await getUser(username)
-
     return {
         sid,
-        user,
+        user: await getUser(username),
     }
 }
 

@@ -33,8 +33,8 @@ const IframeWrapper = styled.div`
 `
 
 export const LogFrame = ({ tag, owner, className }) => {
-    const iframeUrl = `/kibana/s/${owner}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag}"',kind:kuery)`
-    const linkUrl = `/kibana/s/${owner}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag}"',kind:kuery)`
+    const iframeUrl = `/kibana/s/${owner.toLowerCase()}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
+    const linkUrl = `/kibana/s/${owner.toLowerCase()}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
 
     return (
         <LogContainer className={className}>
