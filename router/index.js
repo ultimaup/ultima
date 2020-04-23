@@ -44,6 +44,10 @@ const parseUrl = url => {
 const sourceToKey = (source, extensions) => source.split('.').join('-').split('/').join('-') + (extensions ? extensions.length : 0)
 
 const genConfig = ({ source, destination, extensions = [] }) => {
+    console.log('genConfig called', {
+        source,
+        destination, extensions,
+    })
     const key = sourceToKey(source, extensions)
     const url = parseUrl(destination) // URL doesn't support http2 or hostnames
 
