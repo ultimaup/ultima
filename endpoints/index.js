@@ -1,6 +1,6 @@
 const express = require('express')
 const uuid = require('uuid').v4
-const { ensureContainerForDeployment } = require('./containers')
+const { ensureContainerForDeployment, removeContainerFromDeployment } = require('./containers')
 
 const {
     PORT = 3001,
@@ -22,6 +22,23 @@ app.get('/ensure-deployment/:deploymentId', async (req, res) => {
         res.json(container)
     } else {
         res.status(404).json(null)
+    }
+})
+
+app.post('/remove-deployment/:deploymentId', async (req, res) => {
+    const requestId = uuid()
+    const { deploymentId } = req.params
+
+    let removedContainer 
+    try {
+        removedContainer = await removeContainerFromDeployment({ requestId }, deploymentId)
+    } catch (e) {
+        console.error(e)
+    }
+    if (removedContainer) {
+        res.json(removedContainer)
+    } else {
+        res.json(null)
     }
 })
 

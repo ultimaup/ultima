@@ -116,21 +116,16 @@
 					</a>
 				{{end}}
 
-				{{if and (.Permission.CanRead $.UnitTypeReleases) (not .IsEmptyRepo) }}
-				<a class="{{if .PageIsReleaseList}}active{{end}} item" href="{{.RepoLink}}/releases">
-					{{svg "octicon-tag" 16}} {{.i18n.Tr "repo.releases"}} <span class="ui {{if not .NumReleases}}gray{{else}}blue{{end}} small label">{{.NumReleases}}</span>
-				</a>
-				{{end}}
-
-				{{if or (.Permission.CanRead $.UnitTypeWiki) (.Permission.CanRead $.UnitTypeExternalWiki)}}
-					<a class="{{if .PageIsWiki}}active{{end}} item" href="{{.RepoLink}}/wiki" {{if (.Permission.CanRead $.UnitTypeExternalWiki)}} target="_blank" rel="noopener noreferrer" {{end}}>
-						{{svg "octicon-book" 16}} {{.i18n.Tr "repo.wiki"}}
+				
+				{{if and (.Permission.CanRead $.UnitTypeCode) (not .IsEmptyRepo)}}
+					<a class=" item" href="{{.RepoLink}}/activity/deployments">
+						{{svg "octicon-rocket" 16}} Deployments
 					</a>
 				{{end}}
 
-				{{if and (.Permission.CanReadAny $.UnitTypePullRequests $.UnitTypeIssues $.UnitTypeReleases) (not .IsEmptyRepo)}}
-					<a class="{{if .PageIsActivity}}active{{end}} item" href="{{.RepoLink}}/activity">
-						{{svg "octicon-pulse" 16}} {{.i18n.Tr "repo.activity"}}
+				{{if and (.Permission.CanRead $.UnitTypeCode) (not .IsEmptyRepo)}}
+					<a class=" item" href="{{.RepoLink}}/activity/logs">
+						{{svg "octicon-pulse" 16}} Logs
 					</a>
 				{{end}}
 

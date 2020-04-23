@@ -1,6 +1,7 @@
 const { ApolloServer, gql } = require('apollo-server-express')
 
 const Route = require('./db/Route')
+const Action = require('./db/Action')
 
 const { headersToUser } = require('./jwt')
 
@@ -19,18 +20,41 @@ const typeDefs = gql`
         url: String
     }
 
+    type Action {
+        id: ID
+        owner: String
+        repoName: String
+        branch: String
+        hash: String
+        createdAt: DateTime
+        completedAt: DateTime
+
+        type: String # (error, warning, info)
+        title: String
+        description: String
+        metadata: String
+
+        parentId: ID
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
+        getActions(owner: String, repoName: String, parentId: String) : [Action]
+        getAction(id: ID) : Action
     }
 `
+
+const userCanAccessRepo = (user, { owner, repoName }) => {
+    // console.log(user.username, 'accessed', owner, repoName)
+    return true
+}
 
 const resolvers = {
     Query: {
         getDeployments: async (parent, { owner, repoName, branch }, context) => {
-            if (!context.user) {
+            if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
                 throw new Error('unauthorized')
             }
-            console.log(context.user.username, 'accessed', owner, repoName, branch)
 
             const routes = await Route.query().where('source', 'like', `%${branch}.${repoName}.${owner}%`)
 
@@ -45,6 +69,26 @@ const resolvers = {
                 }
             })
         },
+        getActions: async (parent, { owner, repoName, parentId }, context) => {
+            if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
+                throw new Error('unauthorized')
+            }
+
+            return await Action.query().where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
+        },
+        getAction: async (parent, { id }, context) => {
+            if (!id) {
+                return null
+            }
+            const action = await Action.query().where({ id }).first()
+            const { owner, repoName } = action
+
+            if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
+                throw new Error('unauthorized')
+            }
+
+            return action
+        },
     },
 }
 
@@ -58,6 +102,13 @@ const server = new ApolloServer({
         } catch (e) {
             return {}
         }
+    },
+    formatError: (err) => {
+        console.error(err)
+        
+        // Otherwise return the original error.  The error can also
+        // be manipulated in other ways, so long as it's returned.
+        return err;
       },
 })
 

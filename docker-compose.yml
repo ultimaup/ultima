@@ -11,26 +11,6 @@ services:
     environment:
       POSTGRES_PASSWORD: example
 
-  prisma:
-    image: prismagraphql/prisma:1.34
-    restart: always
-    ports:
-      - '4466:4466'
-    depends_on:
-      - "db"
-    environment:
-      PRISMA_CONFIG: |
-        port: 4466
-        databases:
-          default:
-            connector: postgres
-            host: db
-            port: 5432
-            user: postgres
-            password: example
-            database: postgres
-        managementApiSecret: supersecret
-
   gitea:
     image: gitea/gitea:latest
     environment:
@@ -63,14 +43,13 @@ services:
       - '4467:4467'
     depends_on:
       - "db"
-      - "prisma"
     volumes:
       - './mgmt:/app'
     working_dir: '/app'
     command: ["yarn", "dev"]
+    env_file:
+      - secrets.env
     environment:
-      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
-      PRISMA_MANAGEMENT_API_SECRET: supersecret
       PORT: 4467
       GITEA_WEBHOOK_SECRET: gitea-secret
       GITEA_URL: http://gitea:3000
@@ -92,14 +71,16 @@ services:
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
 
-      GITHUB_CLIENT_ID: replace-with-your-client-id
-      GITHUB_CLIENT_SECRET: replace-with-your-client-secret
-      GITEA_COOKIE_NAME: sid
+      GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
       
       PUBLIC_ROUTE_ROOT_PROTOCOL: http
       PUBLIC_ROUTE_ROOT_PORT: 4480
+
+      ES_USERNAME: elastic
+      ES_PASSWORD: Password123!
+      KIBANA_ENDPOINT: http://kibana:5601/kibana
 
   dind:
     image: docker:dind
@@ -119,15 +100,12 @@ services:
       - '4470:4470'
     depends_on:
       - "db"
-      - "prisma"
       - "dind"
     volumes:
       - './endpoints:/app'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
-      PRISMA_MANAGEMENT_URL: http://prisma:4466/management
-      PRISMA_MANAGEMENT_API_SECRET: supersecret
       PORT: 4470
       DOCKER_HOSTNAME: dind
       DOCKER_HOST: tcp://dind:2376
@@ -143,6 +121,8 @@ services:
       BUILDER_BUCKET_ID: builder-bucket-key-id-7
       BUILDER_BUCKET_SECRET: builder-bucket-secret
       S3_ENDPOINT: http://files:9000
+
+      GELF_ADDRESS: udp://logstash:12201
 
   files:
     image: minio/minio
@@ -201,7 +181,8 @@ services:
       TRAEFIK_ENDPOINT: http://router:8080
       GITEA_ENDPOINT: http://gitea:3000
       FRONTEND_ENDPOINT: http://frontend:4491
-      GITEA_COOKIE_NAME: sid
+      GITEA_COOKIE_NAME: sessionid
+      KIBANA_ENDPOINT: http://kibana:5601
 
   frontend:
     image: node
@@ -223,3 +204,41 @@ services:
     ports:
       - '4480:80'
       - '4488:8080'
+
+  elasticsearch:
+    image: elasticsearch:7.6.2
+    volumes:
+      - ./tmp/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=Password123!
+
+  logstash:
+    image: logstash:7.6.2
+    depends_on: 
+      - elasticsearch
+    ports:
+      - 12201:12201/udp
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    environment: 
+      XPACK.MONITORING.ENABLED: "true"
+      XPACK.MONITORING.ELASTICSEARCH.HOSTS: "[\"http://elasticsearch:9200\"]"
+      XPACK.MONITORING.ELASTICSEARCH.USERNAME: elastic
+      XPACK.MONITORING.ELASTICSEARCH.PASSWORD: Password123!
+
+  kibana:
+    image: kibana:7.6.2
+    depends_on:
+      - elasticsearch
+    ports:
+      - 4492:5601
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=Password123!
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=Password123!
+      - XPACK_SECURITY_ENCRYPTIONKEY=something_at_least_32_characterssomething_at_least_32_characters
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true

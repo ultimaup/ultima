@@ -19,6 +19,7 @@ const {
     TRAEFIK_ENDPOINT,
     GITEA_ENDPOINT,
     FRONTEND_ENDPOINT,
+    KIBANA_ENDPOINT,
 
     GITEA_COOKIE_NAME,
     CERT_RESOLVER,
@@ -123,6 +124,9 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-session`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/cli`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/kibana`, destination: KIBANA_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/kibana/login`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/kibana/logout`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/graphql`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
@@ -168,6 +172,14 @@ app.post('/route', async (req, res) => {
     await ensurePropogation(sourceToKey(source))
 
     res.json(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://${source}${PUBLIC_ROUTE_ROOT_PORT ? `:${PUBLIC_ROUTE_ROOT_PORT}` : ''}`)
+})
+
+app.post('/route/get', async (req, res) => {
+    let { subdomain, source } = req.body
+    source = source || `${subdomain}.${PUBLIC_ROUTE_ROOT}`
+
+    const routes = await Route.query().where({ source })
+    res.json(routes)
 })
 
 const init = async () => {

@@ -9,7 +9,8 @@ const s3 = require('./s3')
 const {
 	DOCKER_HOSTNAME,
 	BUILDER_BUCKET_ID,
-    IN_PROD = false,
+	IN_PROD = false,
+	GELF_ADDRESS,
 } = process.env
 
 // TODO: kill inactive containers after a while
@@ -79,8 +80,8 @@ const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
 	const container = docker.getContainer(containerId)
 
 	await container.start()
-	const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
-	container.modem.demuxStream(logStream, process.stdout, process.stderr)
+	// const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
+	// container.modem.demuxStream(logStream, process.stdout, process.stderr)
 
 	const {hostname} = await getContainerHostname(containerId)
 	const endpoint = '/health'
@@ -202,12 +203,21 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 			WorkingDir: '/app',
 			name: deploymentId,
 			ExposedPorts,
+			AttachStdout: false,
+			AttachStderr: false,
 			Env: Object.entries({
 				...deployment.env,
 				...portEnvs,
 			}).map(([k, v]) => `${k}=${v}`),
 			HostConfig: {
 				PortBindings,
+				LogConfig: {
+					Type: 'gelf',
+					Config: {
+						'gelf-address': GELF_ADDRESS,
+						tag: deployment.repoName ? deployment.repoName.split('/').join('-') : deploymentId,
+					},
+				},
 			},
 		}
 
@@ -251,6 +261,34 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 	}
 }
 
+const removeContainerFromDeployment = async ({ requestId }, deploymentId) => {
+	console.log(requestId, 'requested to remove containers for deployment', deploymentId)
+	const deployment = await Deployment.get(deploymentId)
+	if (!deployment) {
+		console.log(requestId, 'deployment not found')
+		return null
+	}
+
+	// do we have a container for proxy deploymentId requests to?
+	const containerList = await getContainerByName(deploymentId)
+	let containerId = containerList[0] && containerList[0].Id
+	if (containerId) {
+		console.log(requestId, 'found container', containerId)
+		try {
+			const container = docker.getContainer(containerId)
+			await container.remove({ force: true })
+			console.log(requestId, 'container removed', containerId)
+		} catch (e) {
+			console.error('error removing container', e)
+			return null
+		}
+	} else {
+		console.log(requestId, 'could not find container for deployment', deploymentId)
+		return null
+	}
+}
+
 module.exports = {
 	ensureContainerForDeployment,
+	removeContainerFromDeployment,
 }

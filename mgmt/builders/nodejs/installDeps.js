@@ -13,7 +13,7 @@ const restoreCache = async (cacheType, hash) => {
 }
 
 const installDeps = async (wkdir) => {
-	console.log('installing deps')
+	console.log('installing dependencies')
 
 	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
 
@@ -22,10 +22,9 @@ const installDeps = async (wkdir) => {
 		const lockfileStream = fse.createReadStream(path.resolve(wkdir, 'yarn.lock'))
 		const lockfileHash = await streamHash(lockfileStream)
 		await restoreCache('yarn', lockfileHash)
-		
-		const lines = await exec('yarn install --frozen-lockfile --non-interactive --json', { cwd: wkdir })
+		await exec('yarn install --frozen-lockfile --non-interactive', { cwd: wkdir, stdio: 'inherit' })
 
-		return lines
+		return
 	} else {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
@@ -33,14 +32,14 @@ const installDeps = async (wkdir) => {
 			const lockfileStream = fse.createReadStream(lockfileLocation)
 			const lockfileHash = await streamHash(lockfileStream)
 			await restoreCache('npm', lockfileHash)
-			const lines = await exec('npm ci --json', { cwd: wkdir })
+			await exec('npm ci', { cwd: wkdir, stdio: 'inherit' })
 
-			return lines
+			return
 		} else {
 			console.log('using npm install')
-			const lines = await exec('npm install --json', { cwd: wkdir })
+			await exec('npm install', { cwd: wkdir, stdio: 'inherit' })
 
-			return lines
+			return
 		}
 	}
 }

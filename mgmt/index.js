@@ -1,7 +1,7 @@
 const express = require('express')
 
 // const projects = require('./projects')
-const {router: gitea} = require('./gitea')
+const giteaWebhook = require('./routes/giteaWebhook')
 const dev = require('./dev')
 const auth = require('./auth')
 
@@ -16,7 +16,7 @@ const {
 const app = express()
 
 // projects(app)
-gitea(app)
+giteaWebhook(app)
 auth(app)
 dev(app)
 migrate().catch(console.error)
