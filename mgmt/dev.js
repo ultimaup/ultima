@@ -10,6 +10,7 @@ const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
 const route = require('./route')
 const { headersToUser } = require('./jwt')
+const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
 
 const {
 	S3_ENDPOINT,
@@ -59,12 +60,23 @@ router.post('/dev-session', async (req, res) => {
     const devEndpointId = `dev-${user}-${uuid()}`
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
 
+    const schemaInfo = {
+        username: devEndpointId,
+        password: genPass(devEndpointId),
+        schema: devEndpointId,
+    }
+
+    await ensureSchema(schemaInfo)
+
+    const schemaEnv = getSchemaEnv(schemaInfo)
+
 	// ensure dev endpoint exists
 	await Deployment.ensure({
 		id: devEndpointId,
 		stage: 'development',
         bundleLocation: await ensureDevelopmentBundle(lang),
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
+        env: schemaEnv,
     })
 
     console.log(invocationId, `dev endpoint with id ${devEndpointId} exists`)

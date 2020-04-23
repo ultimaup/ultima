@@ -16,6 +16,8 @@ const Deployment = require('./db/Deployment')
 const Action = require('./db/Action')
 const route = require('./route')
 
+const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
+
 const { giteaStream } = require('./gitea')
 
 const {
@@ -311,6 +313,26 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let resultingEndpointId
 		if (hasAPI) {
 			resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+
+			let schemaEnv = {}
+			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
+
+			try {
+				const schemaInfo = {
+					username: `${repository.full_name.split('/').join('-')}-${branch}`,
+					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
+					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
+				}
+
+				await ensureSchema(schemaInfo)
+
+				schemaEnv = getSchemaEnv(schemaInfo)
+				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
+			} catch (e) {
+				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
+				throw e
+			}
+
 			const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
 
 			console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
@@ -320,6 +342,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				hash: after,
 				stage: ref,
 				bundleLocation: resultingBundleLocation,
+				env: schemaEnv,
 			})
 			
 			try {
