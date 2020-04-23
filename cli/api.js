@@ -1,4 +1,4 @@
-const { fetch } = require('fetch-h2')
+const fetch = require('node-fetch')
 
 const init = (rootEndpoint, token) => {
     const apiFetch = (endpoint, ...args) => {
