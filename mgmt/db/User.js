@@ -20,7 +20,7 @@ User.ensure = async ({ username, imageUrl, name, email }) => {
 
 		await User.query().insert(user)
 
-		return user
+		return await User.query().where({ username }).first()
 	}
 }
 
