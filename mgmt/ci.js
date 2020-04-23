@@ -115,11 +115,23 @@ const removeDeployment = async deploymentId => {
 }
 
 const runTests = async ({ ref, after, repository, pusher, commits }) => {
-	const commitMessage = commits.find(c => c.id === after)
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const branch = ref.split('refs/heads/')[1]
 	const [user,repo] = repository.full_name.split('/')
+
+	if (after === '0000000000000000000000000000000000000000') {
+		console.log('branch deleted, removing environment')
+		const [currentRoute] = await route.get(`${branch}.${repo}.${user}`)
+		if (currentRoute) {
+			await removeDeployment(currentRoute.deploymentId)
+			console.log('environment removed', currentRoute)
+		}
+		console.log('done')
+		return null
+	}
+
+	const commitMessage = commits.find(c => c.id === after)
 
 	const actionData = {
 		commits,
