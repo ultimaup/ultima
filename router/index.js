@@ -106,7 +106,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
             service = "${key}"${CERT_RESOLVER ? `
             [http.routers.${key}.tls]
                 certResolver = "${CERT_RESOLVER}"
-                [[http.routers.routerbar.tls.domains]]
+                [[http.routers.${key}.tls.domains]]
                     main = "*.${subdomainMinusOne}"
                     sans = ["*.${subdomainMinusOne}"]` : ''}${prefix ? `
     [http.middlewares]
