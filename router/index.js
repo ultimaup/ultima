@@ -203,7 +203,10 @@ const init = async () => {
     await Promise.all(
         [
             ...defaultConfigs(),
-            ...configs
+            ...configs.map(c => ({
+                ...c,
+                extensions: c.extensions ? JSON.parse(c.extensions) : c.extensions,
+            }))
         ].map(ensureConfig)
     )
 
