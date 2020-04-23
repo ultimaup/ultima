@@ -153,9 +153,9 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
 	let config
-	try {
-		let shouldDie = false
+	let shouldDie = false
 
+	try {
 		await new Promise((resolve, reject) => {
 			let promises = []
 			// handle "special" files special-y
