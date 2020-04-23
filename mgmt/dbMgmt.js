@@ -18,6 +18,7 @@ const knex = Knex({
 		port: PLATFORM_DB_PORT,
 		user: PLATFORM_DBA_USER,
 		password: PLATFORM_DBA_PASSWORD,
+		database: PLATFORM_DBA_USER,
 	},
 })
 
