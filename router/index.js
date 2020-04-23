@@ -59,6 +59,10 @@ const genConfig = ({ source, destination, extensions = [] }) => {
         sourceHost = sourceHostPart
     }
 
+    let subdomainMinusOne = sourceHost.split('.')
+    subdomainMinusOne.shift()
+    subdomainMinusOne = subdomainMinusOne.join('.')
+
     if (extensions && extensions.includes('index.html')) {
         return (
             `[http]
@@ -101,7 +105,10 @@ const genConfig = ({ source, destination, extensions = [] }) => {
             ${(prefix) ? `middlewares = ["${key}"]`: ''}
             service = "${key}"${CERT_RESOLVER ? `
             [http.routers.${key}.tls]
-                certResolver = "${CERT_RESOLVER}"` : ''}${prefix ? `
+                certResolver = "${CERT_RESOLVER}"
+                [[http.routers.routerbar.tls.domains]]
+                    main = "*.${subdomainMinusOne}"
+                    sans = ["*.${subdomainMinusOne}"]` : ''}${prefix ? `
     [http.middlewares]
         [http.middlewares.${key}.addPrefix]
             prefix = "${prefix}"` : ''}
