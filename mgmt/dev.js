@@ -77,19 +77,19 @@ router.post('/dev-session', async (req, res) => {
     const sid = `${invocationId.split('-')[0]}-${user}`
 
     const endpointRoute = {
-        subdomain: `${sid}.dev`,
+        subdomain: `dev-${sid}.dev`,
         destination: internalUrl,
     }
 
     const url = await route.set(endpointRoute)
 
     const debugUrl = await route.set({
-        subdomain: `debug.${sid}.dev`,
+        subdomain: `debug-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
     })
 
     const appUrl = await route.set({
-        subdomain: `app.${sid}.dev`,
+        subdomain: `app-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
     })
 
