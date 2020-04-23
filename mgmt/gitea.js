@@ -67,6 +67,8 @@ const giteaApiReq = (endpoint, { method, body }) => (
 	.then(r => r.json())
 )
 
+const idToPassword = id => `${id}1A`
+
 const registerUser = ({ id, username, imageUrl, name, email }) => (
 	giteaFetch('/api/v1/admin/users', {
         method: 'post',
@@ -77,7 +79,7 @@ const registerUser = ({ id, username, imageUrl, name, email }) => (
             username,
             avatar_url: imageUrl,
             "must_change_password": false,
-            "password": id,
+            "password": idToPassword(id),
             "send_notify": false,
             "source_id": 0,
         })
@@ -105,7 +107,8 @@ const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) =>
     await giteaFetch('/api/v1/user', {}, username)
 }
 
-const getGiteaSession = async (username, password) => {
+const getGiteaSession = async (username, userId) => {
+	const password = idToPassword(userId)
     const cookieJar = new CookieJar()
 
     await giteaFetch('/user/login', { cookieJar, headers: { Authorization: undefined } })
