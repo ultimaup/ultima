@@ -344,9 +344,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
 			// get current route
 			const [currentRoute] = await route.get(`${branch}.${repo}.${user}`)
-			if (currentRoute) {
-				await removeDeployment(currentRoute.deploymentId)
-			}
 
 			// add endpoint route
 			const endpointRoute = {
@@ -355,6 +352,9 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				deploymentId: resultingEndpointId,
 			}
 			endpointRouteUrl = await route.set(endpointRoute)
+			if (currentRoute) {
+				await removeDeployment(currentRoute.deploymentId)
+			}
 			await markActionComplete(routeActionId, { data: { endpointUrl, endpointRouteUrl } })
 		}
 
