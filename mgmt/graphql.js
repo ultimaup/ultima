@@ -121,6 +121,13 @@ const resolvers = {
     },
     Mutation: {
         activateUser: async (parent, { id, activated }, context) => {
+            if (!context.user || !admins.includes(context.user.username)) {
+                if (context.user.username) {
+                    console.error('activateUser access attempt by ', context.user.username)
+                }
+                throw new Error('unauthorized')
+            }
+
             await User.query().update({ activated }).where('id', id)
             return await User.query().findById(id)
         },
