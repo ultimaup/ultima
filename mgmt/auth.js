@@ -83,7 +83,7 @@ router.get('/kibana/*', async (req, res) => {
             const { sid } = await ensureKibanaUser({ email, username, fullName: name, password: id })
             res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
             if (req.query.next) {
-                res.redirect(302, req.query.next)
+                return res.redirect(302, req.query.next)
             }
         } catch (e) {
             
