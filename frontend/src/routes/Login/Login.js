@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
+
+import jwtDecode from 'jwt-decode'
 
 const LoginButton = (props) => (
     <svg width="260" height="40" viewBox="0 0 260 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -38,8 +40,20 @@ export const LoginBtn = () => (
     </a>
 )
 
+const ProfilePic = styled.div`
+    width: 150px;
+    height: 150px;
+    border-radius: 100%;
+    background-size: cover;
+    ${({ src }) => css`
+        background-image: url('${src}');
+    `}
+`
+
 const Login = () => {
     const [auth, setAuth] = useState(null)
+    const urlParams = new URLSearchParams(window.location.search)
+    const isWaitlist = !!urlParams.get('waitlist')
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search)
@@ -57,20 +71,45 @@ const Login = () => {
 
     useEffect(() => {
         if (auth) {
+            window.localStorage.setItem('token', auth.token)
+        }
+
+        if (auth && !isWaitlist) {
             const redirectTo = window.localStorage.getItem('authRedirect') || '/'
             window.localStorage.removeItem('authRedirect')
-            window.localStorage.setItem('token', auth.token)
             window.location.href = redirectTo
         }
     }, [auth])
 
+    let me
+    if (isWaitlist && auth) {
+        try {
+            me = jwtDecode(auth.token)
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    if (isWaitlist && me) {
+        return (
+            <LoginContainer>
+                <ProfilePic src={me.imageUrl} />
+                <h1>You're on the waitlist {me.username}</h1>
+                <p>To get earlier access, message @josh in the community</p>
+                <a className="button" href="/community">
+                <div className="slack-logo"></div>
+                    Join the Insiders community
+                </a>
+            </LoginContainer>
+        )
+    }
+
     return (
         <LoginContainer>
             <h1>Sign into Ultima</h1>
-            <p>Welcome to the alpha.</p>
             {
                 auth ? (
-                    'loading...'
+                    <p>Welcome to the alpha.</p>
                 ) : (
                     <LoginBtn />
                 )

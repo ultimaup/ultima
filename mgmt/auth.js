@@ -55,6 +55,13 @@ router.get('/auth/github-redirect', async (req, res) => {
     // get token for user
     const token = await jwt.sign(user.toJSON())
 
+    if (!user.activated) {
+        return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({
+            token,
+            waitlist: true,
+        })}`)
+    }
+
     // ensure gitea user
     await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
 
