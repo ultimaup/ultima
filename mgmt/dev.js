@@ -40,7 +40,7 @@ const ensureDevelopmentBundle = async lang => {
 
 router.use('/dev-session', async (req, res, next) => {
     try {
-        req.user = headersToUser(req)
+        req.user = await headersToUser(req)
         next()
     } catch (e) {
         res.status(403).json({
