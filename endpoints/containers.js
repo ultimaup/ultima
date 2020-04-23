@@ -261,6 +261,34 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 	}
 }
 
+const removeContainerFromDeployment = async ({ requestId }, deploymentId) => {
+	console.log(requestId, 'requested to remove containers for deployment', deploymentId)
+	const deployment = await Deployment.get(deploymentId)
+	if (!deployment) {
+		console.log(requestId, 'deployment not found')
+		return null
+	}
+
+	// do we have a container for proxy deploymentId requests to?
+	const containerList = await getContainerByName(deploymentId)
+	let containerId = containerList[0] && containerList[0].Id
+	if (containerId) {
+		console.log(requestId, 'found container', containerId)
+		try {
+			const container = docker.getContainer(containerId)
+			await container.remove({ force: true })
+			console.log(requestId, 'container removed', containerId)
+		} catch (e) {
+			console.error('error removing container', e)
+			return null
+		}
+	} else {
+		console.log(requestId, 'could not find container for deployment', deploymentId)
+		return null
+	}
+}
+
 module.exports = {
 	ensureContainerForDeployment,
+	removeContainerFromDeployment,
 }

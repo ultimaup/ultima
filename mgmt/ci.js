@@ -108,6 +108,10 @@ const logAction = async (parentId, { type, title, description, data, completedAt
 	return id
 }
 
+const removeDeployment = async deploymentId => {
+	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
+}
+
 const runTests = async ({ ref, after, repository, pusher, commits }) => {
 	const commitMessage = commits.find(c => c.id === after)
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
@@ -229,26 +233,32 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 		console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 		// pipe tarStream to builder endpoint, response is stream of result
-
+		let resultingBundleLocation
 		const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId } })
+		try {
+			const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
+			const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
-		const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
-		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
+			await pipeline(
+				giteaStream(codeTarUrl),
+				got.stream.post(container.hostname, {
+					headers: {
+						// 'content-type': 'application/octet-stream',
+						'x-parent-invocation-id': invocationId,
+					},
+				}),
+				writeStream
+			)
 
-		await pipeline(
-			giteaStream(codeTarUrl),
-			got.stream.post(container.hostname, {
-				headers: {
-					// 'content-type': 'application/octet-stream',
-					'x-parent-invocation-id': invocationId,
-				},
-			}),
-			writeStream
-		)
+			console.log(invocationId, `piping built result to ${builtBundleKey}`)
+			resultingBundleLocation = await promise
+			console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
+		} catch (e) {
+			await markActionComplete(buildActionId, { type: 'error' })
+			throw e
+		}
 
-		console.log(invocationId, `piping built result to ${builtBundleKey}`)
-		const resultingBundleLocation = await promise
-		console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
+		await removeDeployment(builderEndpointId)
 
 		await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation } })
 
@@ -332,6 +342,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let endpointRouteUrl
 		if (endpointUrl) {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
+			// get current route
+			const [currentRoute] = await route.get(`${branch}.${repo}.${user}`)
+			await removeDeployment(currentRoute.deploymentId)
+
 			// add endpoint route
 			const endpointRoute = {
 				subdomain: `${branch}.${repo}.${user}`,

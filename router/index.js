@@ -174,6 +174,14 @@ app.post('/route', async (req, res) => {
     res.json(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://${source}${PUBLIC_ROUTE_ROOT_PORT ? `:${PUBLIC_ROUTE_ROOT_PORT}` : ''}`)
 })
 
+app.post('/route/get', async (req, res) => {
+    let { subdomain, source } = req.body
+    source = source || `${subdomain}.${PUBLIC_ROUTE_ROOT}`
+
+    const routes = await Route.query().where({ source })
+    res.json(routes)
+})
+
 const init = async () => {
     console.log('server starting')
     const configs = await Route.query()

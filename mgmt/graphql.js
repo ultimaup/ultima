@@ -45,7 +45,7 @@ const typeDefs = gql`
 `
 
 const userCanAccessRepo = (user, { owner, repoName }) => {
-    console.log(user.username, 'accessed', owner, repoName)
+    // console.log(user.username, 'accessed', owner, repoName)
     return true
 }
 
