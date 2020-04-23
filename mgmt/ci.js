@@ -152,8 +152,8 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
+	let config
 	try {
-		let config
 		let shouldDie = false
 
 		await new Promise((resolve, reject) => {
@@ -217,7 +217,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				logAction(parentActionId, { type: 'debug', title: 'not hosting an API', description: `hasAPI key found to be false`, completedAt: true })
 			}
 		}
-
 
 		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
