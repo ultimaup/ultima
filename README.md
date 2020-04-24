@@ -1,5 +1,5 @@
 platform
-[![Build Status](https://drone.ultima.re/api/badges/joshbalfour/platform/status.svg)](https://drone.ultima.re/joshbalfour/platform)
+[![Build Status](https://drone.onultima.com/api/badges/joshbalfour/platform/status.svg)](https://drone.onultima.com/joshbalfour/platform)
 ## 
 ```
 CREATE ROLE gitea WITH LOGIN PASSWORD 'gitea';
