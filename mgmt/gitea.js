@@ -125,7 +125,7 @@ const getGiteaSession = async (username, userId) => {
         },
         followRedirect: false,
 	})
-	
+
     if (loggedIn.statusCode === 302) {
         return sessionId
     } else {
@@ -145,9 +145,21 @@ const reportStatus = (fullName, hash, { targetUrl, context, description }, state
 	})
 }
 
+const addSshKey = (username, { key, readOnly = false, title }) => {
+	return giteaApiReq(`/api/v1/admin/users/${username}/keys`, {
+		method: 'post',
+		body: {
+			key,
+			read_only: readOnly,
+			title,
+		},
+	})
+}
+
 module.exports = {
 	ensureGiteaUserExists,
 	getGiteaSession,
 	reportStatus,
 	giteaStream,
+	addSshKey,
 }

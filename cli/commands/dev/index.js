@@ -1,4 +1,5 @@
 const { cli } = require('cli-ux')
+const { program } = require('commander')
 
 const client = require('./client')
 const fileSync = require('./fileSync')

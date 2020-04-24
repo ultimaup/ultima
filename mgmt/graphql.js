@@ -5,6 +5,7 @@ const Action = require('./db/Action')
 const User = require('./db/User')
 
 const { headersToUser } = require('./jwt')
+const { addSshKey } = require('./gitea')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -60,6 +61,7 @@ const typeDefs = gql`
 
     type Mutation {
         activateUser(id: ID, activated: Boolean): User
+        addSSHkey:(key: String, title: String) : Boolean
     }
 `
 
@@ -130,6 +132,15 @@ const resolvers = {
 
             await User.query().update({ activated }).where('id', id)
             return await User.query().findById(id)
+        },
+        addSSHkey: async (parent, { key, title }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            await addSshKey(context.user.username, { key, title })
+
+            return true
         },
     },
 }
