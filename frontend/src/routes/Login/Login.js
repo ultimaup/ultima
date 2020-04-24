@@ -26,6 +26,7 @@ const LoginContainer = styled.div`
 
     h1 {
         font-size: 48px;
+        margin-top: 12px;
         margin-bottom: 24px;
     }
 
@@ -94,7 +95,7 @@ const Login = () => {
         return (
             <LoginContainer>
                 <ProfilePic src={me.imageUrl} />
-                <h1>You're on the waitlist {me.username}</h1>
+                <h1>You're on the waitlist</h1>
                 <p>To get earlier access, message @josh in the community</p>
                 <a className="button" href="/community">
                 <div className="slack-logo"></div>
