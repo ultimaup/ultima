@@ -18,7 +18,9 @@ app.get('/ensure-deployment/:deploymentId', async (req, res) => {
     } catch (e) {
         console.error(e)
     }
+
     if (container) {
+        console.log(`got container ${JSON.stringify(container)} for deploying ${deploymentId}`)
         res.json(container)
     } else {
         res.status(404).json(null)
