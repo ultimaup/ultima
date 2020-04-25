@@ -57,7 +57,7 @@ router.post('/dev-session', async (req, res) => {
 
     const user = req.user.username
 
-    const devEndpointId = `dev-${user}-${uuid()}`
+    const devEndpointId = `dev-${user}-${uuid()}`.toLowerCase()
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
 
     const schemaInfo = {
