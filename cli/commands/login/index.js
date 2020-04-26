@@ -84,7 +84,7 @@ const ensureKP = async (user, token) => {
             config.append({
                 Host,
                 HostName: Host,
-                User: 'gitea',
+                User: 'ultima',
                 IdentityFile: `~/.ssh/ultima_${user}`
             })
             const newSSHConfig = SSHConfig.stringify(config)
