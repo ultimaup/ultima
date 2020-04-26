@@ -6,6 +6,7 @@ const dev = require('./dev')
 const auth = require('./auth')
 
 const graphql = require('./graphql')
+const { ensureAllLiveDeploymentsExist } = require('./boot')
 
 const migrate = require('./db/migrate')
 
@@ -24,4 +25,7 @@ graphql(app)
 
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
+    setTimeout(() => {
+        ensureAllLiveDeploymentsExist().catch(console.error)
+    }, 2000)
 })
