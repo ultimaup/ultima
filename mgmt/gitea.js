@@ -157,14 +157,14 @@ const reportStatus = (fullName, hash, { targetUrl, context, description }, state
 }
 
 const addSshKey = (username, { key, readOnly = false, title }) => {
-	return giteaApiReq(`/api/v1/admin/users/${username}/keys`, {
+	return giteaFetch(`/api/v1/admin/users/${username}/keys`, {
 		method: 'post',
-		body: {
+		body: JSON.stringify({
 			key,
 			read_only: readOnly,
 			title,
-		},
-	})
+		}),
+	}).json()
 }
 
 const listTemplateRepos = async () => {
@@ -174,44 +174,64 @@ const listTemplateRepos = async () => {
 }
 
 const getRepo = async ({ username }, { id }) => {
-	return giteaFetch(`/repositories/${id}`,{}, username).json()
+	return giteaFetch(`/api/v1/repos/${id}`,{}, username).json()
 }
 
 const getUserRepos = async ({ username, userId }) => {
-	const { data } = await giteaFetch(`/api/v1/repos/search?template=true&uid=${userId}&exclusive=true`, {}, username).json()
+	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${userId}&exclusive=true`, {}, username).json()
 
 	return data
 }
 
 const createRepoFromTemplate = async ({ username, userId }, { name, description, private, templateId }) => {
 	const { cookieJar } = await getLoginCookiejar(username, userId)
-	const _csrf = getCsrf(cookieJar)
 
-	const currentUser = await got.get('/api/v1/user', {
-		cookieJar
-	}).json()
+	const currentUser = await giteaFetch(`/api/v1/user`, {}, username).json()
 
 	const loggedInGiteaUserId = currentUser.id
 
-	await got.post(`${GITEA_URL}/repo/create`, {
-		cookieJar,
-		form: {
-			repo_name: name,
-			private: private ? 'on' : undefined,
-			description: description,
-			repo_template: templateId,
+	try {
+		await got.get(`${GITEA_URL}/repo/create`, {
+			cookieJar,
+		})
 
-			_csrf,
-			uid: loggedInGiteaUserId,
+		const _csrf = getCsrf(cookieJar)
 
-			git_content: 'on',
-			issue_labels: undefined,
-			gitignores: undefined,
-			license: undefined,
-			readme: 'Default',
-			default_branch: undefined
-		},
-	})
+		const result = await got.post(`${GITEA_URL}/repo/create`, {
+			cookieJar,
+			form: {
+				repo_name: name,
+				private: private ? 'on' : undefined,
+				description: description,
+				repo_template: templateId,
+	
+				_csrf,
+				uid: loggedInGiteaUserId,
+	
+				git_content: 'on',
+				issue_labels: undefined,
+				gitignores: undefined,
+				license: undefined,
+				readme: 'Default',
+				default_branch: undefined
+			},
+			followRedirect: false,
+		})
+		if (result.statusCode === 302 && result.headers.location === `/${username}/${name}`) {
+			return {
+				id: `${username}/${name}`,
+			}
+		}
+	} catch (e) {
+		if (e.response) {
+			throw new Error (e.response.body)
+		}
+		throw e
+	}
+	
+	if (result.statusCode === 302) {
+		return false
+	}
 }
 
 module.exports = {

@@ -5,6 +5,8 @@ const { program } = require('commander')
 const config = require('../../config')
 const graphqlFetch = require('../../utils/gqlFetch')
 
+const getSSHHost = require('../login/getSSHHost')
+
 const getActions = async ({ token }, { owner, repoName, parentId }) => {
     return graphqlFetch({ token })(`
         query getActions($owner: String, $repoName: String, $parentId: String) {
@@ -62,14 +64,27 @@ const waitForDeployment = async ({ token }, { owner, repoName }, { hash }) => {
     return action
 }
 
-const stepToString = ({ title, type }) => `${type}: ${title}`
+const stepToString = ({ title, type, metadata, completedAt }) => {
+    cli.log(`${type}: ${title}${completedAt ? ' done' : ''}`)
+
+    if (metadata) {
+        const data = JSON.parse(metadata)
+        if (data && data.endpointRouteUrl) {
+            cli.log(`Deployed API to ${data.endpointRouteUrl}`)
+        }
+        if (data && data.staticRouteUrl) {
+            cli.log(`Deployed static content to ${data.staticRouteUrl}`)
+        }
+    }
+}
 
 let renderedSteps = {}
 const renderSteps = async (steps) => {
     steps.forEach((step) => {
-        const key = [step.type, step.title]
+        const key = [step.id, step.metadata].join('/')
         if (!renderedSteps[key]) {
-            cli.log(stepToString(step))
+            stepToString(step)
+            renderedSteps[key] = true
         }
     })
 }
@@ -86,16 +101,29 @@ const up = async () => {
 
     const remotes = await git.getRemotes(true)
 
+    const sshHost = await getSSHHost({ token })
+
     const ultimaRemote = remotes.find(remote => {
-        const [url] = remote.refs.push.split(':')
-        return url.includes(serverUrl.host)
+        const url = remote.refs.push
+        return url.includes(sshHost.host)
     })
     
     if (!ultimaRemote) {
         return cli.log(`This doesn't look like an ultima project, are you in the right directory?`)
     }
 
-    const status = await git.status()
+    let status = await git.status()
+
+    if (!status.isClean()) {
+        const wantsToCommit = await cli.confirm(`It looks like there might be some changes you haven't committed yet, would you like to commit all your changes with a message?`)
+        if (wantsToCommit) {
+            const message = await cli.prompt('commit message:')
+            await git.add('-A')
+            await git.commit(message)
+        }
+    }
+
+    status = await git.status()
     if (status.ahead) {
         await cli.action.start(`pushing ${status.ahead} changes to ultima`)
     } else {
@@ -107,23 +135,25 @@ const up = async () => {
     await cli.action.stop()
 
     await cli.action.start('waiting for deployment status')
-    const remoteHash = await git.revparse([namedBranch])
-    const [owner, repoName] = ultimaRemote.remote.refs.push.split(':')[1].split('.git')[0].split('/')
     
+    const remoteHash = await git.revparse([namedBranch])
+    const [_,owner, r] = (new URL(ultimaRemote.refs.push)).pathname.split('/')
+    const repoName = r.split('.git')[0]
+
     const deployment = await waitForDeployment({ token }, { owner, repoName }, { hash: remoteHash })
     await cli.action.stop()
     if (!deployment) {
         return cli.error('deployment failed to start')
     }
 
-    cli.log(`Started deployment ${serverUrl}/${owner}/${repoName}/deployments#/${deployment.id}`)
+    cli.log(`Started deployment ${serverUrl}${owner}/${repoName}/activity/deployments#/${deployment.id}`)
     await cli.action.start('deploying...')
 
-    let d
+    let d = await getAction({ token }, { id: deployment.id })
     while (!d.completedAt) {
-        d = await getAction({ token }, { id: deployment.id })
         steps = await getActions({ token }, { parentId: deployment.id })
         await renderSteps(steps)
+        d = await getAction({ token }, { id: deployment.id })
         if (!d.completedAt) {
             await wait(300)
         }

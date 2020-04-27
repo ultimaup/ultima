@@ -52,16 +52,11 @@ const typeDefs = gql`
         parentId: ID
     }
 
-    type Template {
-        id: ID,
-        name: String,
-        description: String
-    }
-
     type Repo {
         id: ID,
         name: String,
         private: Boolean
+        ssh_url: String
     }
 
     type Query {
@@ -69,7 +64,7 @@ const typeDefs = gql`
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
         getUsers: [User]
-        getTemplateRepos: [Template]
+        getTemplateRepos: [Repo]
         getMyRepos: [Repo]
     }
 
@@ -162,7 +157,14 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
 
-            await addSshKey(context.user.username, { key, title })
+            try {
+                await addSshKey(context.user.username, { key, title })
+            } catch (e) {
+                if (e.response) {
+                    throw new Error(e.response.body)
+                }
+                throw e
+            }
 
             return true
         },
