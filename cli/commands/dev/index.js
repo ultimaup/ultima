@@ -10,14 +10,6 @@ const config = require('../../config')
 
 const dev = async () => {
     const cfg = await config.get()
-    if (!cfg.token) {
-        cli.log(`Welcome to the Ultima CLI`)
-        cli.log(`Please go here to login:`)
-        const authlink = `${program.server}/user/login?redirect_to=/cli`
-        await cli.url(authlink, authlink)
-        await cli.open(authlink)
-        process.exit()
-    }
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token)

@@ -7,12 +7,11 @@ const homedir = require('os').homedir()
 const hostname = require('os').hostname()
 const path = require('path')
 const { program } = require('commander')
-const graphqlFetch = require('graphql-fetch')
-
 const { cli } = require('cli-ux')
 const jwtdecode = require('jwt-decode')
 
 const config = require('../../config')
+const graphqlFetch = require('../../utils/gqlFetch')
 
 const generateKeyPair = promisify(crypto.generateKeyPair)
 
@@ -94,17 +93,13 @@ const ensureKP = async (user, token) => {
         // add to gitea
         
         const title = `ultima-cli-${hostname}`
-        const gqlFetch = graphqlFetch(`${program.server}/graphql`)
+        const gqlFetch = graphqlFetch({ token })
 
         const gqlResult = await gqlFetch(`
             mutation addSSHkey:($key: String, $title: String) {
                 addSSHkey:(key: $key, title: $title)
             }
-        `, { title, key: publicKey }, { 
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
+        `, { title, key: publicKey })
 
         if (gqlResult) {
             cli.debug('added ssh key to ultima')

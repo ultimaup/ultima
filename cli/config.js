@@ -12,4 +12,5 @@ const set = data => fse.writeJSON(configLoc, data)
 module.exports = {
     get,
     set,
+    env,
 }

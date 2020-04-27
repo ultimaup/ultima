@@ -5,7 +5,7 @@ const Action = require('./db/Action')
 const User = require('./db/User')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey } = require('./gitea')
+const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos } = require('./gitea')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -52,16 +52,31 @@ const typeDefs = gql`
         parentId: ID
     }
 
+    type Template {
+        id: ID,
+        name: String,
+        description: String
+    }
+
+    type Repo {
+        id: ID,
+        name: String,
+        private: Boolean
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
         getUsers: [User]
+        getTemplateRepos: [Template]
+        getMyRepos: [Repo]
     }
 
     type Mutation {
         activateUser(id: ID, activated: Boolean): User
-        addSSHkey:(key: String, title: String) : Boolean
+        addSSHkey(key: String, title: String) : Boolean
+        createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
     }
 `
 
@@ -120,6 +135,15 @@ const resolvers = {
 
             return await User.query()
         },
+        getTemplateRepos: listTemplateRepos,
+        getMyRepos: async (parent, {}, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+            const { username, id } = context.user
+
+            return await getUserRepos({ username, userId: id })
+        },
     },
     Mutation: {
         activateUser: async (parent, { id, activated }, context) => {
@@ -141,6 +165,19 @@ const resolvers = {
             await addSshKey(context.user.username, { key, title })
 
             return true
+        },
+        createRepo: async (parent, { name, description, private, templateId }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            const { username, id } = context.user
+
+            const result = await createRepoFromTemplate({ username, userId: id }, {
+                name, description, private, templateId
+            })
+
+            return await getRepo({ username }, { id: result.id })
         },
     },
 }
