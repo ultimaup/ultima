@@ -1,8 +1,11 @@
 {
-  "name": "cli",
+  "name": "@ultimaup/cli",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "bin": {
+    "ultima": "./bin/ultima.js"
+  },
   "dependencies": {
     "chokidar": "^3.3.1",
     "cli-select": "^1.1.2",
