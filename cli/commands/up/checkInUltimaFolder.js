@@ -28,4 +28,4 @@ const checkInUltimaFolder = async ({ token }) => {
     return true
 }
 
-export default checkInUltimaFolder
+module.exports = checkInUltimaFolder
