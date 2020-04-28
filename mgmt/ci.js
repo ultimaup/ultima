@@ -377,11 +377,11 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		if (endpointUrl) {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
 			// get current route
-			const [currentRoute] = await route.get(`${branch}.${repo}.${user}`)
+			const [currentRoute] = await route.get(`${branch}-${repo}-${user}`)
 
 			// add endpoint route
 			const endpointRoute = {
-				subdomain: `${branch}.${repo}.${user}`,
+				subdomain: `${branch}-${repo}-${user}`,
 				destination: endpointUrl,
 				deploymentId: resultingEndpointId,
 			}
@@ -397,7 +397,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating static route' })
 			// add static route
 			const staticRoute = {
-				subdomain: `static.${branch}.${repo}.${user}`,
+				subdomain: `static-${branch}-${repo}-${user}`,
 				destination: staticUrl,
 				extensions: ['index.html'],
 				deploymentId: `${repository.full_name.split('/').join('-')}-${after}`,
