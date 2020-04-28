@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { ApolloProvider } from '@apollo/client'
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
 
+import Navbar from './components/Navbar'
 import DeploymentInfo from './components/DeploymentInfo'
 import DeploymentNotification from './components/DeploymentNotification'
 import Deployments from './routes/Deployments'
@@ -17,6 +18,17 @@ document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(e
 })
 
 const gitea = () => {
+    const navbar = document.getElementById('ultima-navbar')
+
+    if (navbar) {
+        ReactDOM.render(
+            <React.StrictMode>
+                <Navbar />
+            </React.StrictMode>,
+            navbar
+        )
+    }
+
     const deploymentInfoContainer = document.getElementById('ultima-deployment-info')
 
     if (deploymentInfoContainer) {
