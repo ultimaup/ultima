@@ -7,9 +7,16 @@ const runner = require('./runner')
 const API = require('./api')
 
 const config = require('../../config')
+const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 
 const dev = async () => {
     const cfg = await config.get()
+
+    const inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+
+    if (!inUltimaFolder) {
+        return
+    }
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token)
