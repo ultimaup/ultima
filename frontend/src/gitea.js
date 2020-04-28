@@ -4,6 +4,7 @@ import { ApolloProvider } from '@apollo/client'
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
 
 import DeploymentInfo from './components/DeploymentInfo'
+import DeploymentNotification from './components/DeploymentNotification'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 
@@ -37,6 +38,21 @@ const gitea = () => {
             </React.StrictMode>,
             deploymentInfoContainer
         )
+
+        const [notificationContainer] = document.querySelectorAll(`.item[href="/${owner}/${repoName}/activity/deployments"]`)
+        const div = document.createElement('div')
+        notificationContainer.appendChild(div)
+        
+        if (notificationContainer) {
+            ReactDOM.render(
+                <React.StrictMode>
+                    <ApolloProvider client={client}>
+                        <DeploymentNotification owner={owner} repoName={repoName} />
+                    </ApolloProvider>
+                </React.StrictMode>,
+                div
+            )
+        }
     }
 
     const logsDeployments = document.getElementById('logsDeployments')
