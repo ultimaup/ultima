@@ -1,0 +1,139 @@
+#ultima-navbar {
+    width: 1127px;
+    margin: auto;
+    /* background: #181818; */
+    height: 68px;
+}
+
+.dashboard .dashboard-navbar {
+    width: 1127px;
+    margin: auto;
+    padding-left: 0;
+}
+
+.dashboard .dashboard-navbar .ui .item {
+    margin-left: 0;
+    padding-left: 4px;
+}
+
+.following.bar #navbar {
+    width: 1127px;
+    padding: 0;
+}
+.following.bar .brand .ui.mini.image {
+    width: auto;
+    transform: scale(0.8);
+    margin-left: -10px;
+}
+.following.bar #navbar .brand {
+    padding-left: 0px;
+    margin-left: -2px;
+}
+
+.following.bar #navbar .item:last-child {
+    padding-right: 0;
+    margin-right: 0;
+}
+
+.brand .badge {
+    display: inline-block;
+    box-sizing: border-box;
+    border-radius: 2px;
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 8px;
+    line-height: 12px;
+    text-transform: uppercase;
+    -webkit-letter-spacing: 0.15em;
+    -moz-letter-spacing: 0.15em;
+    -ms-letter-spacing: 0.15em;
+    letter-spacing: 0.15em;
+    text-align: center;
+    padding: 2px 6px;
+    padding-top: 2.5px;
+    margin-left: -2px;
+    color: white;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid white;
+}
+
+/*
+body {
+    background: #363636;
+    color: #919191;
+}
+
+.ui.attached.header {
+    background: #363636;
+    border-color: #565656;
+    color: #dbdbdb;
+}
+
+.ui.secondary.segment {
+    background: #363636;
+    border-color: #565656;
+}
+
+.ui.input.focus input, .ui.input input, .ui.input input:focus {
+    background: #181818;
+    border-color: #565656;
+    color: #dbdbdb;
+}
+.ui.segment {
+    background: #363636;
+}
+.ui.secondary.pointing.menu .active.item:hover {
+    color: #dbdbdb;
+
+    background: #363636;
+    border-color: #565656;
+    box-sizing: border-box;
+    border-radius: 3px;
+}
+.ui.form input:not([type]):focus, .ui.form input[type=date]:focus, .ui.form input[type=datetime-local]:focus, .ui.form input[type=email]:focus, .ui.form input[type=file]:focus, .ui.form input[type=number]:focus, .ui.form input[type=password]:focus, .ui.form input[type=search]:focus, .ui.form input[type=tel]:focus, .ui.form input[type=text]:focus, .ui.form input[type=time]:focus, .ui.form input[type=url]:focus {
+    background: #363636;
+    border: 2px solid #565656;
+    color: #dbdbdb;
+}
+.ui.dropdown .menu {
+    background: #363636;
+}
+.ui.selection.dropdown .menu>.item {
+    border-color: #565656;
+}
+.ui.form textarea, .ui.form textarea:focus {
+    color: #dbdbdb;
+    background: #363636;
+    border: 2px solid #565656;
+}
+.ui.selection.dropdown {
+    background: #363636;
+    border: 1px solid #565656;
+    color: #dbdbdb;
+}
+.ui.selection.dropdown:hover {
+    border: 1px solid #565656;
+}
+.ui.form input:not([type]), .ui.form input[type=date], .ui.form input[type=datetime-local], .ui.form input[type=email], .ui.form input[type=file], .ui.form input[type=number], .ui.form input[type=password], .ui.form input[type=search], .ui.form input[type=tel], .ui.form input[type=text], .ui.form input[type=time], .ui.form input[type=url] {
+    color: #dbdbdb;
+    background: #363636;
+    border: 2px solid #565656;
+}
+.feeds .list ul li.private {
+    background: #363636;
+    border: 0.5px solid #565656;
+}
+.ui.secondary.pointing.menu .active.item {
+    color: #dbdbdb;
+    border: 0;
+    background: #181818;
+}
+.ui.attached.table.segment {
+    background: #363636;
+    border-color: #565656;
+}
+
+/* .ui.breadcrumb a:hover, .ui.card>.extra a:not(.ui):hover, .ui.cards>.card>.extra a:not(.ui):hover, a:hover, a {
+    color: #FF8C47;
+} */
