@@ -5,7 +5,7 @@ const getSSHHost = async ({ token }) => {
     let sshUrl = templates[0].ssh_url
 
     if (!sshUrl.startsWith('ssh://')) {
-        sshUrl = `ssh://${sshUrl.split(':').join('/')}`
+        sshUrl = `ssh://${sshUrl.split(':').join('/')}` // converts the "shorthand" ssh clone url to a standards compliant url
     }
 
     const url = new URL(sshUrl)
