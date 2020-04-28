@@ -33,11 +33,11 @@ const GET_ACTION = gql`
     }
 `
 
-export const useActions = ({ owner, repoName, parentId }) => {
+export const useActions = ({ owner, repoName, parentId, pollInterval = 3000 }) => {
     const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ACTIONS, { variables: { owner, repoName, parentId } })
 
     useEffect(() => {
-        startPolling(3000)
+        startPolling(pollInterval)
         return stopPolling
     }, [])
 
