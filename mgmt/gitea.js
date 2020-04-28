@@ -157,8 +157,7 @@ const reportStatus = (fullName, hash, { targetUrl, context, description }, state
 }
 
 const addSshKey = (username, { key, readOnly = false, title }) => {
-	return giteaFetch(`/api/v1/admin/users/${username}/keys`, {
-		method: 'post',
+	return giteaPost(`/api/v1/admin/users/${username}/keys`, {
 		body: JSON.stringify({
 			key,
 			read_only: readOnly,
