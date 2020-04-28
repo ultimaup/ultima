@@ -75,7 +75,7 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
 
-            const routes = await Route.query().where('source', 'like', `%${branch}.${repoName}.${owner}%`)
+            const routes = await Route.query().where('source', 'like', `%${branch}-${repoName}-${owner}%`)
 
             return routes.filter(r => !!r.deploymentId).map(r => {
                 const a = r.deploymentId.split('-')
