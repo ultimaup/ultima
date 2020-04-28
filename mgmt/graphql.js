@@ -135,9 +135,9 @@ const resolvers = {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
-            const { username, id } = context.user
+            const { username } = context.user
 
-            return await getUserRepos({ username, userId: id })
+            return await getUserRepos({ username })
         },
     },
     Mutation: {

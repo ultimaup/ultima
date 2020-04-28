@@ -7,7 +7,7 @@ const {
 
 	GITEA_URL,
 	GITEA_COOKIE_NAME,
-	TEMPLATE_OWNER_GITEA_ID,
+	TEMPLATE_OWNER_GITEA_USERNAME,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
@@ -167,8 +167,13 @@ const addSshKey = (username, { key, readOnly = false, title }) => {
 	}).json()
 }
 
+let templateUser
+
 const listTemplateRepos = async () => {
-	const { data } = await giteaFetch(`/api/v1/repos/search?template=true&uid=${TEMPLATE_OWNER_GITEA_ID}&exclusive=true`).json()
+	if (!templateUser) {
+		templateUser = await getUser(TEMPLATE_OWNER_GITEA_USERNAME)
+	}
+	const { data } = await giteaFetch(`/api/v1/repos/search?template=true&uid=${templateUser.id}&exclusive=true`).json()
 
 	return data
 }
@@ -177,8 +182,11 @@ const getRepo = async ({ username }, { id }) => {
 	return giteaFetch(`/api/v1/repos/${id}`,{}, username).json()
 }
 
-const getUserRepos = async ({ username, userId }) => {
-	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${userId}&exclusive=true`, {}, username).json()
+const getUser = username => giteaFetch(`/api/v1/user`, {}, username).json()
+
+const getUserRepos = async ({ username }) => {
+	const user = await getUser(username)
+	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&exclusive=true`, {}, username).json()
 
 	return data
 }
@@ -186,7 +194,7 @@ const getUserRepos = async ({ username, userId }) => {
 const createRepoFromTemplate = async ({ username, userId }, { name, description, private, templateId }) => {
 	const { cookieJar } = await getLoginCookiejar(username, userId)
 
-	const currentUser = await giteaFetch(`/api/v1/user`, {}, username).json()
+	const currentUser = await getUser(username)
 
 	const loggedInGiteaUserId = currentUser.id
 
