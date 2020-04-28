@@ -1,17 +1,27 @@
 {
-  "name": "cli",
-  "version": "1.0.0",
+  "name": "@ultimaup/cli",
+  "version": "0.1.1",
   "main": "index.js",
   "license": "MIT",
+  "private": false,
+  "bin": {
+    "ultima": "./bin/ultima.js"
+  },
   "dependencies": {
     "chokidar": "^3.3.1",
+    "cli-select": "^1.1.2",
     "cli-ux": "^5.4.5",
+    "command-exists": "^1.2.9",
     "commander": "^5.0.0",
     "envinfo": "^7.5.0",
     "fetch-h2": "^2.4.5",
     "fs-extra": "^9.0.0",
+    "graphql-fetch": "^1.0.1",
     "jwt-decode": "^2.2.0",
     "node-fetch": "^2.6.0",
-    "socket.io-client": "^2.3.0"
+    "simple-git": "^1.132.0",
+    "socket.io-client": "^2.3.0",
+    "ssh-config": "^4.0.2",
+    "uuid": "^7.0.3"
   }
 }

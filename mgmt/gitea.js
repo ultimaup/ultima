@@ -7,11 +7,12 @@ const {
 
 	GITEA_URL,
 	GITEA_COOKIE_NAME,
+	TEMPLATE_OWNER_GITEA_USERNAME,
 } = process.env
 
 const base64 = str => Buffer.from(str).toString('base64')
 
-const giteaFetch = (endpoint, opts, asUser) => {
+const giteaFetch = (endpoint, opts = {}, asUser) => {
 	const conf = {
 		headers: {
 			Accept: 'application/json',
@@ -107,15 +108,15 @@ const ensureGiteaUserExists = async ({ id, username, imageUrl, name, email }) =>
     await giteaFetch('/api/v1/user', {}, username)
 }
 
-const getGiteaSession = async (username, userId) => {
+const getCsrf = cookieJar => cookieJar.toJSON().cookies.find(({ key }) => key === '_csrf').value
+
+const getLoginCookiejar = async (username, userId) => {
 	const password = idToPassword(userId)
     const cookieJar = new CookieJar()
 
     await giteaFetch('/user/login', { cookieJar, headers: { Authorization: undefined } })
 
-    const _csrf = cookieJar.toJSON().cookies.find(({ key }) => key === '_csrf').value
-    const sessionId = cookieJar.toJSON().cookies.find(({ key }) => key === GITEA_COOKIE_NAME).value
-
+    const _csrf = getCsrf(cookieJar)
     const loggedIn = await got.post(`${GITEA_URL}/user/login`, {
         cookieJar,
         form: {
@@ -125,7 +126,17 @@ const getGiteaSession = async (username, userId) => {
         },
         followRedirect: false,
 	})
-	
+
+	return {
+		cookieJar,
+		loggedIn,
+	}
+}
+
+const getGiteaSession = async (username, userId) => {
+	const { cookieJar, loggedIn } = await getLoginCookiejar(username, userId)
+    const sessionId = cookieJar.toJSON().cookies.find(({ key }) => key === GITEA_COOKIE_NAME).value
+
     if (loggedIn.statusCode === 302) {
         return sessionId
     } else {
@@ -145,9 +156,99 @@ const reportStatus = (fullName, hash, { targetUrl, context, description }, state
 	})
 }
 
+const addSshKey = (username, { key, readOnly = false, title }) => {
+	return giteaPost(`/api/v1/admin/users/${username}/keys`, {
+		body: JSON.stringify({
+			key,
+			read_only: readOnly,
+			title,
+		}),
+	}).json()
+}
+
+let templateUser
+
+const listTemplateRepos = async () => {
+	if (!templateUser) {
+		templateUser = await getUser(TEMPLATE_OWNER_GITEA_USERNAME)
+	}
+	const { data } = await giteaFetch(`/api/v1/repos/search?template=true&uid=${templateUser.id}&exclusive=true`).json()
+
+	return data
+}
+
+const getRepo = async ({ username }, { id }) => {
+	return giteaFetch(`/api/v1/repos/${id}`,{}, username).json()
+}
+
+const getUser = username => giteaFetch(`/api/v1/user`, {}, username).json()
+
+const getUserRepos = async ({ username }) => {
+	const user = await getUser(username)
+	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&exclusive=true`, {}, username).json()
+
+	return data
+}
+
+const createRepoFromTemplate = async ({ username, userId }, { name, description, private, templateId }) => {
+	const { cookieJar } = await getLoginCookiejar(username, userId)
+
+	const currentUser = await getUser(username)
+
+	const loggedInGiteaUserId = currentUser.id
+
+	try {
+		await got.get(`${GITEA_URL}/repo/create`, {
+			cookieJar,
+		})
+
+		const _csrf = getCsrf(cookieJar)
+
+		const result = await got.post(`${GITEA_URL}/repo/create`, {
+			cookieJar,
+			form: {
+				repo_name: name,
+				private: private ? 'on' : undefined,
+				description: description || "",
+				repo_template: templateId,
+	
+				_csrf,
+				uid: loggedInGiteaUserId,
+	
+				git_content: 'on',
+				issue_labels: undefined,
+				gitignores: undefined,
+				license: undefined,
+				readme: 'Default',
+				default_branch: undefined
+			},
+			followRedirect: false,
+		})
+		if (result.statusCode === 302 && result.headers.location === `/${username}/${name}`) {
+			return {
+				id: `${username}/${name}`,
+			}
+		}
+	} catch (e) {
+		if (e.response) {
+			throw new Error (e.response.body)
+		}
+		throw e
+	}
+	
+	if (result.statusCode === 302) {
+		return false
+	}
+}
+
 module.exports = {
 	ensureGiteaUserExists,
 	getGiteaSession,
 	reportStatus,
 	giteaStream,
+	addSshKey,
+	listTemplateRepos,
+	createRepoFromTemplate,
+	getRepo,
+	getUserRepos,
 }

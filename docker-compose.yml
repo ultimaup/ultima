@@ -88,6 +88,8 @@ services:
 
       SALT: 9KvXN2783FHDSJkKkSDN
 
+      TEMPLATE_OWNER_GITEA_USERNAME: joshbalfour
+
   dind:
     image: docker:dind
     privileged: true

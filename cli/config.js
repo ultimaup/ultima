@@ -9,7 +9,12 @@ const get = () => fse.readJSON(configLoc).catch(() => null).then(data => data ||
 
 const set = data => fse.writeJSON(configLoc, data)
 
+const env = {
+    sshUrl: 'ultima',
+}
+
 module.exports = {
     get,
     set,
+    env,
 }

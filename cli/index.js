@@ -1,121 +1,53 @@
 const { program } = require('commander')
-const { cli } = require('cli-ux')
-const jwtdecode = require('jwt-decode')
+const { cli, config } = require('cli-ux')
 
-const client = require('./client')
-const fileSync = require('./fileSync')
-const runner = require('./runner')
-const API = require('./api')
-const config = require('./config')
+const dev = require('./commands/dev')
+const login = require('./commands/login')
+const init = require('./commands/init')
+const up = require('./commands/up')
+const clone = require('./commands/clone')
 
-program.version('0.0.1')
-program
-    .option('-s, --server <value>', 'Set server URL', 'http://build.onultima.local:4480')
+const ultimaConfig = require('./config')
 
-program.command('login <token>')
-    .description('login to ultima')
-    .action(async token => {
-        const user = jwtdecode(token)
-        cli.log(`Welcome ${user.username}`)
+config.outputLevel = 'trace'
 
-        const cfg = await config.get()
-        await config.set({
-            ...cfg,
-            token,
-        })
+const main = async () => {
+    const cfg = await ultimaConfig.get()
+    if (!cfg.token) {
+        cli.log(`Welcome to the Ultima CLI`)
+        cli.log(`Please go here to login:`)
+        const authlink = `${program.server}/user/login?redirect_to=/cli`
+        await cli.url(authlink, authlink)
+        await cli.open(authlink)
+        process.exit()
+    } else {
+        program.version('0.0.1')
+        program
+            .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
 
-        cli.log(`You can now use the ultima cli to develop your projects.`)
-    })
+        program.command('login <token>')
+            .description('login to ultima')
+            .action(login)
 
-program.command('dev')
-    .description('develop an ultima project')
-    .action(async () => {
-        const cfg = await config.get()
-        if (!cfg.token) {
-            cli.log(`Welcome to the Ultima CLI`)
-            cli.log(`Please go here to login:`)
-            const authlink = `${program.server}/user/login?redirect_to=/cli`
-            await cli.url(authlink, authlink)
-            await cli.open(authlink)
-            process.exit()
-        }
+        program.command('dev')
+            .description('develop an ultima project')
+            .action(dev)
 
-        await cli.action.start('starting session...')
-        const api = API.init(program.server, cfg.token)
+        program.command('up')
+            .alias('push')
+            .description('push your changes live')
+            .action(up)
 
-        const server = await api.getDeploymentUrl()
+        program.command('init <project-name>')
+            .description('start a new project')
+            .action(init)
 
-        const { sessionId } = await client.initSession({
-            rootEndpoint: server.url
-        })
+        program.command('clone [project-name]')
+            .description('clone an existing project')
+            .action(clone)
 
-        cli.log(`You can find your app on: ${server.appUrl}`)
-        cli.log(`and connect to node debug: ${server.debugUrl}`)
+        program.parse(process.argv)
+    }
+}
 
-        let barVisible = false
-        let runnerStarted = false
-
-        runner.on('stdout', (line) => {
-            cli.log(line.toString())
-        })
-        runner.on('stderr', (line) => {
-            cli.log(line.toString())
-        })
-        
-        runner.on('start', () => {
-            cli.log('start')
-        })
-        runner.on('quit', () => {
-            cli.log('quit')
-        })
-        runner.on('restart', (files) => {
-            cli.log('restart due to changed files: '+files.join(', '))
-        })
-        runner.on('crash', () => {
-            cli.log('crash')
-        })
-        runner.on('connect', () => {
-            cli.log('connected to development instance')
-        })
-        runner.on('disconnect', () => {
-            cli.log('connection to development instance lost, will reconnect...')
-        })
-
-        await runner.connect(server.url)
-
-        const fileBar = cli.progress({
-            format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total}',
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591'
-        })
-        
-        try {
-            await fileSync.init({
-                sessionId,
-            }, (completed, total) => {
-                if (!barVisible) {
-                    cli.action.stop()
-                    fileBar.start()
-                }
-
-                fileBar.update(completed)
-                fileBar.setTotal(total)
-                if (total === completed && !runnerStarted) {
-                    // start runner
-                    runnerStarted = true
-                    runner.start({ sessionId })
-                }
-                if (total === completed && isInitialized) {
-                    fileBar.stop()
-                    cli.action.start('Watching for changes')
-                }
-            }, () => {
-                isInitialized = true
-            })
-        } catch (e) {
-            await cli.action.stop()
-            console.error('failed to init', e)
-        }
-    })
-
-program.parse(process.argv)
+main().catch(console.error)
