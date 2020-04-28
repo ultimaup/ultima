@@ -9,8 +9,6 @@ import DeploymentNotification from './components/DeploymentNotification'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 
-import './gitea.css'
-
 import client from './graphql'
 
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
