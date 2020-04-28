@@ -36,6 +36,12 @@ const dev = async () => {
     runner.on('start', () => {
         cli.log('start')
     })
+    runner.on('install-deps-start', () => {
+        cli.log('installing dependancies')
+    })
+    runner.on('install-deps-complete', () => {
+        cli.log('installed dependancies')
+    })
     runner.on('quit', () => {
         cli.log('quit')
     })
