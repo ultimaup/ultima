@@ -23,7 +23,7 @@ const main = async () => {
     } else {
         program.version('0.0.1')
         program
-            .option('-s, --server <value>', 'Set server URL', 'http://build.onultima.local:4480')
+            .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
 
         program.command('login <token>')
             .description('login to ultima')
