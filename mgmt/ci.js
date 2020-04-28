@@ -176,6 +176,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 							.then(text => yaml.safeLoad(text))
 							.then(configFromYml => {
 								config = configFromYml
+								console.log(configFromYml)
 							})
 							.catch(e => {
 								logAction(parentActionId, { type: 'error', title: 'failed to parse .ultima.yml', data: { error: e } })
@@ -195,7 +196,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				})
 				.on('error', reject)
 				.on('finish', () => {
-					resolve()
+					Promise.all(promises).then(resolve)
 				})
 		})
 
@@ -247,9 +248,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
 		// pipe tarStream to builder endpoint, response is stream of result
 		let resultingBundleLocation
+		let builtBundleKey
 		const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId } })
 		try {
-			const builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
+			builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
 			const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
 			await pipeline(
