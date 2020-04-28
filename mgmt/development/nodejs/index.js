@@ -12,6 +12,7 @@ const {
 
 const sessions = {}
 
+const io = socketIO(server)
 
 const server = spdy
     .createServer({ spdy: { plain: true, ssl: false, protocols: ['h2', 'http'] } }, (req, res) => {
@@ -28,7 +29,13 @@ const server = spdy
                 const wkdir = path.resolve('/tmp', sessionId)
                 if (await shouldRunInstallDeps(filePath, wkdir)) {
                     const wkdir = path.resolve('/tmp', sessionId)
+                    io.to(sessionId).emit('event', {
+                        event: 'install-deps-start',
+                    })
                     await installDeps(wkdir)
+                    io.to(sessionId).emit('event', {
+                        event: 'install-deps-complete',
+                    })
                 }
                 res.writeHead(200, { 'Content-Type': 'application/json' })
                 res.end(JSON.stringify({ status: 'success', data: result }))
@@ -61,13 +68,17 @@ const server = spdy
     })
     .on('error', (err) => console.error(err))
 
-const io = socketIO(server)
-
 const createSession = async sessionId => {
     const wkdir = path.resolve('/tmp', sessionId)
 
+    io.to(sessionId).emit('event', {
+        event: 'install-deps-start',
+    })
     // install deps
     await installDeps(wkdir, true)
+    io.to(sessionId).emit('event', {
+        event: 'install-deps-complete',
+    })
 
     const session = runner({ wkdir })
 
