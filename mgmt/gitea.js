@@ -210,7 +210,7 @@ const createRepoFromTemplate = async ({ username, userId }, { name, description,
 			form: {
 				repo_name: name,
 				private: private ? 'on' : undefined,
-				description: description,
+				description: description || "",
 				repo_template: templateId,
 	
 				_csrf,

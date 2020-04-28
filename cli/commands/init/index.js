@@ -30,7 +30,6 @@ const init = async (projectName) => {
     const chosenTemplateName = await cliSelect({
         values: [
             ...templates.map(t => t.name),
-            'Blank',
         ],
     })
     cli.log(`Using template: ${chosenTemplateName.value}`)
