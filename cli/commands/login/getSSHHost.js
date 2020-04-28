@@ -2,7 +2,11 @@ const listRepoTemplates = require('../init/listRepoTemplates')
 
 const getSSHHost = async ({ token }) => {
     const templates = await listRepoTemplates({ token })
-    const sshUrl = templates[0].ssh_url
+    let sshUrl = templates[0].ssh_url
+
+    if (!sshUrl.startsWith('ssh://')) {
+        sshUrl = `ssh://${sshUrl.split(':').join('/')}` // converts the "shorthand" ssh clone url to a standards compliant url
+    }
 
     const url = new URL(sshUrl)
 

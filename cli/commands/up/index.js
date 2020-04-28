@@ -4,8 +4,7 @@ const { program } = require('commander')
 
 const config = require('../../config')
 const graphqlFetch = require('../../utils/gqlFetch')
-
-const getSSHHost = require('../login/getSSHHost')
+const checkInUltimaFolder = require('./checkInUltimaFolder')
 
 const getActions = async ({ token }, { owner, repoName, parentId }) => {
     return graphqlFetch({ token })(`
@@ -89,27 +88,15 @@ const renderSteps = async (steps) => {
     })
 }
 
+
 const up = async () => {
     const { token } = await config.get()
     const serverUrl = new URL(program.server)
 
-    const isRepo = await git.checkIsRepo()
+    const inUltimaFolder = await checkInUltimaFolder({ token })
 
-    if (!isRepo) {
-        return cli.log(`This doesn't look like a repo, are you in the right directory?`)
-    }
-
-    const remotes = await git.getRemotes(true)
-
-    const sshHost = await getSSHHost({ token })
-
-    const ultimaRemote = remotes.find(remote => {
-        const url = remote.refs.push
-        return url.includes(sshHost.host)
-    })
-    
-    if (!ultimaRemote) {
-        return cli.log(`This doesn't look like an ultima project, are you in the right directory?`)
+    if (!inUltimaFolder) {
+        return
     }
 
     let status = await git.status()
