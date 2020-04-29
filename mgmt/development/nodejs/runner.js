@@ -11,7 +11,9 @@ function spawnNodemon({ nodeArgs, script, exec, cwd, env }) {
   return spawn('npx', [
       'nodemon',
       ...nodeArgs,
-      script ? [script] : ['--exec', exec],
+      ...(script ? [script] : ['--exec', exec]),
+      '--ignore', `${cwd}/node_modules`,
+      '--watch', '.',
     ], {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
         cwd,
@@ -68,7 +70,5 @@ const start = async ({ wkdir }) => {
     const opts = await getNodemonOpts({ wkdir })
     return spawnNodemon(opts)
 }
-
-start({ wkdir: '.' })
 
 module.exports = start
