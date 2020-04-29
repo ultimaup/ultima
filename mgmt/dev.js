@@ -110,12 +110,6 @@ const startDevSession = async ({ user }) => {
     }
 }
 
-startDevSession({
-    user: {
-        username: 'josh'
-    }
-}).then(console.log).catch(console.error)
-
 router.post('/dev-session', async (req, res) => {
     const session = await startDevSession({ user: req.user })
     res.json(session)
