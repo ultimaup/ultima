@@ -15,7 +15,6 @@ const initSession = async (config) => {
     while (!data && ctr < 20) {
         ctr++
         try {
-            console.log('trying', rootEndpoint)
             const res = await clientFetch(`/new-session`, {
                 method: 'post',
             })

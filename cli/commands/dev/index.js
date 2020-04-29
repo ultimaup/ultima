@@ -22,7 +22,9 @@ const dev = async () => {
     const api = API.init(program.server, cfg.token)
 
     const server = await api.getDeploymentUrl()
-
+    if (server.status === 'error') {
+        return cli.error(`Failed to start dev session: ${server.message}`)
+    }
     const { sessionId } = await client.initSession({
         rootEndpoint: server.url
     })
