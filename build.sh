@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 # get dependencies
 echo "Getting Endpoint deps"
 cd endpoints
