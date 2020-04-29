@@ -9,20 +9,8 @@ const {
 
 const getNodemonOpts = async ({ wkdir }) => {
     const pkg = await fse.readJSON(path.resolve(wkdir, 'package.json'))
-    let script = 'node .'
-
-    if (pkg.scripts && pkg.scripts.start) {
-        script = `npm run start`
-    }
-    if (pkg.scripts && pkg.scripts.watch) {
-        script = `npm run watch`
-    }
-    if (pkg.scripts && pkg.scripts.dev) {
-        script = `npm run dev`
-    }
 
     let opts = {
-        script,
         ext: 'js json',
         cwd: wkdir,
         stdout: false,
@@ -30,6 +18,20 @@ const getNodemonOpts = async ({ wkdir }) => {
             PORT: CHILD_PORT,
         },
         nodeArgs: [`--inspect=0.0.0.0:${CHILD_DEBUG_PORT}`]
+    }
+
+    if (pkg.scripts && pkg.scripts.start) {
+        opts.exec = `npm run start`
+    }
+    if (pkg.scripts && pkg.scripts.watch) {
+        opts.exec = `npm run watch`
+    }
+    if (pkg.scripts && pkg.scripts.dev) {
+        opts.exec = `npm run dev`
+    }
+
+    if (!opts.exec) {
+        opts.script = 'node .'
     }
 
     if (pkg.nodemonConfig) {
