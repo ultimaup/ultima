@@ -12,7 +12,7 @@ const {
 
 const sessions = {}
 
-const io = socketIO(server)
+let io
 
 const server = spdy
     .createServer({ spdy: { plain: true, ssl: false, protocols: ['h2', 'http'] } }, (req, res) => {
@@ -67,6 +67,8 @@ const server = spdy
         res.end(JSON.stringify({}))
     })
     .on('error', (err) => console.error(err))
+
+io = socketIO(server)
 
 const createSession = async sessionId => {
     const wkdir = path.resolve('/tmp', sessionId)
