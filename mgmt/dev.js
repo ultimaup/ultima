@@ -51,13 +51,11 @@ router.use('/dev-session', async (req, res, next) => {
     }
 })
 
-router.post('/dev-session', async (req, res) => {
+const startDevSession = async ({ user }) => {
     const invocationId = uuid()
     const lang = 'nodejs'
 
-    const user = req.user.username
-
-    const devEndpointId = `dev-${user}-${uuid()}`.toLowerCase()
+    const devEndpointId = `${user.username}-dev-${uuid()}`.toLowerCase()
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
 
     const schemaInfo = {
@@ -86,7 +84,7 @@ router.post('/dev-session', async (req, res) => {
     console.log(invocationId, 'got internal url', endpointUrl)
     const internalUrl = endpointUrl.split('http://').join('h2c://')
 
-    const sid = `${invocationId.split('-')[0]}-${user}`
+    const sid = `${invocationId.split('-')[0]}-${user.username}`
 
     const endpointRoute = {
         subdomain: `dev-${sid}.dev`,
@@ -105,11 +103,22 @@ router.post('/dev-session', async (req, res) => {
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
     })
 
-    res.json({
+    return {
         url,
         debugUrl,
         appUrl,
-    })
+    }
+}
+
+startDevSession({
+    user: {
+        username: 'josh'
+    }
+}).then(console.log).catch(console.error)
+
+router.post('/dev-session', async (req, res) => {
+    const session = await startDevSession({ user: req.user })
+    res.json(session)
 })
 
 module.exports = app => {
