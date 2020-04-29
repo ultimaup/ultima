@@ -42,32 +42,6 @@ const giteaStream = (url, asUser) => (
 	})
 )
 
-const giteaPost = (url, body, asUser) => (
-	got.post(url, {
-		body: body,
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			Authorization: `Basic ${base64(`${GITEA_MACHINE_USER}:${GITEA_MACHINE_PASSWORD}`)}`,
-			...(asUser ? {
-				Sudo: asUser,
-			} : {}),
-		},
-	})
-)
-
-const giteaApiReq = (endpoint, { method, body }) => (
-	giteaPost(`${GITEA_URL}${endpoint}`, JSON.stringify(body))
-	.then(r => {
-		if (r.status > 399) {
-			throw new Error(`${r.status}`)
-		}
-	
-		return r
-	})
-	.then(r => r.json())
-)
-
 const idToPassword = id => `${id}1A`
 
 const registerUser = ({ id, username, imageUrl, name, email }) => (
@@ -145,7 +119,7 @@ const getGiteaSession = async (username, userId) => {
 }
 
 const reportStatus = (fullName, hash, { targetUrl, context, description }, state) => {
-	return giteaApiReq(`/api/v1/repos/${fullName}/statuses/${hash}`, {
+	return giteaFetch(`/api/v1/repos/${fullName}/statuses/${hash}`, {
 		method: 'post',
 		body: {
 			target_url: targetUrl, 
@@ -157,7 +131,8 @@ const reportStatus = (fullName, hash, { targetUrl, context, description }, state
 }
 
 const addSshKey = (username, { key, readOnly = false, title }) => {
-	return giteaPost(`/api/v1/admin/users/${username}/keys`, {
+	return giteaFetch(`/api/v1/admin/users/${username}/keys`, {
+		method: 'post',
 		body: JSON.stringify({
 			key,
 			read_only: readOnly,
