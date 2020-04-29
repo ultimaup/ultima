@@ -82,7 +82,7 @@ const createSession = async sessionId => {
         event: 'install-deps-complete',
     })
 
-    const session = runner({ wkdir })
+    const session = await runner({ wkdir })
 
     session.on('start', data => {
         io.to(sessionId).emit('event', {

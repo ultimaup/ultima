@@ -55,11 +55,11 @@ const init = async ({ sessionId }, progressCallback, initCallback) => {
         pushToRemote('addDir', path, sessionId, progressCallback)
     })
 
-    watcher.on('unlink', () => {
+    watcher.on('unlink', path => {
         pushToRemote('unlink', path, sessionId, progressCallback)
     })
 
-    watcher.on('unlinkDir', () => {
+    watcher.on('unlinkDir', path => {
         pushToRemote('unlinkDir', path, sessionId, progressCallback)
     })
 
