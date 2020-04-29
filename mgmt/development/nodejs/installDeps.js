@@ -3,7 +3,7 @@ const path = require('path')
 const spawn = require('@expo/spawn-async')
 
 const getFileHash = async absPath => {
-	const { stdout } = await spawn(`sha1sum ${absPath}`)
+	const { stdout } = await spawn(`sha1sum`, [absPath])
 	return stdout.split('/n')[0].split(' ')[0]
 }
 
@@ -29,23 +29,23 @@ const installDeps = async (wkdir, force) => {
 		const lockfileHash = await getFileHash(path.resolve(wkdir, 'yarn.lock'))
 		await restoreCache('yarn', lockfileHash)
 		
-		const lines = await spawn('yarn install --frozen-lockfile --non-interactive --json', { cwd: wkdir })
+		await spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, stdio: 'inherit' })
 
-		return lines
+		return
 	} else {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
 			console.log('using npm ci')
 			const lockfileHash = await getFileHash(lockfileLocation)
 			await restoreCache('npm', lockfileHash)
-			const lines = await spawn('npm ci --json', { cwd: wkdir })
+			await spawn('npm',['ci'], { cwd: wkdir, stdio: 'inherit' })
 
-			return lines
+			return
 		} else {
 			console.log('using npm install')
-			const lines = await spawn('npm install --json', { cwd: wkdir })
+			await spawn('npm', ['install'], { cwd: wkdir, stdio: 'inherit' })
 
-			return lines
+			return
 		}
 	}
 }
