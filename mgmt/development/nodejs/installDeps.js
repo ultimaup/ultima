@@ -1,25 +1,12 @@
 const fse = require('fs-extra')
 const path = require('path')
 const util = require('util')
-const crypto = require('crypto')
 
 const exec = util.promisify(require('child_process').exec)
 
-const streamHash = (s, algorithm = 'sha1') => {
-	return new Promise((resolve, reject) => {
-		const shasum = crypto.createHash(algorithm)
-		try {
-			s.on('data', (data) => {
-				shasum.update(data)
-			})
-			s.on('end', () => {
-				const hash = shasum.digest('hex')
-				return resolve(hash)
-			})
-		} catch (error) {
-			return reject('calc fail')
-		}
-	})
+const getFileHash = async absPath => {
+	const { stdout } = await exec(`sha1sum ${absPath}`)
+	return stdout.split('/n')[0].split(' ')[0]
 }
 
 const restoreCache = async (cacheType, hash) => {
@@ -41,8 +28,7 @@ const installDeps = async (wkdir, force) => {
 
 	if (useYarn) {
 		console.log('using yarn')
-		const lockfileStream = fse.createReadStream(path.resolve(wkdir, 'yarn.lock'))
-		const lockfileHash = await streamHash(lockfileStream)
+		const lockfileHash = await getFileHash(path.resolve(wkdir, 'yarn.lock'))
 		await restoreCache('yarn', lockfileHash)
 		
 		const lines = await exec('yarn install --frozen-lockfile --non-interactive --json', { cwd: wkdir })
@@ -52,8 +38,7 @@ const installDeps = async (wkdir, force) => {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
 			console.log('using npm ci')
-			const lockfileStream = fse.createReadStream(lockfileLocation)
-			const lockfileHash = await streamHash(lockfileStream)
+			const lockfileHash = await getFileHash(lockfileLocation)
 			await restoreCache('npm', lockfileHash)
 			const lines = await exec('npm ci --json', { cwd: wkdir })
 
