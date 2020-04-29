@@ -46,7 +46,9 @@ cd ..
 echo "Building frontend"
 
 cd frontend
+set +e
 yarn build
+set -e
 rm -rf node_modules
 npm install express
 cd ..
