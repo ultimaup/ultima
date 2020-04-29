@@ -84,45 +84,26 @@ const createSession = async sessionId => {
 
     const session = await runner({ wkdir })
 
-    session.on('start', data => {
+    session.on('message', ({ type }) => {
         io.to(sessionId).emit('event', {
-            event: 'start',
-            data,
-        })
-    })
-    session.on('quit', data => {
-        io.to(sessionId).emit('event', {
-            event: 'quit',
-            data,
-        })
-    })
-    session.on('restart', data => {
-        io.to(sessionId).emit('event', {
-            event: 'restart',
-            data,
-        })
-    })
-    session.on('crash', data => {
-        io.to(sessionId).emit('event', {
-            event: 'crash',
-            data,
+            event: type,
         })
     })
 
-    session.on('readable', function() {
-        this.stdout.on('data', (msg) => {{
-            io.to(sessionId).emit('event',{
-                event: 'stdout',
-                data: msg.toString('utf8'),
-            })
-        }})
-        
-        this.stderr.on('data', (msg) => {{
-            io.to(sessionId).emit('event',{
-                event: 'stderr',
-                data: msg.toString('utf8'),
-            })
-        }})
+    session.stdout.on('data', (msg) => {
+        console.log(msg.toString('utf8'))
+        io.to(sessionId).emit('event',{
+            event: 'stdout',
+            data: msg.toString('utf8'),
+        })
+    })
+
+    session.stderr.on('data', (msg) => {
+        console.error(msg.toString('utf8'))
+        io.to(sessionId).emit('event',{
+            event: 'stderr',
+            data: msg.toString('utf8'),
+        })
     })
 
     return session

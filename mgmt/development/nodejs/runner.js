@@ -1,11 +1,26 @@
-const nodemon = require('nodemon')
 const fse = require('fs-extra')
 const path = require('path')
+const { spawn } = require('child_process')
 
 const {
     CHILD_PORT = 4490,
     CHILD_DEBUG_PORT = 4491,
 } = process.env
+
+function spawnNodemon({ nodeArgs, script, exec, cwd, env }) {
+  return spawn('npx', [
+      'nodemon',
+      ...nodeArgs,
+      script ? [script] : ['--exec', exec],
+    ], {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+        cwd,
+        env : {
+            ...process.env,
+            ...env,
+        },
+  })
+}
 
 const getNodemonOpts = async ({ wkdir }) => {
     const pkg = await fse.readJSON(path.resolve(wkdir, 'package.json'))
@@ -13,7 +28,6 @@ const getNodemonOpts = async ({ wkdir }) => {
     let opts = {
         ext: 'js json',
         cwd: wkdir,
-        stdout: false,
         env: {
             PORT: CHILD_PORT,
         },
@@ -45,15 +59,16 @@ const getNodemonOpts = async ({ wkdir }) => {
         }
     }
 
+    console.log('using nodemon opts', JSON.stringify(opts))
+
     return opts
 }
 
 const start = async ({ wkdir }) => {
     const opts = await getNodemonOpts({ wkdir })
-
-    nodemon(opts)
-
-    return nodemon
+    return spawnNodemon(opts)
 }
+
+start({ wkdir: '.' })
 
 module.exports = start
