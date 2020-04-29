@@ -1,11 +1,9 @@
 const fse = require('fs-extra')
 const path = require('path')
-const util = require('util')
-
-const exec = util.promisify(require('child_process').exec)
+const spawn = require('@expo/spawn-async')
 
 const getFileHash = async absPath => {
-	const { stdout } = await exec(`sha1sum ${absPath}`)
+	const { stdout } = await spawn(`sha1sum ${absPath}`)
 	return stdout.split('/n')[0].split(' ')[0]
 }
 
@@ -24,7 +22,7 @@ const installDeps = async (wkdir) => {
 		console.log('using yarn')
 		const lockfileHash = await getFileHash(path.resolve(wkdir, 'yarn.lock'))
 		await restoreCache('yarn', lockfileHash)
-		await exec('yarn install --frozen-lockfile --non-interactive', { cwd: wkdir, stdio: 'inherit' })
+		await spawn('yarn install --frozen-lockfile --non-interactive', { cwd: wkdir, stdio: 'inherit' })
 
 		return
 	} else {
@@ -33,12 +31,12 @@ const installDeps = async (wkdir) => {
 			console.log('using npm ci')
 			const lockfileHash = await getFileHash(lockfileLocation)
 			await restoreCache('npm', lockfileHash)
-			await exec('npm ci', { cwd: wkdir, stdio: 'inherit' })
+			await spawn('npm ci', { cwd: wkdir, stdio: 'inherit' })
 
 			return
 		} else {
 			console.log('using npm install')
-			await exec('npm install', { cwd: wkdir, stdio: 'inherit' })
+			await spawn('npm install', { cwd: wkdir, stdio: 'inherit' })
 
 			return
 		}
