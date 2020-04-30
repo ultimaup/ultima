@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 # get dependencies
 echo "Getting Endpoint deps"
 cd endpoints
@@ -45,7 +46,9 @@ cd ..
 echo "Building frontend"
 
 cd frontend
+set +e
 yarn build
+set -e
 rm -rf node_modules
 npm install express
 cd ..
