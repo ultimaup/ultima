@@ -5,7 +5,7 @@ const Home = () => (
     <>
     <div className="nav">
       <div className="grid">
-        <div className="logo">
+        <div className="logo" onClick={() => { window.location.href = '/' }}>
           <div className="logo-img"></div>
           <span className="logo-text">ultima</span>
         </div>

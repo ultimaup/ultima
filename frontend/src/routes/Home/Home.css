@@ -91,7 +91,6 @@
     -webkit-animation-name: bounceInUp;
     animation-name: bounceInUp;
 }
-  
 
 body, a {
     color: #181818;
@@ -122,6 +121,7 @@ body, a {
 
 .logo {
     display: inline-flex;
+    cursor: pointer;
 }
 
 .logo-img {

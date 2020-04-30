@@ -132,6 +132,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/og-image.png`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/sockjs-node`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/legals`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/user/login`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/auth`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-session`, destination: MGMT_ENDPOINT },
@@ -141,6 +142,8 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/kibana/logout`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/graphql`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/admin/waitlist`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/security`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/.well-known`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
     ]

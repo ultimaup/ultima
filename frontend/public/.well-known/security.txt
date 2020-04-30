@@ -1,0 +1,17 @@
+# Hello World!
+# We're a bootstrapped startup so don't have a structured bug bounty program (yet) but we do offer:
+# Thanks - Everyone that submits a new bug gets acknowledged on our acknowledgements page
+# Swag - If you submit something we deem medium severity or higher we'll send you some swag
+# Dinner - If you submit something of high severity which really saves our bacon, we'll buy you pizza, if it's critical you get a steak dinner, on us!
+
+# Our security address
+Contact: mailto:security@onultima.com
+
+# Languages we speak
+Preferred-Languages: en,de
+
+# Our security acknowledgements page
+Acknowledgments: https://build.onultima.com/security
+
+# Link to this file
+Canonical: https://build.onultima.com/.well-known/security.txt
