@@ -287,35 +287,38 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			// TODO: use stream from earlier instead of fetching from s3 again
 			const builtBundleStream = s3.getStream({ Key: builtBundleKey })
 
-			await new Promise((resolve, reject) => {
-				builtBundleStream
-					.pipe(gunzip())
-					.pipe(tarStream.extract())
-					.on('entry', (header, stream, next) => {
-						const loc = header.name
-						console.log('found', loc)
-						if (loc === staticContentLocation || header.type !== 'file') {
-							return next()
-						}
-						if (loc.startsWith(staticContentLocation)) {
-							const realPath = loc.substring(staticContentLocation.length)
-							const { writeStream, promise } = s3.uploadStream({
-								Key: removeLeadingSlash(realPath),
-								Bucket: actualBucketName,
-								ContentType: mime.lookup(realPath) || 'application/octet-stream',
-							})
-							stream.pipe(writeStream)
-							promise.then(() => {
-								console.log('uploaded', realPath, 'to', actualBucketName)
-								next()
-							})
-						} else {
-							next()
-						}
+			const ts = tarStream.extract()
+			ts.on('entry', (header, stream, next) => {
+				const loc = header.name
+				console.log('found', loc)
+				if (loc === staticContentLocation || header.type !== 'file') {
+					return next()
+				}
+				if (loc.startsWith(staticContentLocation)) {
+					const realPath = loc.substring(staticContentLocation.length)
+					const { writeStream, promise } = s3.uploadStream({
+						Key: removeLeadingSlash(realPath),
+						Bucket: actualBucketName,
+						ContentType: mime.lookup(realPath) || 'application/octet-stream',
 					})
-					.on('error', reject)
-					.on('finish', resolve)
+					stream.pipe(writeStream)
+					promise.then(() => {
+						console.log('uploaded', realPath, 'to', actualBucketName)
+						next()
+					}).catch(e => {
+						console.error('failed to upload', realPath, 'to', actualBucketName, e)
+						throw e
+					})
+				} else {
+					next()
+				}
 			})
+
+			await pipeline(
+				builtBundleStream,
+				gunzip(),
+				ts,
+			)
 
 			await markActionComplete(deployActionId, { data: { staticUrl } })
 
