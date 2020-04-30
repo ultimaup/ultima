@@ -37,11 +37,11 @@ const ensureSchema = async ({ username, password, schema }) => {
 
 const genPass = seed => crypto.createHash('sha256').update(`${seed}-${SALT}`).digest('hex')
 
-const getSchemaEnv = ({ username, password, schema }) => {
+const getSchemaEnv = ({ username, password }) => {
 	return {
 		PGUSER: username,
 		PGPASSWORD: password,
-		PGDATABASE: schema,
+		PGDATABASE: PLATFORM_DBA_USER,
 		PGHOST: PLATFORM_DB_HOST,
 		PGPORT: PLATFORM_DB_PORT,
 	}
