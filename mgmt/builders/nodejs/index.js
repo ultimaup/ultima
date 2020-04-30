@@ -5,6 +5,7 @@ const tar = require('tar-fs')
 const gunzip = require('gunzip-maybe')
 const { createGzip } = require('zlib')
 const stream = require('stream')
+const yaml = require('js-yaml')
 
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
@@ -90,6 +91,25 @@ app.post('/', async (req, res) => {
 		const filesBefore = await fse.readdir(wkdir)
 		console.log('bundle contains files: ', filesBefore)
 
+		let config
+		if (await fse.pathExists(path.resolve(wkdir, '.ultima.yml'))) {
+			const configYml = await fse.readFile(path.resolve(wkdir, '.ultima.yml'), 'utf-8')
+			config = await yaml.safeLoad(configYml)
+		}
+
+		let removeNodeModules = false
+		if (!config) {
+			console.log('no .ultima.yml found, assuming nodejs api app')
+		} else {
+			if (config.web) {
+				console.log('static website found')
+			}
+			if (config.hasAPI === false) {
+				console.log('not an api, will remove node_modules folder from resulting output')
+				removeNodeModules = true
+			}
+		}
+
 		try {
 			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
 				await installDeps(wkdir)
@@ -98,6 +118,11 @@ app.post('/', async (req, res) => {
 			}
 		} catch (e) {
 			console.error(e)
+		}
+
+		if (removeNodeModules) {
+			console.log('removing node_modules folder')
+			await fse.rmdir(path.resolve(wkdir, 'node_modules'))
 		}
 
 		const filesAfter = await fse.readdir(wkdir)
