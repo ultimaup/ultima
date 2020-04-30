@@ -54,8 +54,8 @@ const dev = async () => {
     runner.on('quit', () => {
         cli.log('quit')
     })
-    runner.on('restart', (files) => {
-        cli.log('restart due to changed files: '+files.join(', '))
+    runner.on('restart', () => {
+        cli.log('restart due to changed files')
     })
     runner.on('crash', () => {
         cli.log('crash')
