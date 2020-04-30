@@ -292,10 +292,15 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				const loc = header.name
 				console.log('found', loc)
 				if (loc === staticContentLocation || header.type !== 'file') {
+					console.log('skipping', loc)
 					return next()
 				}
-				if (loc.startsWith(staticContentLocation)) {
+				if (!loc.startsWith(staticContentLocation)) {
+					console.log('skipping', loc)
+					return next()
+				} else {
 					const realPath = loc.substring(staticContentLocation.length)
+					console.log('uploading', loc)
 					const { writeStream, promise } = s3.uploadStream({
 						Key: removeLeadingSlash(realPath),
 						Bucket: actualBucketName,
@@ -309,8 +314,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 						console.error('failed to upload', realPath, 'to', actualBucketName, e)
 						throw e
 					})
-				} else {
-					next()
 				}
 			})
 
