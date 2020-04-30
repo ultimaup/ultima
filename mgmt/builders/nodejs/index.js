@@ -122,7 +122,7 @@ app.post('/', async (req, res) => {
 
 		if (removeNodeModules) {
 			console.log('removing node_modules folder')
-			await fse.rmdir(path.resolve(wkdir, 'node_modules'))
+			await exec(`rm -rf ${path.resolve(wkdir, 'node_modules')}`)
 		}
 
 		const filesAfter = await fse.readdir(wkdir)
