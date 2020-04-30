@@ -293,11 +293,16 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				console.log('found', loc)
 				if (loc === staticContentLocation || header.type !== 'file') {
 					console.log('skipping', loc)
-					return next()
+					stream.resume()
+					stream.on('end', next)
+					return
 				}
 				if (!loc.startsWith(staticContentLocation)) {
 					console.log('skipping', loc)
-					return next()
+					
+					stream.resume()
+					stream.on('end', next)
+					return
 				} else {
 					const realPath = loc.substring(staticContentLocation.length)
 					console.log('uploading', loc)
@@ -317,11 +322,17 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				}
 			})
 
-			await pipeline(
-				builtBundleStream,
-				gunzip(),
-				ts,
-			)
+			try {
+				await pipeline(
+					builtBundleStream,
+					gunzip(),
+					ts,
+				)
+			} catch (e) {
+				await markActionComplete(deployActionId, { type: 'error' })
+				console.error(e)
+				throw e
+			}
 
 			await markActionComplete(deployActionId, { data: { staticUrl } })
 
