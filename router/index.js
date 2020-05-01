@@ -126,6 +126,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 const defaultConfigs = () => {
     return [
         { source: `mgmt.${PUBLIC_ROUTE_ROOT}`, destination: MGMT_ENDPOINT },
+        { source: PUBLIC_ROUTE_ROOT, destination: MGMT_ENDPOINT },
 
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/assets`, destination: FRONTEND_ENDPOINT },

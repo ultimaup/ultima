@@ -23,6 +23,10 @@ dev(app)
 migrate().catch(console.error)
 graphql(app)
 
+app.get('/', (req, res) => {
+    res.redirect(`build.${req.hostname}`)
+})
+
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
     setTimeout(() => {
