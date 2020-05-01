@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
+import Clipboard from 'react-clipboard.js'
 
 import { LoginBtn } from '../Login/Login'
 
@@ -11,9 +12,11 @@ const Terminal = styled.div`
 
     max-width: 600px;
     margin: auto;
-    overflow: hidden;
 
     box-shadow: inset 0 1px 0 rgba(255,255,255,0), 0 22px 70px 4px rgba(0,0,0,0.56), 0 0 0 1px rgba(0, 0, 0, 0.0);
+    code {
+        overflow: hidden;
+    }
 `
 
 const Container = styled.div`
@@ -34,6 +37,8 @@ const Container = styled.div`
 const Body = styled.div`
     padding: 12px;
     line-height: 110%;
+    position: relative;
+    
     code {
         display: block;
         margin-bottom: 8px;
@@ -45,6 +50,12 @@ const Body = styled.div`
         user-select: none;
         margin-right: 8px;
         color: #003B00;
+    }
+
+    button {
+        position: absolute;
+        right: -62px;
+        top: 3em;
     }
 `
 
@@ -68,6 +79,7 @@ const Chrome = styled.div`
 `
 
 const CLI = () => {
+    const [copySuccess, setCopySuccess] = useState(null)
     const token = localStorage.getItem('token')
     const pkg = "@ultimaup/cli"
 
@@ -89,6 +101,14 @@ const CLI = () => {
                     {!token && <LoginBtn />}
                     <code><i>$</i>npm i -g {pkg}</code>
                     <code><i>$</i>ultima login {token}</code>
+                    <Clipboard data-clipboard-text={`ultima login ${token}`} onSuccess={() => {
+                        setCopySuccess(true)
+                        setTimeout(() => {
+                            setCopySuccess(false)
+                        }, 1000)
+                    }}>
+                        {copySuccess ? 'Copied' : 'Copy'}
+                    </Clipboard>
                     <code><i>$</i>ultima dev</code>
                 </Body>
             </Terminal>
