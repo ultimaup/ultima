@@ -20,7 +20,7 @@
 					<feBlend mode="normal" in2="shape" result="effect1_innerShadow"/>
 					</filter>
 					</defs>
-					</svg>
+				</svg>
 			</div>
 			<span class="badge">alpha</span>
 		</a>
@@ -34,7 +34,9 @@
 
 	{{if .IsSigned}}
 		<div class="right stackable menu">
-
+			<a class="cli-link" href="/cli" style="display: flex; align-items: center;">
+				{{svg "octicon-terminal" 24}}
+			</a>
 			<div class="ui dropdown jump item poping up" data-content="{{.i18n.Tr "create_new"}}" data-variation="tiny inverted">
 				<span class="text">
 					<span class="fitted">{{svg "octicon-plus" 16}}</span>

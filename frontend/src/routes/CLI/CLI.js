@@ -112,6 +112,9 @@ const CLI = () => {
                     <code><i>$</i>ultima dev</code>
                 </Body>
             </Terminal>
+            <a href="/" style={{ marginTop: 32 }}>
+               {'<--'} Back to Ultima
+            </a>
         </Container>
     )
 }
