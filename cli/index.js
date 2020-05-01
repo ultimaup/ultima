@@ -11,43 +11,76 @@ const ultimaConfig = require('./config')
 
 config.outputLevel = 'trace'
 
-const main = async () => {
+const outputLoginText = async () => {
+    cli.log(`Welcome to the Ultima CLI`)
+    cli.log(`Please go here to login:`)
+    const authlink = `${program.server}/user/login?redirect_to=/cli`
+    await cli.url(authlink, authlink)
+    try {
+        await cli.open(authlink)
+    } catch (e) {
+        //
+    }
+}
+
+const checkToken = async (noExit) => {
     const cfg = await ultimaConfig.get()
     if (!cfg.token) {
-        cli.log(`Welcome to the Ultima CLI`)
-        cli.log(`Please go here to login:`)
-        const authlink = `${program.server}/user/login?redirect_to=/cli`
-        await cli.url(authlink, authlink)
-        await cli.open(authlink)
-        process.exit()
-    } else {
-        program.version('0.0.1')
-        program
-            .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
-
-        program.command('login <token>')
-            .description('login to ultima')
-            .action(login)
-
-        program.command('dev')
-            .description('develop an ultima project')
-            .action(dev)
-
-        program.command('up')
-            .alias('push')
-            .description('push your changes live')
-            .action(up)
-
-        program.command('init <project-name>')
-            .description('start a new project')
-            .action(init)
-
-        program.command('clone [project-name]')
-            .description('clone an existing project')
-            .action(clone)
-
-        program.parse(process.argv)
+        await outputLoginText()
+        if (!noExit) {
+            process.exit(0)
+        }
     }
+}
+
+const main = async () => {
+    program.version('0.0.1')
+    program
+        .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
+
+    program.command('login [token]')
+        .description('login to ultima')
+        .action(async (token) => {
+            if (!token) {
+                await checkToken()
+            }
+            return login(token)
+        })
+
+    program.command('dev')
+        .description('develop an ultima project')
+        .action(async args => {
+            await checkToken()
+            return dev(...args)
+        })
+
+    program.command('up')
+        .alias('push')
+        .description('push your changes live')
+        .action(async args => {
+            await checkToken()
+            return up(...args)
+        })
+
+    program.command('init <project-name>')
+        .description('start a new project')
+        .action(async args => {
+            await checkToken()
+            return init(...args)
+        })
+    
+    program.command('clone [project-name]')
+        .description('clone an existing project')
+        .action(async args => {
+            await checkToken()
+            return clone(...args)
+        })
+
+    program.on('--help', async () => {
+        await checkToken(true)
+    });
+
+    await program.parseAsync(process.argv)
 }
 
 main().catch(console.error)
