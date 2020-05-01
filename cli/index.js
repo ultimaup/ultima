@@ -49,7 +49,7 @@ const main = async () => {
 
     program.command('dev')
         .description('develop an ultima project')
-        .action(async args => {
+        .action(async (...args) => {
             await checkToken()
             return dev(...args)
         })
@@ -57,21 +57,21 @@ const main = async () => {
     program.command('up')
         .alias('push')
         .description('push your changes live')
-        .action(async args => {
+        .action(async (...args) => {
             await checkToken()
             return up(...args)
         })
 
     program.command('init <project-name>')
         .description('start a new project')
-        .action(async args => {
+        .action(async (...args) => {
             await checkToken()
             return init(...args)
         })
     
     program.command('clone [project-name]')
         .description('clone an existing project')
-        .action(async args => {
+        .action(async (...args) => {
             await checkToken()
             return clone(...args)
         })
