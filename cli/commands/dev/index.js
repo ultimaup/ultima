@@ -8,15 +8,30 @@ const API = require('./api')
 
 const config = require('../../config')
 const checkInUltimaFolder = require('../up/checkInUltimaFolder')
+const makeTunnel = require('../db/makeTunnel')
+
+const getRepoName = remote => {
+    if (!remote) {
+        return {
+            repoName: 'unknown',
+            owner: 'joshbalfour',
+        }
+    }
+    const [_,owner, r] = (new URL(remote.refs.push)).pathname.split('/')
+    const repoName = r.split('.git')[0]
+    return {repoName, owner}
+}
 
 const dev = async () => {
     const cfg = await config.get()
 
-    const inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    let inUltimaFolder
 
-    if (!inUltimaFolder) {
-        return
-    }
+    // inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+
+    // if (!inUltimaFolder) {
+    //     return
+    // }
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token)
@@ -25,12 +40,20 @@ const dev = async () => {
     if (server.status === 'error') {
         return cli.error(`Failed to start dev session: ${server.message}`)
     }
+
+    const {repoName, owner} = getRepoName(inUltimaFolder)
+    const [un] = server.id.split('-')[0]
+    const dbPortKey = `${owner}-${repoName}-${un}-dev`
+    
+    console.log(server.id, dbPortKey)
+    const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
     const { sessionId } = await client.initSession({
         rootEndpoint: server.url
     })
 
     cli.log(`You can find your app on: ${server.appUrl}`)
     cli.log(`and connect to node debug: ${server.debugUrl}`)
+    cli.log(`and connect to your database using any username and password on localhost:${dbPort}`)
 
     let barVisible = false
     let runnerStarted = false

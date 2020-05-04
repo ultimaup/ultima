@@ -124,7 +124,7 @@ const up = async () => {
     await cli.action.start('waiting for deployment status')
     
     const remoteHash = await git.revparse([namedBranch])
-    const [_,owner, r] = (new URL(ultimaRemote.refs.push)).pathname.split('/')
+    const [_,owner, r] = (new URL(inUltimaFolder.refs.push)).pathname.split('/')
     const repoName = r.split('.git')[0]
 
     const deployment = await waitForDeployment({ token }, { owner, repoName }, { hash: remoteHash })

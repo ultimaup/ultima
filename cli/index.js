@@ -6,6 +6,7 @@ const login = require('./commands/login')
 const init = require('./commands/init')
 const up = require('./commands/up')
 const clone = require('./commands/clone')
+const db = require('./commands/db')
 
 const ultimaConfig = require('./config')
 
@@ -74,6 +75,13 @@ const main = async () => {
         .action(async (...args) => {
             await checkToken()
             return clone(...args)
+        })
+
+    program.command('db [environment-name]')
+        .description('connect to a database')
+        .action(async (...args) => {
+            await checkToken()
+            return db(...args)
         })
 
     program.on('--help', async () => {

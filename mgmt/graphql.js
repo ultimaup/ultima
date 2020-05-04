@@ -10,6 +10,9 @@ const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRe
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
+    PUBLIC_ROUTE_ROOT,
+
+    PG_BROKER_PORT,
 
     ADMIN_USERNAME,
 } = process.env
@@ -66,6 +69,7 @@ const typeDefs = gql`
         getUsers: [User]
         getTemplateRepos: [Repo]
         getMyRepos: [Repo]
+        getPGEndpoint: String
     }
 
     type Mutation {
@@ -138,6 +142,14 @@ const resolvers = {
             const { username } = context.user
 
             return await getUserRepos({ username })
+        },
+        getPGEndpoint: () => {
+            let port = PG_BROKER_PORT
+            if (PUBLIC_ROUTE_ROOT_PROTOCOL === 'https') {
+                port = 443
+            }
+
+            return `pg.${PUBLIC_ROUTE_ROOT}:${port}`
         },
     },
     Mutation: {
