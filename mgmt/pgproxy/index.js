@@ -24,7 +24,7 @@ const getConnectionDetails = async ({ database, user }) => {
         PGDATABASE,
         PGHOST,
         PGPORT,
-    } = getSchemaEnv({ username: environment, password })
+    } = getSchemaEnv({ schema: environment, username: environment, password })
 
     return {
         host: PGHOST,
