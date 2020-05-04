@@ -50,7 +50,7 @@ const server = ({ host, port, database, user, secure }) => net.createServer((soc
 
     socket.once('data', (buf) => {
         if (isSslPacket(buf)) {
-            socket.write('N')
+            socket.write('N') // decline SSL negotiation
             socket.once('data', gotStartupPacket)
         } else {
             gotStartupPacket()

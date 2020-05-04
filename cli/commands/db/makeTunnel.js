@@ -5,15 +5,21 @@ const config = require('../../config')
 const server = require('./server')
 const getPgBrokerEndpoint = require('./getPgBrokerEndpoint')
 
+const portNums = [...Array(100).keys()].map(n => 7000 + n)
+
 const getPortForKey = async portKey => {
     const cfg = await config.get()
     
     let newConfig = {...cfg}
+
     if (!newConfig.dbPorts) {
         newConfig.dbPorts = {}
     }
+
     if (!newConfig.dbPorts[portKey]) {
-        newConfig.dbPorts[portKey] = await getPort({ port: getPort.makeRange(7000, 7100) })
+        const reservedPorts = Object.values(newConfig.dbPorts).map(n => parseInt(n, 10))
+        const freePorts = portNums.filter(n => !reservedPorts.includes(n))
+        newConfig.dbPorts[portKey] = await getPort({ port: freePorts })
         await config.set(newConfig)
     }
 

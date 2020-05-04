@@ -53,7 +53,15 @@ const dev = async () => {
 
     cli.log(`You can find your app on: ${server.appUrl}`)
     cli.log(`and connect to node debug: ${server.debugUrl}`)
-    cli.log(`and connect to your database using any username and password on localhost:${dbPort}`)
+    cli.log('')
+    cli.log(`Connected to development database`)
+    cli.log('Connect using your favourite postgres tool:')
+    cli.log('Host: localhost')
+    cli.log(`Port: ${dbPort}`)
+    cli.log(`Database: <any>`)
+    cli.log('User: <any>')
+    cli.log('Password: <any>')
+    cli.log('')
 
     let barVisible = false
     let runnerStarted = false

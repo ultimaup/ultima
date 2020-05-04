@@ -80,7 +80,6 @@ const parseInitialPacket = buf => {
             packet[v] = null
         }
     })
-    console.log(packet)
     return packet
 }
 
@@ -90,7 +89,6 @@ const serverWithMiddleware = (getConnectionDetails) => net.createServer((socket)
 
     socket.once('data', async (initialPacket) => {
         try {
-            console.log(initialPacket)
             const { host, port, database, user, password } = await getConnectionDetails(parseInitialPacket(initialPacket))
 
             dbClient = net.createConnection(port, host, () => {
@@ -103,10 +101,6 @@ const serverWithMiddleware = (getConnectionDetails) => net.createServer((socket)
 
                 dbClient.pipe(socket)
                 socket.pipe(dbClient)
-            })
-
-            dbClient.on('data', buf => {
-                console.log(buf.toString())
             })
         } catch (e) {
             console.error(`pgbroker connection failed: `, e)

@@ -11,12 +11,11 @@ const getConnectionDetails = async ({ database, user }) => {
     const token = user
 
     const usr = await jwt.verify(token)
-
     // naiive af
     if (!environment.startsWith(usr.username.toLowerCase())) {
         throw new Error('unauthorized')
     }
- 
+
     const password = genPass(environment)
     const {
         PGUSER,

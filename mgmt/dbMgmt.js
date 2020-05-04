@@ -23,14 +23,14 @@ const knex = Knex({
 })
 
 const ensureSchema = async ({ username, password, schema }) => {
-    const existsResult = await knex.raw(`SELECT FROM pg_catalog.pg_roles WHERE rolname = ?`, [username])
-    const userExists = !!existsResult.rows.length
+    const existsResult = await knex.raw(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = ?`, [username])
+	const userExists = !!existsResult.rows.length
 
     if (!userExists) {
         await knex.raw(`CREATE ROLE "${username}" LOGIN PASSWORD '${password}';`)
 	}
 
-	const dbExistsResult = await knex.raw(`SELECT FROM pg_catalog.pg_database WHERE datname='${schema}'`)
+	const dbExistsResult = await knex.raw(`SELECT 1 FROM pg_catalog.pg_database WHERE datname='${schema}'`)
 	const databaseExists = !!dbExistsResult.rows.length
 
 	if (!databaseExists) {
