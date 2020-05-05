@@ -8,7 +8,10 @@ const getEnvironments = require('../db/getEnvironments')
 
 const devExec = async (command, args = []) => {
     const { token } = await config.get()
-    const cmd = [
+    const cmd = (command.includes(' ') && args.length === 0) ? [
+        ...command.split(' '),
+        ...args,
+    ] : [
         command,
         ...args,
     ]
@@ -24,7 +27,7 @@ const devExec = async (command, args = []) => {
     } else {
         env = es[0]
     }
-    
+
     if (!env) {
         cli.log('no environments found')
         return
