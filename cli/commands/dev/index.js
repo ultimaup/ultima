@@ -45,7 +45,6 @@ const dev = async () => {
     const [un] = server.id.split('-')[0]
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
-    console.log(server.id, dbPortKey)
     const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
     const { sessionId } = await client.initSession({
         rootEndpoint: server.url
