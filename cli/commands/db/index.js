@@ -8,7 +8,7 @@ const selectEnvironment = require('./selectEnvironment')
 const db = async (envId) => {
     const { token } = await config.get()
     if (!token) {
-        cli.error('you must be logged in to do that')
+        return cli.error('you must be logged in to do that')
     }
 
     cli.log('select a database to connect to:')
