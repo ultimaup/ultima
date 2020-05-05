@@ -89,6 +89,7 @@ const startDevSession = async ({ user }) => {
     const endpointRoute = {
         subdomain: `dev-${sid}.dev`,
         destination: internalUrl,
+        deploymentId: devEndpointId,
     }
 
     const url = await route.set(endpointRoute)
@@ -96,14 +97,17 @@ const startDevSession = async ({ user }) => {
     const debugUrl = await route.set({
         subdomain: `debug-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
+        deploymentId: devEndpointId,
     })
 
     const appUrl = await route.set({
         subdomain: `app-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
+        deploymentId: devEndpointId,
     })
 
     return {
+        id: devEndpointId,
         url,
         debugUrl,
         appUrl,

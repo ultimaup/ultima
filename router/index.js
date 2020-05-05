@@ -23,6 +23,8 @@ const {
 
     GITEA_COOKIE_NAME,
     CERT_RESOLVER,
+    PGBROKER_ENDPOINT,
+    ENDPOINTS_ENDPOINT,
 } = process.env
 
 const app = express()
@@ -33,10 +35,12 @@ const stripTrailingSlash = (str) =>
 
 const parseUrl = url => {
     const host = url.split('//')[1].split('/')[0]
+    const port = host.split(':')[1]
 
     return {
         protocol: url.split('//')[0],
         host,
+        port,
         pathname: url.split(host)[1] || '/',
     }
 }
@@ -51,7 +55,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
     const key = sourceToKey(source, extensions)
     const url = parseUrl(destination) // URL doesn't support http2 or hostnames
 
-    const { host, protocol, pathname } = url
+    const { host, protocol, pathname, port } = url
     const prefix = stripTrailingSlash(pathname)
 
     let sourceHost = source
@@ -66,6 +70,32 @@ const genConfig = ({ source, destination, extensions = [] }) => {
     let subdomainMinusOne = sourceHost.split('.')
     subdomainMinusOne.shift()
     subdomainMinusOne = subdomainMinusOne.join('.')
+
+    if (extensions && extensions.includes('tcp')) {
+        return (
+            `${!CERT_RESOLVER ? `
+            [entryPoints]
+                [entryPoints.${key}]
+                    address=":${port}"
+            ` : ''}
+            [tcp]
+                [tcp.routers]
+                    [tcp.routers.${key}]
+                        service = "${key}"${CERT_RESOLVER ? `
+                        rule = "HostSNI(\`${sourceHost}\`)"
+                        [tcp.routers.${key}.tls]
+                            certResolver = "${CERT_RESOLVER}"
+                            [[tcp.routers.${key}.tls.domains]]
+                                main = "*.${subdomainMinusOne}"
+                                sans = ["*.${subdomainMinusOne}"]` : `
+                        entryPoints = ["${key}"]
+                        `}
+                [tcp.services]
+                    [tcp.services.${key}.loadBalancer]
+                        [[tcp.services.${key}.loadBalancer.servers]]
+                            address = "${host}"`
+        )
+    }
 
     if (extensions && extensions.includes('index.html')) {
         return (
@@ -130,6 +160,7 @@ const defaultConfigs = () => {
 
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/assets`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/ws/container`, destination: `${ENDPOINTS_ENDPOINT}/ws/container`},
         { source: `build.${PUBLIC_ROUTE_ROOT}/og-image.png`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/sockjs-node`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
@@ -147,6 +178,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/.well-known`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
+        { source: `pg.${PUBLIC_ROUTE_ROOT}`, destination: PGBROKER_ENDPOINT, extensions: ['tcp'] },
     ]
 }
 

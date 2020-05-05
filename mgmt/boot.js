@@ -9,7 +9,7 @@ const Deployment = require('./db/Deployment')
 const routeMgmt = require('./route')
 
 const getRoutesWithDeployments = async () => {
-    return await Route.query().whereIn('deploymentId', Deployment.query().select('id'))
+    return await Route.query().whereIn('deploymentId', Deployment.query().select('id').where('stage', 'like', 'refs/%'))
 }
 
 const ensureAllLiveDeploymentsExist = async () => {

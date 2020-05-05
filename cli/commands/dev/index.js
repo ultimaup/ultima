@@ -8,11 +8,26 @@ const API = require('./api')
 
 const config = require('../../config')
 const checkInUltimaFolder = require('../up/checkInUltimaFolder')
+const makeTunnel = require('../db/makeTunnel')
+
+const getRepoName = remote => {
+    if (!remote) {
+        return {
+            repoName: 'unknown',
+            owner: 'unknown',
+        }
+    }
+    const [_,owner, r] = (new URL(remote.refs.push)).pathname.split('/')
+    const repoName = r.split('.git')[0]
+    return {repoName, owner}
+}
 
 const dev = async () => {
     const cfg = await config.get()
 
-    const inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    let inUltimaFolder
+
+    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
 
     if (!inUltimaFolder) {
         return
@@ -25,12 +40,27 @@ const dev = async () => {
     if (server.status === 'error') {
         return cli.error(`Failed to start dev session: ${server.message}`)
     }
+
+    const {repoName, owner} = getRepoName(inUltimaFolder)
+    const [un] = server.id.split('-')[0]
+    const dbPortKey = `${owner}-${repoName}-${un}-dev`
+    
+    const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
     const { sessionId } = await client.initSession({
         rootEndpoint: server.url
     })
 
     cli.log(`You can find your app on: ${server.appUrl}`)
     cli.log(`and connect to node debug: ${server.debugUrl}`)
+    cli.log('')
+    cli.log(`Connected to development database`)
+    cli.log('Connect using your favourite postgres tool:')
+    cli.log('Host: localhost')
+    cli.log(`Port: ${dbPort}`)
+    cli.log(`Database: <any>`)
+    cli.log('User: <any>')
+    cli.log('Password: <any>')
+    cli.log('')
 
     let barVisible = false
     let runnerStarted = false

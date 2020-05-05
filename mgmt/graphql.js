@@ -2,6 +2,7 @@ const { ApolloServer, gql } = require('apollo-server-express')
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
+const Deployment = require('./db/Deployment')
 const User = require('./db/User')
 
 const { headersToUser } = require('./jwt')
@@ -10,6 +11,9 @@ const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRe
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
+    PUBLIC_ROUTE_ROOT,
+
+    PG_BROKER_PORT,
 
     ADMIN_USERNAME,
 } = process.env
@@ -59,6 +63,14 @@ const typeDefs = gql`
         ssh_url: String
     }
 
+    type Environment {
+        id: ID
+        repoName: String
+        stage: String
+        owner: String
+        createdAt: DateTime
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -66,6 +78,8 @@ const typeDefs = gql`
         getUsers: [User]
         getTemplateRepos: [Repo]
         getMyRepos: [Repo]
+        getPGEndpoint: String
+        getEnvironments: [Environment]
     }
 
     type Mutation {
@@ -77,11 +91,30 @@ const typeDefs = gql`
 
 const userCanAccessRepo = (user, { owner, repoName }) => {
     // console.log(user.username, 'accessed', owner, repoName)
-    return true
+    return user.username === owner
 }
 
 const resolvers = {
     Query: {
+        getEnvironments: async (parent, { repoName, stage }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            const owner = context.user.username
+
+            const deployments = await Deployment.query()
+                .whereIn('id',
+                    Route.query().select('deploymentId').where('deploymentId', 'like', `${owner}-%`)
+                )
+
+            return deployments.map(d => {
+                return {
+                    ...d,
+                    owner: d.id.split('-')[0],
+                }
+            })
+        },
         getDeployments: async (parent, { owner, repoName, branch }, context) => {
             if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
                 throw new Error('unauthorized')
@@ -101,7 +134,7 @@ const resolvers = {
             })
         },
         getActions: async (parent, { owner, repoName, parentId }, context) => {
-            if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
+            if (!context.user) {
                 throw new Error('unauthorized')
             }
 
@@ -138,6 +171,14 @@ const resolvers = {
             const { username } = context.user
 
             return await getUserRepos({ username })
+        },
+        getPGEndpoint: () => {
+            let port = PG_BROKER_PORT
+            if (PUBLIC_ROUTE_ROOT_PROTOCOL === 'https') {
+                port = 443
+            }
+
+            return `pg.${PUBLIC_ROUTE_ROOT}:${port}`
         },
     },
     Mutation: {

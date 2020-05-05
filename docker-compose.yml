@@ -41,6 +41,7 @@ services:
     image: node
     ports:
       - '4467:4467'
+      - '4497:4497'
     depends_on:
       - "db"
     volumes:
@@ -90,6 +91,9 @@ services:
 
       TEMPLATE_OWNER_GITEA_USERNAME: joshbalfour
 
+      PG_BROKER_PORT: 4497
+      PUBLIC_ROUTE_ROOT: onultima.local
+
   dind:
     image: docker:dind
     privileged: true
@@ -131,6 +135,7 @@ services:
       S3_ENDPOINT: http://files:9000
 
       GELF_ADDRESS: udp://logstash:12201
+      MGMT_ENDPOINT: http://mgmt:4467
 
   files:
     image: minio/minio
@@ -163,6 +168,7 @@ services:
     image: node
     ports: 
       - '4487:4487'
+      - '4997:4497'
     volumes:
       - './router:/app'
       - './tmp/router:/configs'
@@ -191,6 +197,7 @@ services:
       FRONTEND_ENDPOINT: http://frontend:4491
       GITEA_COOKIE_NAME: sessionid
       KIBANA_ENDPOINT: http://kibana:5601
+      PGBROKER_ENDPOINT: tcp://mgmt:4497
 
   frontend:
     image: node

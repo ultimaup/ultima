@@ -50,10 +50,10 @@ const gitea = () => {
         )
 
         const [notificationContainer] = document.querySelectorAll(`.item[href="/${owner}/${repoName}/activity/deployments"]`)
-        const div = document.createElement('div')
-        notificationContainer.appendChild(div)
         
         if (notificationContainer) {
+            const div = document.createElement('div')
+            notificationContainer.appendChild(div)
             ReactDOM.render(
                 <React.StrictMode>
                     <ApolloProvider client={client}>

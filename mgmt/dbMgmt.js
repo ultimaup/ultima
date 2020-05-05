@@ -23,25 +23,30 @@ const knex = Knex({
 })
 
 const ensureSchema = async ({ username, password, schema }) => {
-    const existsResult = await knex.raw(`SELECT FROM pg_catalog.pg_roles WHERE rolname = ?`, [username])
-    const userExists = !!existsResult.rows.length
+    const existsResult = await knex.raw(`SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = ?`, [username])
+	const userExists = !!existsResult.rows.length
 
     if (!userExists) {
         await knex.raw(`CREATE ROLE "${username}" LOGIN PASSWORD '${password}';`)
-    }
-   
-    await knex.raw(`CREATE SCHEMA IF NOT EXISTS "${schema}" AUTHORIZATION "${username}";`)
+	}
+
+	const dbExistsResult = await knex.raw(`SELECT 1 FROM pg_catalog.pg_database WHERE datname='${schema}'`)
+	const databaseExists = !!dbExistsResult.rows.length
+
+	if (!databaseExists) {
+		await knex.raw(`CREATE DATABASE "${schema}" OWNER "${username}";`)
+	}
 
     return true
 }
 
 const genPass = seed => crypto.createHash('sha256').update(`${seed}-${SALT}`).digest('hex')
 
-const getSchemaEnv = ({ username, password }) => {
+const getSchemaEnv = ({ username, password, schema }) => {
 	return {
 		PGUSER: username,
 		PGPASSWORD: password,
-		PGDATABASE: PLATFORM_DBA_USER,
+		PGDATABASE: schema,
 		PGHOST: PLATFORM_DB_HOST,
 		PGPORT: PLATFORM_DB_PORT,
 	}

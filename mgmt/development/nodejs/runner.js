@@ -47,7 +47,7 @@ const getNodemonOpts = async ({ wkdir }) => {
     }
 
     if (!opts.exec) {
-        opts.script = 'node .'
+        opts.script = 'index.js'
     }
 
     if (pkg.nodemonConfig) {

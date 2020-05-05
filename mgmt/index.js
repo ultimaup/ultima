@@ -4,6 +4,7 @@ const express = require('express')
 const giteaWebhook = require('./routes/giteaWebhook')
 const dev = require('./dev')
 const auth = require('./auth')
+require('./pgproxy')
 
 const graphql = require('./graphql')
 const { ensureAllLiveDeploymentsExist } = require('./boot')

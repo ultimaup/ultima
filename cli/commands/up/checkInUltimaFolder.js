@@ -25,7 +25,7 @@ const checkInUltimaFolder = async ({ token }) => {
         return false
     }
 
-    return true
+    return ultimaRemote
 }
 
 module.exports = checkInUltimaFolder
