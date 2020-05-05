@@ -27,11 +27,11 @@ const dev = async () => {
 
     let inUltimaFolder
 
-    // inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
 
-    // if (!inUltimaFolder) {
-    //     return
-    // }
+    if (!inUltimaFolder) {
+        return
+    }
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token)

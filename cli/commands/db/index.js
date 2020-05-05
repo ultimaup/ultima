@@ -1,10 +1,9 @@
 const { cli } = require('cli-ux')
-const cliSelect = require('cli-select')
 
 const config = require('../../config')
 
 const makeTunnel = require('./makeTunnel')
-const getEnvironments = require('./getEnvironments')
+const selectEnvironment = require('./selectEnvironment')
 
 const db = async (envId) => {
     const { token } = await config.get()
@@ -17,22 +16,10 @@ const db = async (envId) => {
     let environmentId = envId
 
     if (!envId) {
-        const environments = await getEnvironments({ token })
-
-        let ids = []
-        const choiceMap = {}
-        const choices = environments
-            .filter(e => e.stage !== 'builder' && e.stage !== 'development')
-            .map((env) => {
-                const { id, repoName, stage } = env
-                const branch = stage.replace('refs/heads/', '')
-                ids.push(id)
-                choiceMap[id] = env
-                return `[${branch}] ${repoName}`
-            })
-
-        const choice = await cliSelect({ values: choices })
-        const env = choiceMap[ids[choice.id]]
+        const env = await selectEnvironment({ token }, environments => {
+            console.log(environments)
+            return environments.filter(e => e.stage !== 'development' && e.stage !== 'builder')
+        })
         environmentId = `${env.repoName.split('/').join('-')}-${env.stage.replace('refs/heads/', '')}`
     }
 

@@ -135,6 +135,7 @@ services:
       S3_ENDPOINT: http://files:9000
 
       GELF_ADDRESS: udp://logstash:12201
+      MGMT_ENDPOINT: http://mgmt:4467
 
   files:
     image: minio/minio

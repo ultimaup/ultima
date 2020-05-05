@@ -89,6 +89,24 @@ router.get('/auth/logout', (req, res) => {
     res.redirect(302, '/')
 })
 
+router.get('/auth/me', async (req, res) => {
+    if (req.headers.authorization) {
+        const token = req.headers.authorization.split('Bearer ')[1]
+        if (!token) {
+            res.json(null)
+        } else {
+            try {
+                const user = await jwt.verify(token)
+                res.json(user)
+            } catch (e) {
+                res.json(null)
+            }
+        }
+    } else {
+        res.json(null)
+    }
+})
+
 router.use('/kibana', cookieParser())
 
 router.get('/kibana/*', async (req, res) => {    

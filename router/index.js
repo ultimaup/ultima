@@ -24,6 +24,7 @@ const {
     GITEA_COOKIE_NAME,
     CERT_RESOLVER,
     PGBROKER_ENDPOINT,
+    ENDPOINTS_ENDPOINT,
 } = process.env
 
 const app = express()
@@ -159,6 +160,7 @@ const defaultConfigs = () => {
 
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/assets`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/ws/container`, destination: `${ENDPOINTS_ENDPOINT}/ws/container`},
         { source: `build.${PUBLIC_ROUTE_ROOT}/og-image.png`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/sockjs-node`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/community`, destination: FRONTEND_ENDPOINT },
