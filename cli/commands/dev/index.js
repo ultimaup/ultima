@@ -14,7 +14,7 @@ const getRepoName = remote => {
     if (!remote) {
         return {
             repoName: 'unknown',
-            owner: 'joshbalfour',
+            owner: 'unknown',
         }
     }
     const [_,owner, r] = (new URL(remote.refs.push)).pathname.split('/')
