@@ -25,15 +25,15 @@ router.use(bodyParser.json())
 const ensureDevelopmentBundle = async lang => {
 	const key = `development/${lang}.tar.gz`
 
-	// const existing = await s3.headObject({ Key: key })
+	const existing = await s3.headObject({ Key: key })
 
-	// if (!existing) {
+	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: key })
 		const tarStream = tar.pack(path.resolve(__dirname, 'development', lang))
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
-	// }
+	}
 
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
@@ -89,6 +89,7 @@ const startDevSession = async ({ user }) => {
     const endpointRoute = {
         subdomain: `dev-${sid}.dev`,
         destination: internalUrl,
+        deploymentId: devEndpointId,
     }
 
     const url = await route.set(endpointRoute)
@@ -96,11 +97,13 @@ const startDevSession = async ({ user }) => {
     const debugUrl = await route.set({
         subdomain: `debug-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
+        deploymentId: devEndpointId,
     })
 
     const appUrl = await route.set({
         subdomain: `app-${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
+        deploymentId: devEndpointId,
     })
 
     return {
