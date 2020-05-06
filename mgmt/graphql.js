@@ -58,7 +58,8 @@ const typeDefs = gql`
 
     type Repo {
         id: ID,
-        name: String,
+        name: String
+        full_name: String
         private: Boolean
         ssh_url: String
     }
