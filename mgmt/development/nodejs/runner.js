@@ -12,7 +12,6 @@ function spawnNodemon({ nodeArgs, script, exec, cwd, env }) {
       'nodemon',
       ...nodeArgs,
       ...(script ? [script] : ['--exec', exec]),
-      '--ignore', `${cwd}/node_modules`,
       '--watch', '.',
     ], {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
