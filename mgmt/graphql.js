@@ -1,4 +1,5 @@
 const { ApolloServer, gql } = require('apollo-server-express')
+const slugify = require('slugify')
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
@@ -6,7 +7,8 @@ const Deployment = require('./db/Deployment')
 const User = require('./db/User')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos } = require('./gitea')
+const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
+const { runTests } = require('./ci')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -215,13 +217,30 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
 
-            const { username, id } = context.user
+            const { username, id, imageUrl } = context.user
 
             const result = await createRepoFromTemplate({ username, userId: id }, {
-                name, description, private, templateId
+                name: slugify(name), description, private, templateId
             })
 
-            return await getRepo({ username }, { id: result.id })
+            const repo = await getRepo({ username }, { id: result.id })
+
+            try {
+                const latestCommit = await getLatestCommitFromRepo({ owner: repo.owner.login, repo: repo.name })
+                runTests({
+                    repository: repo,
+                    ref: `refs/heads/${repo.default_branch}`,
+                    pusher: {
+                        login: username,
+                        avatar_url: imageUrl,
+                    },
+                    commits: [latestCommit],
+                    after: latestCommit.sha,
+                })
+            } catch (e) {
+                console.error(e)
+            }
+            return repo
         },
     },
 }
