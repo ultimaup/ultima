@@ -6,6 +6,7 @@ import {BrowserRouter, Switch, Route} from 'react-router-dom'
 import Navbar from './components/Navbar'
 import DeploymentInfo from './components/DeploymentInfo'
 import DeploymentNotification from './components/DeploymentNotification'
+import GettingStarted from './components/GettingStarted'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 
@@ -81,6 +82,23 @@ const gitea = () => {
             </React.StrictMode>,
             logsDeployments
         )
+    }
+
+    if (window.location.pathname === '/') {
+        const asdf = document.querySelectorAll('.ui.container.ten.wide.column')[0]
+        if (asdf) {
+            const div = document.createElement('div')
+            asdf.children[0].insertAdjacentElement('beforeBegin', div)
+            // asdf.children[0].remove()
+            ReactDOM.render(
+                <React.StrictMode>
+                    <ApolloProvider client={client}>
+                        <GettingStarted />
+                    </ApolloProvider>
+                </React.StrictMode>,
+                div
+            )
+        }
     }
 }
 

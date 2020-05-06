@@ -70,8 +70,12 @@
 						{{.i18n.Tr "signed_in_as"}} <strong>{{.SignedUser.Name}}</strong>
 					</div>
 					
+					<div class="divider"></div>
+					<a class="item" href="{{AppSubUrl}}/{{.SignedUser.Name}}">
+						{{svg "octicon-person" 16}}
+						{{.i18n.Tr "your_profile"}}<!-- Your profile -->
+					</a>
 					{{if .IsAdmin}}
-						<div class="divider"></div>
 
 						<a class="{{if .PageIsAdmin}}active{{end}} item" href="{{AppSubUrl}}/admin">
 							<i class="icon settings"></i>
