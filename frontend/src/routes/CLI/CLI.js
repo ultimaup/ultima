@@ -109,7 +109,7 @@ const CLI = () => {
                     }}>
                         {copySuccess ? 'Copied' : 'Copy'}
                     </Clipboard>
-                    <code><i>$</i>ultima dev</code>
+                    <code><i>$</i>ultima init {'$PROJECT_NAME'}</code>
                 </Body>
             </Terminal>
             <a href="/" style={{ marginTop: 32 }}>
