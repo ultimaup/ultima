@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import styled from 'styled-components'
 
 import useTemplateRepos from '../../hooks/useTemplateRepos'
@@ -13,6 +13,12 @@ const Form = styled.form`
 const NewRepo = () => {
     const { templates } = useTemplateRepos()
     const { loading, createRepository } = useCreateRepository()
+
+    let dv = ''
+    const sp = new URLSearchParams(window.location.search)
+    if (sp.get('template_id')) {
+        dv = sp.get('template_id')
+    }
 
     return (
         <Form className="ui form" onSubmit={(e) => {
@@ -36,6 +42,9 @@ const NewRepo = () => {
                     private: isPrivate,
                 }).then((repo) => {
                     document.location.href = `/${repo.full_name}`
+                }).catch(e => {
+                    alert('sorry there was an issue creating your repo')
+                    console.error(e)
                 })
             }
 
@@ -47,8 +56,8 @@ const NewRepo = () => {
             <div className="ui attached segment">
                 <div className="inline required field">
                     <label>Template</label>
-                    <select required class="ui search normal selection dropdown" name="template">
-                        <option value="" selected disabled hidden>Choose a template</option>
+                    <select required className="ui search normal selection dropdown" name="template" defaultValue={dv}>
+                        <option value="" disabled hidden>Choose a template</option>
                         {templates && templates.map(({ id, name }) => (
                             <option key={id} value={id}>{name}</option>
                         ))}
@@ -56,23 +65,23 @@ const NewRepo = () => {
                     </select>
                 </div>
                 <div className="inline required field">
-                    <label for="repo_name">Name</label>
-                    <input name="repo_name" autofocus required />
+                    <label htmlFor="repo_name">Name</label>
+                    <input name="repo_name" autoFocus required />
                 </div>
-                <div class="inline field">
+                <div className="inline field">
                     <label>Private</label>
-                    <div class="ui checkbox">
+                    <div className="ui checkbox">
                         <input name="private" type="checkbox" defaultChecked />
                         <label>Hide this repository from other people</label>
                     </div>
                 </div>
                 <br/>
-                <div class="inline field">
+                <div className="inline field">
                     <label></label>
-                    <button class="ui green button" disabled={loading}>
+                    <button className="ui green button" disabled={loading}>
                         Create Repository
                     </button>
-                    <a class="ui button" href="/">Cancel</a>
+                    <a className="ui button" href="/">Cancel</a>
                 </div>
             </div>
         </Form>
