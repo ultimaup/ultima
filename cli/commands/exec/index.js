@@ -23,7 +23,7 @@ const devExec = async (command, args = []) => {
         const selected = await cliSelect({
             values: es.map(e => `session started at ${e.createdAt}`),
         })
-        env = envs[selected.id]
+        env = es[selected.id]
     } else {
         env = es[0]
     }

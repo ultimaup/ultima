@@ -51,7 +51,7 @@ router.use('/dev-session', async (req, res, next) => {
     }
 })
 
-const startDevSession = async ({ user }) => {
+const startDevSession = async ({ user, details: { repoName, owner } }) => {
     const invocationId = uuid()
     const lang = 'nodejs'
 
@@ -75,6 +75,7 @@ const startDevSession = async ({ user }) => {
         bundleLocation: await ensureDevelopmentBundle(lang),
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
         env: schemaEnv,
+        repoName: `${owner}/${repoName}`,
     })
 
     console.log(invocationId, `dev endpoint with id ${devEndpointId} exists`)
@@ -115,7 +116,7 @@ const startDevSession = async ({ user }) => {
 }
 
 router.post('/dev-session', async (req, res) => {
-    const session = await startDevSession({ user: req.user })
+    const session = await startDevSession({ user: req.user, details: req.body })
     res.json(session)
 })
 

@@ -28,6 +28,9 @@ const selectEnvironment = async ({ token }, filter) => {
             return `[${branch}] ${repoName}`
         })
 
+    if (!choices.length) {
+        return null
+    }
     const choice = await cliSelect({ values: choices })
     const env = choiceMap[ids[choice.id]]
 

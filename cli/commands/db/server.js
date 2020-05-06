@@ -41,11 +41,16 @@ const server = ({ host, port, database, user, secure }) => net.createServer((soc
     let dbClient
 
     const gotStartupPacket = () => {
-        dbClient = (secure ? tls : net).createConnection(port, host, () => {
+        const cb = () => {
             dbClient.write(startupPacket({ user, database }))
             dbClient.pipe(socket)
             socket.pipe(dbClient)
-        })
+        }
+       
+        dbClient = secure ? tls.connect({
+            // enableTrace: true,
+            port, host, servername: host,
+        }, cb) : net.createConnection(port, host, cb)
     }
 
     socket.once('data', (buf) => {

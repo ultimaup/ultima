@@ -17,7 +17,11 @@ const getRepoName = remote => {
             owner: 'unknown',
         }
     }
-    const [_,owner, r] = (new URL(remote.refs.push)).pathname.split('/')
+    let sshUrl = remote.refs.push
+    if (!sshUrl.startsWith('ssh://')) {
+        sshUrl = `ssh://${sshUrl.split(':').join('/')}` // converts the "shorthand" ssh clone url to a standards compliant url
+    }
+    const [_,owner, r] = (new URL(sshUrl)).pathname.split('/')
     const repoName = r.split('.git')[0]
     return {repoName, owner}
 }
@@ -32,16 +36,16 @@ const dev = async () => {
     if (!inUltimaFolder) {
         return
     }
+    const {repoName, owner} = getRepoName(inUltimaFolder)
 
     await cli.action.start('starting session...')
-    const api = API.init(program.server, cfg.token)
+    const api = API.init(program.server, cfg.token, {owner, repoName})
 
     const server = await api.getDeploymentUrl()
     if (server.status === 'error') {
         return cli.error(`Failed to start dev session: ${server.message}`)
     }
 
-    const {repoName, owner} = getRepoName(inUltimaFolder)
     const [un] = server.id.split('-')[0]
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
@@ -57,7 +61,7 @@ const dev = async () => {
     cli.log('Connect using your favourite postgres tool:')
     cli.log('Host: localhost')
     cli.log(`Port: ${dbPort}`)
-    cli.log(`Database: <any>`)
+    cli.log(`Database: ${server.id}`)
     cli.log('User: <any>')
     cli.log('Password: <any>')
     cli.log('')

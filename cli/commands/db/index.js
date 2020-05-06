@@ -11,16 +11,20 @@ const db = async (envId) => {
         return cli.error('you must be logged in to do that')
     }
 
-    cli.log('select a database to connect to:')
-
     let environmentId = envId
 
     if (!envId) {
+        cli.log('select a database to connect to:')
         const env = await selectEnvironment({ token }, environments => {
-            console.log(environments)
             return environments.filter(e => e.stage !== 'development' && e.stage !== 'builder')
         })
-        environmentId = `${env.repoName.split('/').join('-')}-${env.stage.replace('refs/heads/', '')}`
+        if (env) {
+            environmentId = `${env.repoName.split('/').join('-')}-${env.stage.replace('refs/heads/', '')}`
+        }
+    }
+
+    if (!environmentId) {
+        return cli.log('no databases found')
     }
 
     const port = await makeTunnel(environmentId, token, environmentId)
