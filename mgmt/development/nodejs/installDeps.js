@@ -15,36 +15,51 @@ const restoreCache = async (cacheType, hash) => {
 
 let ranBefore = false
 
-const installDeps = async (wkdir, force) => {
+const installDeps = async (wkdir, force, msgCb) => {
 	if (!force && !ranBefore) {
 		return
 	}
 	ranBefore = true
-	console.log('installing deps')
+	console.log('installing dependencies')
 
 	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
 
 	if (useYarn) {
-		console.log('using yarn')
+		console.log('found yarn.lock so using yarn')
 		const lockfileHash = await getFileHash(path.resolve(wkdir, 'yarn.lock'))
 		await restoreCache('yarn', lockfileHash)
-		
-		await spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, stdio: 'inherit' })
 
+		const p = spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, ignoreStdio: true })
+
+		p.child.stdout.on('data', msgCb)
+		p.child.stderr.on('data', msgCb)
+
+		await p
+		
 		return
 	} else {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
-			console.log('using npm ci')
+			console.log('found package-lock.json so using npm ci')
 			const lockfileHash = await getFileHash(lockfileLocation)
 			await restoreCache('npm', lockfileHash)
-			await spawn('npm',['ci'], { cwd: wkdir, stdio: 'inherit' })
-
+			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
+			
+			p.child.stdout.on('data', msgCb)
+			p.child.stderr.on('data', msgCb)
+			
+			await p
+			
 			return
 		} else {
 			console.log('using npm install')
-			await spawn('npm', ['install'], { cwd: wkdir, stdio: 'inherit' })
-
+			const p = spawn('npm', ['install'], { cwd: wkdir, ignoreStdio: true })
+			
+			p.child.stdout.on('data', msgCb)
+			p.child.stderr.on('data', msgCb)
+			
+			await p
+			
 			return
 		}
 	}

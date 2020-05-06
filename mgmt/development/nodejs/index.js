@@ -77,7 +77,12 @@ const createSession = async sessionId => {
         event: 'install-deps-start',
     })
     // install deps
-    await installDeps(wkdir, true)
+    await installDeps(wkdir, true, (msg) => {
+        io.to(sessionId).emit('event',{
+            event: 'stdout',
+            data: msg.toString('utf8'),
+        })
+    })
     io.to(sessionId).emit('event', {
         event: 'install-deps-complete',
     })
