@@ -165,6 +165,11 @@ const getUserRepos = async ({ username }) => {
 	return data
 }
 
+const getLatestCommitFromRepo = async ({ owner, repo }) => {
+	const [commit] = await giteaFetch(`/api/v1/repos/${owner}/${repo}/commits`).json()
+	return commit
+}
+
 const createRepoFromTemplate = async ({ username, userId }, { name, description, private, templateId }) => {
 	const { cookieJar } = await getLoginCookiejar(username, userId)
 
@@ -226,4 +231,5 @@ module.exports = {
 	createRepoFromTemplate,
 	getRepo,
 	getUserRepos,
+	getLatestCommitFromRepo,
 }
