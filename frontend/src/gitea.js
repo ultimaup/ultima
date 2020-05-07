@@ -9,6 +9,7 @@ import DeploymentNotification from './components/DeploymentNotification'
 import GettingStarted from './components/GettingStarted'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
+import NewRepoRoute from './routes/NewRepo'
 
 import client from './graphql'
 
@@ -99,6 +100,18 @@ const gitea = () => {
                 div
             )
         }
+    }
+
+    const newRepo = document.getElementById('new-repo-container')
+    if (newRepo) {
+        ReactDOM.render(
+            <React.StrictMode>
+                <ApolloProvider client={client}>
+                    <NewRepoRoute />
+                </ApolloProvider>
+            </React.StrictMode>,
+            newRepo
+        )
     }
 }
 
