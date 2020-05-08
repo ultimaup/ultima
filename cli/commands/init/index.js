@@ -34,7 +34,7 @@ const init = async (projectName) => {
     })
     cli.log(`Using template: ${chosenTemplateName.value}`)
 
-    const private = await cli.confirm('Would you like this to be a private repo?')
+    const private = await cli.confirm('Would you like this to be a private repo? (y/n)')
 
     const chosenTemplate = templates.find(t => t.name === chosenTemplateName.value)
     await cli.action.start('creating repo...')
