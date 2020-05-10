@@ -55,11 +55,11 @@ const dev = async () => {
 
     let inUltimaFolder
 
-    // inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
 
-    // if (!inUltimaFolder) {
-    //     return
-    // }
+    if (!inUltimaFolder) {
+        return
+    }
     const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
     await cli.action.start('starting session...')
