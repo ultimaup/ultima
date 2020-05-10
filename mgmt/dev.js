@@ -9,13 +9,14 @@ const got = require('got')
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
 const route = require('./route')
-const { headersToUser } = require('./jwt')
+const { headersToUser, sign } = require('./jwt')
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
 
 const {
 	S3_ENDPOINT,
     BUILDER_BUCKET_ID,
     ENDPOINTS_ENDPOINT,
+	MGMT_ENDPOINT,
 } = process.env
 
 const router = new Router()
@@ -74,7 +75,11 @@ const startDevSession = async ({ user, details: { repoName, owner } }) => {
 		stage: 'development',
         bundleLocation: await ensureDevelopmentBundle(lang),
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
-        env: schemaEnv,
+        env: {
+            ...schemaEnv,
+            ULTIMA_CACHE_TOKEN: await sign({ actorType: 'development', user: owner, repo: repoName, deploymentId: devEndpointId }, { expiresIn: '1 week' }),
+            MGMT_ENDPOINT,
+        },
         repoName: `${owner}/${repoName}`,
     })
 

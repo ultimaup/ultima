@@ -2,6 +2,7 @@ const express = require('express')
 
 // const projects = require('./projects')
 const giteaWebhook = require('./routes/giteaWebhook')
+const buildCache = require('./routes/buildCache')
 const dev = require('./dev')
 const auth = require('./auth')
 require('./pgproxy')
@@ -23,6 +24,7 @@ auth(app)
 dev(app)
 migrate().catch(console.error)
 graphql(app)
+buildCache(app)
 
 app.get('/', (req, res) => {
     res.redirect(`build.${req.hostname}`)

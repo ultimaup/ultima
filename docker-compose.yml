@@ -71,6 +71,7 @@ services:
       PLATFORM_DB_PASSWORD: platform
 
       ROUTER_MGMT_ENDPOINT: http://router-mgmt:4487
+      MGMT_ENDPOINT: http://mgmt:4467
 
       GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN

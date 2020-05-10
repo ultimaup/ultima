@@ -2,32 +2,17 @@ const express = require('express')
 const fse = require('fs-extra')
 const path = require('path')
 const tar = require('tar-fs')
-const gunzip = require('gunzip-maybe')
 const { createGzip } = require('zlib')
 const stream = require('stream')
 const yaml = require('js-yaml')
 
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
+
 const installDeps = require('./installDeps')
+const { extractStreamToDir } = require('./utils')
 
 const pipeline = util.promisify(stream.pipeline)
-
-const extractStreamToDir = async (stream, dir) => {
-
-	await fse.ensureDir(dir)
-	
-	const extract = tar.extract(dir)
-
-	const promise = new Promise((resolve, reject) => {
-		extract.on('finish', resolve)
-		extract.on('error', reject)
-	})
-
-	stream.pipe(gunzip()).pipe(extract)
-
-	return promise
-}
 
 const doBuild = async (wkdir) => {
 	const packageInfo = await fse.readJSON(path.resolve(wkdir, 'package.json'))
@@ -110,9 +95,12 @@ app.post('/', async (req, res) => {
 			}
 		}
 
+		let depCachePromise
+
 		try {
 			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-				await installDeps(wkdir)
+				const populateCache = await installDeps(wkdir)
+				depCachePromise = populateCache()
 				await doBuild(wkdir)
 				await doTest(wkdir)
 			}
@@ -138,6 +126,10 @@ app.post('/', async (req, res) => {
 		)
 	} catch (e) {
 		console.error(e)
+	}
+
+	if (depCachePromise) {
+		await depCachePromise
 	}
 	
 	process.exit()

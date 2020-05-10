@@ -4,9 +4,9 @@ const {
     JWT_SECRET,
 } = process.env
 
-const sign = payload => {
+const sign = (payload, options = {}) => {
     return new Promise((resolve, reject) => {
-        jwt.sign(payload, JWT_SECRET, (err, token) => {
+        jwt.sign(payload, JWT_SECRET, options, (err, token) => {
             if (err) {
                 reject(err)
             } else {
