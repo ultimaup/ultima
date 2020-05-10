@@ -10,7 +10,7 @@ const db = require('./commands/db')
 const exec = require('./commands/exec')
 
 const ultimaConfig = require('./config')
-const pkg = require('./package.json');
+const pkg = require('./package.json')
  
 updateNotifier({ pkg }).notify()
 
