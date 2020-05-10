@@ -39,6 +39,10 @@ const clone = async (projectName) => {
 
     const repo = repos.find(r => r.name === chosenRepoName)
     await git.clone(repo.ssh_url)
+
+    cli.log(`Project cloned into directory ${chosenRepoName}`)
+    cli.log(`now run \`cd ${chosenRepoName} && ultima dev\` to get building!`)
+    cli.log(`when you're ready to go live, run \`ultima up\``)
 }
 
 module.exports = clone

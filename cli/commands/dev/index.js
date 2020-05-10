@@ -1,5 +1,8 @@
 const { cli } = require('cli-ux')
 const { program } = require('commander')
+const inquirer = require('inquirer')
+const cliSpinners = require('cli-spinners')
+const jwtdecode = require('jwt-decode')
 
 const apiClient = require('./client')
 const fileSync = require('./fileSync')
@@ -10,11 +13,11 @@ const config = require('../../config')
 const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 
-const getRepoName = remote => {
+const getRepoName = (remote, user) => {
     if (!remote) {
         return {
             repoName: 'unknown',
-            owner: 'unknown',
+            owner: user.username,
         }
     }
     let sshUrl = remote.refs.push
@@ -24,6 +27,27 @@ const getRepoName = remote => {
     const [_,owner, r] = (new URL(sshUrl)).pathname.split('/')
     const repoName = r.split('.git')[0]
     return {repoName, owner}
+}
+
+const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
+    const spinner = cliSpinners.dots
+
+    let ctr = 0
+
+    let url = appUrl.endsWith(':443') ? appUrl.split(':443')[0] : appUrl
+
+    return setInterval(() => {
+        const idx = (ctr % (spinner.frames.length - 1))
+        const frame = spinner.frames[idx]
+
+        writeFrame(['',
+            `DB host: localhost:${dbPort} database: ${database}`,
+            `Live url: ${url}`, 
+            `Watching for changes ${frame}`
+        ].join('\n'))
+
+        ctr++
+    }, spinner.interval)
 }
 
 const dev = async () => {
@@ -36,7 +60,7 @@ const dev = async () => {
     if (!inUltimaFolder) {
         return
     }
-    const {repoName, owner} = getRepoName(inUltimaFolder)
+    const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token, {owner, repoName})
@@ -54,6 +78,8 @@ const dev = async () => {
         rootEndpoint: server.url
     })
 
+    await cli.action.stop()
+
     cli.log(`You can find your app on: ${server.appUrl}`)
     cli.log(`and connect to node debug: ${server.debugUrl}`)
     cli.log('')
@@ -66,76 +92,92 @@ const dev = async () => {
     cli.log('Password: <any>')
     cli.log('')
 
-    let barVisible = false
+    const ui = new inquirer.ui.BottomBar()
+
     let runnerStarted = false
     let isInitialized
 
     runner.on('stdout', (line) => {
-        cli.log(line.toString())
+        ui.log.write(line.toString())
     })
     runner.on('stderr', (line) => {
-        cli.log(line.toString())
+        ui.log.write(line.toString())
     })
     
+    let spinInterval
+
     runner.on('start', () => {
-        cli.log('start')
+        ui.log.write('start')
     })
-    runner.on('install-deps-start', () => {
-        cli.log('installing dependancies')
+    
+    let firstTime = true
+    runner.on('install-deps-start', async () => {
+        if (firstTime) {
+            await cli.action.start('installing dependancies...')
+        } else {
+            if (spinInterval) {
+                clearInterval(spinInterval)
+            }
+            ui.updateBottomBar(`installing dependancies...`)
+        }
     })
-    runner.on('install-deps-complete', () => {
-        cli.log('installed dependancies')
+    runner.on('install-deps-complete', async () => {
+        if (firstTime) {
+            await cli.action.stop()
+        } else {
+            ui.log.write('installed dependancies')
+        }
+        
+        firstTime = false
+
+        liveSpinner(server.appUrl, (str) => {
+            ui.updateBottomBar(str)
+        }, dbPort, server.id)
     })
+
     runner.on('quit', () => {
-        cli.log('quit')
+        ui.log.write('quit')
     })
     runner.on('restart', () => {
-        cli.log('restart due to changed files')
+        // cli.log('restart due to changed files')
     })
     runner.on('crash', () => {
-        cli.log('crash')
+        // ui.log.write('crash')
     })
     runner.on('connect', () => {
-        cli.log('connected to development instance')
+        ui.log.write('connected to development instance')
     })
     runner.on('disconnect', () => {
-        cli.log('connection to development instance lost, will reconnect...')
+        ui.log.write('connection to development instance lost, will reconnect...')
     })
 
     await runner.connect(server.url)
 
-    const fileBar = cli.progress({
-        format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total}',
-        barCompleteChar: '\u2588',
-        barIncompleteChar: '\u2591'
-    })
-    
     try {
         await fileSync.init({
             sessionId,
             client,
         }, (completed, total) => {
-            if (!barVisible) {
-                cli.action.stop()
-                fileBar.start()
+            if (spinInterval) {
+                clearInterval(spinInterval)
             }
-
-            fileBar.update(completed)
-            fileBar.setTotal(total)
+            ui.updateBottomBar(`uploading files ${completed}/${total}`)
+            
             if (total === completed && !runnerStarted) {
                 // start runner
                 runnerStarted = true
                 runner.start({ sessionId })
+                ui.updateBottomBar(`starting app...`)
             }
             if (total === completed && isInitialized) {
-                fileBar.stop()
-                cli.action.start('Watching for changes')
+                liveSpinner(server.appUrl, (str) => {
+                    ui.updateBottomBar(str)
+                }, dbPort, server.id)
             }
         }, () => {
             isInitialized = true
         })
     } catch (e) {
-        await cli.action.stop()
         console.error('failed to init', e)
     }
 }

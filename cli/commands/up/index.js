@@ -102,7 +102,7 @@ const up = async () => {
     let status = await git.status()
 
     if (!status.isClean()) {
-        const wantsToCommit = await cli.confirm(`It looks like there might be some changes you haven't committed yet, would you like to commit all your changes with a message?`)
+        const wantsToCommit = await cli.confirm(`would you like to commit all your changes with a message? (y/n)`)
         if (wantsToCommit) {
             const message = await cli.prompt('commit message:')
             await git.add('-A')
