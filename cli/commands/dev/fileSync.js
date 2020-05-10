@@ -1,14 +1,18 @@
 const chokidar = require('chokidar')
 const fs = require('fs')
+const stream = require('stream')
+const promisify = require('util').promisify
 
-const client = require('./client')
+const pipeline = promisify(stream.pipeline)
+
 const runner = require('./runner')
+const apiClient = require('./client')
 
 let inflight = 0
 let total = 0
 let completed = 0
 
-const pushToRemote = (event, path, sessionId, progressCallback) => {
+const pushToRemote = (event, path, sessionId, progressCallback, got) => {
     runner.whenConnected(async () => {
         total++
         inflight++
@@ -17,15 +21,23 @@ const pushToRemote = (event, path, sessionId, progressCallback) => {
 
         try {
             const stream = ['add', 'change'].includes(event) ? fs.createReadStream(path) : undefined
-            await client.fetch(`/file`, {
-                method: 'post',
-                body: stream,
-                headers: {
-                    'x-event-type': event,
-                    'x-event-path': path,
-                    'x-session-id': sessionId,
-                },
-            })
+            const headers = {
+                'x-event-type': event,
+                'x-event-path': path,
+                'x-session-id': sessionId,
+            }
+            if (stream) {
+                await pipeline(
+                    stream,
+                    got.stream.post(`file`, {
+                        headers,
+                    })
+                )
+            } else {
+                await got.post('file', {
+                    headers,
+                })
+            }
         } catch (e) {
             console.error('error pushing to remote:', event, path, e)
         }
@@ -37,30 +49,30 @@ const pushToRemote = (event, path, sessionId, progressCallback) => {
     })
 }
 
-const init = async ({ sessionId }, progressCallback, initCallback) => {
+const init = async ({ sessionId, client }, progressCallback, initCallback) => {
     const watcher = chokidar.watch('.', {
         ignored: ['node_modules', '.git'],
         persistent: true,
     })
 
     watcher.on('add', path => {
-        pushToRemote('add', path, sessionId, progressCallback)
+        pushToRemote('add', path, sessionId, progressCallback, client)
     })
 
     watcher.on('change', path => {
-        pushToRemote('change', path, sessionId, progressCallback)
+        pushToRemote('change', path, sessionId, progressCallback, client)
     })
 
     watcher.on('addDir', path => {
-        pushToRemote('addDir', path, sessionId, progressCallback)
+        pushToRemote('addDir', path, sessionId, progressCallback, client)
     })
 
     watcher.on('unlink', path => {
-        pushToRemote('unlink', path, sessionId, progressCallback)
+        pushToRemote('unlink', path, sessionId, progressCallback, client)
     })
 
     watcher.on('unlinkDir', path => {
-        pushToRemote('unlinkDir', path, sessionId, progressCallback)
+        pushToRemote('unlinkDir', path, sessionId, progressCallback, client)
     })
 
     watcher.on('ready', () => {
@@ -72,7 +84,7 @@ const init = async ({ sessionId }, progressCallback, initCallback) => {
 
         Promise.all([
             watcher.close(),
-            client.disconnectAll(),
+            apiClient.disconnectAll(),
         ]).then(() => {
             console.log('done')
             process.exit()
