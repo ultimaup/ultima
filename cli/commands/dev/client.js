@@ -1,14 +1,7 @@
 const http2 = require('http2-wrapper')
 const got = require('got')
 
-class MyAgent extends http2.Agent {
-	createConnection(origin, options) {
-		console.log(`Connecting to ${http2.Agent.normalizeOrigin(origin)}`);
-		return http2.Agent.connect(origin, options);
-	}
-}
-
-const agent = new MyAgent()
+const agent = new http2.Agent()
 
 const initSession = async (config) => {
     const client = got.extend({
@@ -16,6 +9,7 @@ const initSession = async (config) => {
         agent: {
             http2: agent,
         },
+        http2: true,
     })
 
     const data = await client.post(`new-session`).json()
