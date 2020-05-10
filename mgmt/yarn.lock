@@ -898,10 +898,10 @@ colorette@1.1.0:
   resolved "https://registry.yarnpkg.com/colorette/-/colorette-1.1.0.tgz#1f943e5a357fac10b4e0f5aaef3b14cdc1af6ec7"
   integrity sha512-6S062WDQUXi6hOfkO/sBPVwE5ASXY4G2+b4atvhJfSsuUUhIaUKlkjLe9692Ipyt5/a+IPF5aVTu3V5gvXq5cg==
 
-commander@^4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-4.1.1.tgz#9fd602bd936294e9e9ef46a3f4d6964044b18068"
-  integrity sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==
+commander@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-5.1.0.tgz#46abbd1652f8e059bddaef99bbdcb2ad9cf179ae"
+  integrity sha512-P0CysNDQ7rtVw4QIQtm+MRxV66vKFSvlsQvGYXZWR3qFU0jlMKHZZZgw8e+8DSah4UDKMqnknRDQz+xuQXQ/Zg==
 
 component-emitter@^1.2.1:
   version "1.3.0"
@@ -2093,13 +2093,13 @@ kind-of@^6.0.0, kind-of@^6.0.2:
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
   integrity sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==
 
-knex@^0.20.11:
-  version "0.20.11"
-  resolved "https://registry.yarnpkg.com/knex/-/knex-0.20.11.tgz#c25167cdd562b08252a53b833b91cb6436e76a35"
-  integrity sha512-8H3dUVSQOxDRVxRd9YcfL3Xli5BdblYy8Yg4hGSaII2XHEqfGhWrcMxuL2hogBuQ5CL85Bzp+dUEeRCHb94fCw==
+knex@^0.21.1:
+  version "0.21.1"
+  resolved "https://registry.yarnpkg.com/knex/-/knex-0.21.1.tgz#4fba7e6c58c9f459846c3090be157a732fc75e41"
+  integrity sha512-uWszXC2DPaLn/YznGT9wFTWUG9+kqbL4DMz+hCH789GLcLuYzq8werHPDKBJxtKvxrW/S1XIXgrTWdMypiVvsw==
   dependencies:
     colorette "1.1.0"
-    commander "^4.1.1"
+    commander "^5.1.0"
     debug "4.1.1"
     esm "^3.2.25"
     getopts "2.2.5"
@@ -2107,11 +2107,11 @@ knex@^0.20.11:
     interpret "^2.0.0"
     liftoff "3.1.0"
     lodash "^4.17.15"
-    mkdirp "^0.5.1"
-    pg-connection-string "2.1.0"
-    tarn "^2.0.0"
+    mkdirp "^1.0.4"
+    pg-connection-string "2.2.0"
+    tarn "^3.0.0"
     tildify "2.0.0"
-    uuid "^7.0.1"
+    uuid "^7.0.3"
     v8flags "^3.1.3"
 
 latest-version@^3.0.0:
@@ -2328,6 +2328,11 @@ mkdirp@^0.5.1:
   integrity sha1-MAV0OOrGz3+MR2fzhkjWaX11yQM=
   dependencies:
     minimist "0.0.8"
+
+mkdirp@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
+  integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
 ms@2.0.0:
   version "2.0.0"
@@ -2629,30 +2634,25 @@ peek-stream@^1.1.0:
     duplexify "^3.5.0"
     through2 "^2.0.3"
 
-pg-connection-string@0.1.3:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-0.1.3.tgz#da1847b20940e42ee1492beaf65d49d91b245df7"
-  integrity sha1-2hhHsglA5C7hSSvq9l1J2RskXfc=
+pg-connection-string@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.2.0.tgz#caab4d38a9de4fdc29c9317acceed752897de41c"
+  integrity sha512-xB/+wxcpFipUZOQcSzcgkjcNOosGhEoPSjz06jC89lv1dj7mc9bZv6wLVy8M2fVjP0a/xN0N988YDq1L0FhK3A==
 
-pg-connection-string@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.1.0.tgz#e07258f280476540b24818ebb5dca29e101ca502"
-  integrity sha512-bhlV7Eq09JrRIvo1eKngpwuqKtJnNhZdpdOlvrPrA4dxqXPjxSrbNrfnIDmTpwMyRszrcV4kU5ZA4mMsQUrjdg==
+pg-connection-string@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.2.2.tgz#fdc2fb2084e655f0b3e6e50c69330f6932df452e"
+  integrity sha512-+hel4DGuSZCjCZwglAuyi+XlodHnKmrbyTw0hVWlmGN2o4AfJDkDo5obAFzblS5M5PFBMx0uDt5Y1QjlNC+tqg==
 
 pg-int8@1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/pg-int8/-/pg-int8-1.0.1.tgz#943bd463bf5b71b4170115f80f8efc9a0c0eb78c"
   integrity sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==
 
-pg-packet-stream@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/pg-packet-stream/-/pg-packet-stream-1.1.0.tgz#e45c3ae678b901a2873af1e17b92d787962ef914"
-  integrity sha512-kRBH0tDIW/8lfnnOyTwKD23ygJ/kexQVXZs7gEyBljw4FYqimZFxnMMx50ndZ8In77QgfGuItS5LLclC2TtjYg==
-
-pg-pool@^2.0.10:
-  version "2.0.10"
-  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-2.0.10.tgz#842ee23b04e86824ce9d786430f8365082d81c4a"
-  integrity sha512-qdwzY92bHf3nwzIUcj+zJ0Qo5lpG/YxchahxIN8+ZVmXqkahKXsnl2aiJPHLYN9o5mB/leG+Xh6XKxtP7e0sjg==
+pg-pool@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.2.0.tgz#edde90f21556f83d16c45f1efd696af4afec6f2f"
+  integrity sha512-7BLwDNDEfPFjE9vmZLcJPLFwuDAVGZ5lIZo2MeQfwYG7EPGfdNVis/dz6obI/yKqvQIx2sf6QBKXMLB+y/ftgA==
 
 pg-protocol@^1.2.2:
   version "1.2.2"
@@ -2670,16 +2670,16 @@ pg-types@^2.1.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg@^7.18.2:
-  version "7.18.2"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-7.18.2.tgz#4e219f05a00aff4db6aab1ba02f28ffa4513b0bb"
-  integrity sha512-Mvt0dGYMwvEADNKy5PMQGlzPudKcKKzJds/VbOeZJpb6f/pI3mmoXX0JksPgI3l3JPP/2Apq7F36O63J7mgveA==
+pg@^8.1.0:
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.1.0.tgz#e5ac5ac2b77bad438130d93982cb60485d5c1a8c"
+  integrity sha512-Jp+XSNTGYDztc2FgIbmBXeeYMR7kKjfgnl3R+ioO6rkcxDmaea+YPp/gaxe13PBnJAFYyEGl0ixpwPm2gb6eUw==
   dependencies:
     buffer-writer "2.0.0"
     packet-reader "1.0.0"
-    pg-connection-string "0.1.3"
-    pg-packet-stream "^1.1.0"
-    pg-pool "^2.0.10"
+    pg-connection-string "^2.2.2"
+    pg-pool "^3.2.0"
+    pg-protocol "^1.2.2"
     pg-types "^2.1.0"
     pgpass "1.x"
     semver "4.3.2"
@@ -3252,10 +3252,10 @@ tar-stream@^2.0.0, tar-stream@^2.1.2:
     inherits "^2.0.3"
     readable-stream "^3.1.1"
 
-tarn@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/tarn/-/tarn-2.0.0.tgz#c68499f69881f99ae955b4317ca7d212d942fdee"
-  integrity sha512-7rNMCZd3s9bhQh47ksAQd92ADFcJUjjbyOvyFjNLwTPpGieFHMC84S+LOzw0fx1uh6hnDz/19r8CPMnIjJlMMA==
+tarn@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/tarn/-/tarn-3.0.0.tgz#a4082405216c0cce182b8b4cb2639c52c1e870d4"
+  integrity sha512-PKUnlDFODZueoA8owLehl8vLcgtA8u4dRuVbZc92tspDYZixjJL6TqYOmryf/PfP/EBX+2rgNcrj96NO+RPkdQ==
 
 term-size@^1.2.0:
   version "1.2.0"
@@ -3517,6 +3517,11 @@ uuid@^7.0.1:
   version "7.0.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-7.0.1.tgz#95ed6ff3d8c881cbf85f0f05cc3915ef994818ef"
   integrity sha512-yqjRXZzSJm9Dbl84H2VDHpM3zMjzSJQ+hn6C4zqd5ilW+7P4ZmLEEqwho9LjP+tGuZlF4xrHQXT0h9QZUS/pWA==
+
+uuid@^7.0.3:
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-7.0.3.tgz#c5c9f2c8cf25dc0a372c4df1441c41f5bd0c680b"
+  integrity sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==
 
 v8flags@^3.1.3:
   version "3.1.3"

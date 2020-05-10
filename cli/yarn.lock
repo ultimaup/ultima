@@ -644,9 +644,10 @@ glob-parent@~5.1.0:
   dependencies:
     is-glob "^4.0.1"
 
-"got@https://github.com/sindresorhus/got":
-  version "11.1.2"
-  resolved "https://github.com/sindresorhus/got#47c1afedc77b27a2eb3edd85064d8532da835045"
+got@^11.1.3:
+  version "11.1.3"
+  resolved "https://registry.yarnpkg.com/got/-/got-11.1.3.tgz#bcb624c636f9c4da5a82a7d7c9017fcad6e2905a"
+  integrity sha512-JnGxEHZiy0ZArb/zhfu1Gxoksy9PjhQ4GAk6N4UArV/m1JdE7cGNVXbUDnrQk+nU7UPMDX+BHQAP0daMjsnTtQ==
   dependencies:
     "@sindresorhus/is" "^2.1.1"
     "@szmarczak/http-timer" "^4.0.5"

@@ -6,6 +6,8 @@ const config = require('../../config')
 const graphqlFetch = require('../../utils/gqlFetch')
 const checkInUltimaFolder = require('./checkInUltimaFolder')
 
+const getRepoName = require('../dev/getRepoName')
+
 const getActions = async ({ token }, { owner, repoName, parentId }) => {
     return graphqlFetch({ token })(`
         query getActions($owner: String, $repoName: String, $parentId: String) {
@@ -122,10 +124,9 @@ const up = async () => {
     await cli.action.stop()
 
     await cli.action.start('waiting for deployment status')
-    
+
+    const { repoName, owner } = getRepoName(inUltimaFolder)
     const remoteHash = await git.revparse([namedBranch])
-    const [_,owner, r] = (new URL(inUltimaFolder.refs.push)).pathname.split('/')
-    const repoName = r.split('.git')[0]
 
     const deployment = await waitForDeployment({ token }, { owner, repoName }, { hash: remoteHash })
     await cli.action.stop()
