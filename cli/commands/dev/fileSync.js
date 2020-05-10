@@ -80,7 +80,7 @@ const init = async ({ sessionId, client }, progressCallback, initCallback) => {
     })
 
     process.on('SIGINT', () => {
-        console.log('shutting down...')
+        console.log('\nshutting down...')
 
         Promise.all([
             watcher.close(),

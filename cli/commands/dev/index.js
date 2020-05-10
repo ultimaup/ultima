@@ -1,6 +1,5 @@
 const { cli } = require('cli-ux')
 const { program } = require('commander')
-const inquirer = require('inquirer')
 const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
 
@@ -8,6 +7,8 @@ const apiClient = require('./client')
 const fileSync = require('./fileSync')
 const runner = require('./runner')
 const API = require('./api')
+
+const UI = require('./ui')
 
 const config = require('../../config')
 const checkInUltimaFolder = require('../up/checkInUltimaFolder')
@@ -25,7 +26,7 @@ const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
         const idx = (ctr % (spinner.frames.length - 1))
         const frame = spinner.frames[idx]
 
-        writeFrame(['',
+        writeFrame([
             `DB host: localhost:${dbPort} database: ${database}`,
             `Live url: ${url}`, 
             `Watching for changes ${frame}`
@@ -37,6 +38,7 @@ const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
 
 const dev = async () => {
     const cfg = await config.get()
+    const ui = UI()
 
     let inUltimaFolder
 
@@ -76,8 +78,6 @@ const dev = async () => {
     cli.log('User: <any>')
     cli.log('Password: <any>')
     cli.log('')
-
-    const ui = new inquirer.ui.BottomBar()
 
     let runnerStarted = false
     let isInitialized
