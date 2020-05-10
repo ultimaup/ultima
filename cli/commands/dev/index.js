@@ -2,6 +2,7 @@ const { cli } = require('cli-ux')
 const { program } = require('commander')
 const inquirer = require('inquirer')
 const cliSpinners = require('cli-spinners')
+const jwtdecode = require('jwt-decode')
 
 const apiClient = require('./client')
 const fileSync = require('./fileSync')
@@ -12,11 +13,11 @@ const config = require('../../config')
 const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 
-const getRepoName = remote => {
+const getRepoName = (remote, user) => {
     if (!remote) {
         return {
             repoName: 'unknown',
-            owner: 'unknown',
+            owner: user.username,
         }
     }
     let sshUrl = remote.refs.push
@@ -54,12 +55,12 @@ const dev = async () => {
 
     let inUltimaFolder
 
-    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    // inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
 
-    if (!inUltimaFolder) {
-        return
-    }
-    const {repoName, owner} = getRepoName(inUltimaFolder)
+    // if (!inUltimaFolder) {
+    //     return
+    // }
+    const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
     await cli.action.start('starting session...')
     const api = API.init(program.server, cfg.token, {owner, repoName})
