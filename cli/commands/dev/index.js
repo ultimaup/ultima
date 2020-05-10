@@ -1,7 +1,7 @@
 const { cli } = require('cli-ux')
 const { program } = require('commander')
 
-const client = require('./client')
+const apiClient = require('./client')
 const fileSync = require('./fileSync')
 const runner = require('./runner')
 const API = require('./api')
@@ -50,7 +50,7 @@ const dev = async () => {
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
     const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
-    const { sessionId } = await client.initSession({
+    const { data: { sessionId }, client } = await apiClient.initSession({
         rootEndpoint: server.url
     })
 
@@ -68,6 +68,7 @@ const dev = async () => {
 
     let barVisible = false
     let runnerStarted = false
+    let isInitialized
 
     runner.on('stdout', (line) => {
         cli.log(line.toString())
@@ -112,6 +113,7 @@ const dev = async () => {
     try {
         await fileSync.init({
             sessionId,
+            client,
         }, (completed, total) => {
             if (!barVisible) {
                 cli.action.stop()

@@ -1,41 +1,30 @@
-const { context } = require('fetch-h2')
+const http2 = require('http2-wrapper')
+const got = require('got')
 
-const { fetch, disconnectAll } = context()
-const clientFetch = (endpoint, ...args) => fetch(`${rootEndpoint}${endpoint}`, ...args)
-
-let rootEndpoint
-
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+const agent = new http2.Agent()
 
 const initSession = async (config) => {
-    rootEndpoint = config.rootEndpoint
-    let data
-    let ctr = 0
+    const client = got.extend({
+        prefixUrl: config.rootEndpoint,
+        agent: {
+            http2: agent,
+        },
+        http2: true,
+    })
 
-    while (!data && ctr < 20) {
-        ctr++
-        try {
-            const res = await clientFetch(`/new-session`, {
-                method: 'post',
-            })
-            data = await res.json()
-        } catch (e) {
-            if (!e.message.includes('unable to verify the first certificate')) {
-                throw e
-            }
-        }
-        await wait(500)
-    }
+    const data = await client.post(`new-session`).json()
 
     if (!data) {
         throw new Error('unable to connect to allocated development session')
     }
 
-    return data
+    return {
+        data,
+        client,
+    }
 }
 
 module.exports = {
-    fetch: clientFetch,
     initSession,
-    disconnectAll,
+    disconnectAll: () => agent.destroy('disconnectAll called'),
 }
