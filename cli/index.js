@@ -1,6 +1,6 @@
 const { program } = require('commander')
 const { cli, config } = require('cli-ux')
-
+const updateNotifier = require('update-notifier');
 const dev = require('./commands/dev')
 const login = require('./commands/login')
 const init = require('./commands/init')
@@ -10,6 +10,9 @@ const db = require('./commands/db')
 const exec = require('./commands/exec')
 
 const ultimaConfig = require('./config')
+const pkg = require('./package.json')
+ 
+updateNotifier({ pkg }).notify()
 
 config.outputLevel = 'trace'
 
@@ -36,7 +39,7 @@ const checkToken = async (noExit) => {
 }
 
 const main = async () => {
-    program.version('0.0.1')
+    program.version(pkg.version)
     program
         .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
 

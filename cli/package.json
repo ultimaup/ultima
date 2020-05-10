@@ -1,6 +1,6 @@
 {
   "name": "@ultimaup/cli",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "main": "index.js",
   "license": "MIT",
   "private": false,
@@ -28,6 +28,7 @@
     "simple-git": "^1.132.0",
     "socket.io-client": "^2.3.0",
     "ssh-config": "^4.0.2",
+    "update-notifier": "^4.1.0",
     "uuid": "^7.0.3"
   }
 }
