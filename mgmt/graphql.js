@@ -82,7 +82,7 @@ const typeDefs = gql`
         getTemplateRepos: [Repo]
         getMyRepos: [Repo]
         getPGEndpoint: String
-        getEnvironments: [Environment]
+        getEnvironments(owner: String, repoName: String): [Environment]
     }
 
     type Mutation {
@@ -99,17 +99,24 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
 
 const resolvers = {
     Query: {
-        getEnvironments: async (parent, { repoName, stage }, context) => {
+        getEnvironments: async (parent, { repoName, owner }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
 
-            const owner = context.user.username
+            const o = owner || context.user.username
 
-            const deployments = await Deployment.query()
-                .whereIn('id',
-                    Route.query().select('deploymentId').where('deploymentId', 'like', `${owner}-%`)
-                )
+            let q = Deployment.query()
+            
+            if (!repoName) {
+                q = q.whereIn('id',
+                        Route.query().select('deploymentId').where('deploymentId', 'like', `${o}-%`)
+                    )
+            } else {
+                q = q.where('repoName', `${owner}/${repoName}`)
+            }
+
+            const deployments = await q
 
             return deployments.map(d => {
                 return {

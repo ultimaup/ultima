@@ -1,5 +1,4 @@
 const fs = require('fs')
-const uuid =  require('uuid').v4
 const Docker = require('dockerode')
 const got = require('got')
 
@@ -12,8 +11,6 @@ const {
 	IN_PROD = false,
 	GELF_ADDRESS,
 } = process.env
-
-// TODO: kill inactive containers after a while
 
 const getBundle = async url => {
 	const Key = url.split(BUILDER_BUCKET_ID)[1]
@@ -318,8 +315,16 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 	}
 }
 
+const listContainers = async () => {
+	const containers = await docker.listContainers({
+		state: 'stopped',
+	})
+	const containerInfo = await Promise.all(containers.map(c => docker.inspect(c.Id)))
+}
+
 module.exports = {
 	ensureContainerForDeployment,
 	removeContainerFromDeployment,
+	listContainers,
 	exec,
 }

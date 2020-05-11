@@ -10,6 +10,7 @@ import GettingStarted from './components/GettingStarted'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 import NewRepoRoute from './routes/NewRepo'
+import Environments from './routes/Environments'
 
 import client from './graphql'
 
@@ -28,20 +29,33 @@ const gitea = () => {
             navbar
         )
     }
+    
+    const url = window.location.pathname
+        
+    let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
+    
+    if (_ === '_edit') {
+        branch = __
+    }
+    if (!branch) {
+        branch = 'master'
+    }
+
+    const environmentsContainer = document.getElementById('environment-container')
+    if (environmentsContainer) {
+        ReactDOM.render(
+            <React.StrictMode>
+                <ApolloProvider client={client}>
+                    <Environments owner={owner} repoName={repoName} />
+                </ApolloProvider>
+            </React.StrictMode>,
+            environmentsContainer
+        )
+    }
 
     const deploymentInfoContainer = document.getElementById('ultima-deployment-info')
 
     if (deploymentInfoContainer) {
-        const url = window.location.pathname
-        
-        let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
-        if (_ === '_edit') {
-            branch = __
-        }
-        if (!branch) {
-            branch = 'master'
-        }
-
         ReactDOM.render(
             <React.StrictMode>
                 <ApolloProvider client={client}>

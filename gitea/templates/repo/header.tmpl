@@ -93,7 +93,13 @@
 		{{if not .Repository.IsBeingCreated}}
 			<div class="ui tabular stackable menu navbar">
 				{{if .Permission.CanRead $.UnitTypeCode}}
-				<a class="{{if .PageIsViewCode}}active{{end}} item" href="{{.RepoLink}}{{if (ne .BranchName .Repository.DefaultBranch)}}/src/{{.BranchNameSubURL | EscapePound}}{{end}}">
+				<a class="{{if .PageIsViewCode}}active{{end}} item" href="{{.RepoLink}}#">
+					{{svg "octicon-versions" 16}} Environments
+				</a>
+				{{end}}
+
+				{{if .Permission.CanRead $.UnitTypeCode}}
+				<a class="{{if .PageIsViewCode}}active{{end}} item" href="{{.RepoLink}}{{if (ne .BranchName .Repository.DefaultBranch)}}/src/{{.BranchNameSubURL | EscapePound}}{{end}}#/code">
 					{{svg "octicon-code" 16}} {{.i18n.Tr "repo.code"}}
 				</a>
 				{{end}}

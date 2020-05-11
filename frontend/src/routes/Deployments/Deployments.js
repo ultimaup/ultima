@@ -153,7 +153,11 @@ const Description = styled.span`
     font-weight: 300;
 `
 
-const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, to }) => {
+const Chevron = styled.div`
+    margin-left: 16px;
+`
+
+const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to }) => {
     const data = JSON.parse(metadata)
 
     if (!title) {
@@ -184,6 +188,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                     <span title={completedAt}>{completedAt ? `completed in ${moment(completedAt).diff(createdAt, 'seconds')} seconds` : null}</span>
                     <span title={createdAt}>{moment(createdAt).fromNow()}</span>
                 </Timings>
+                {!noLink && <Chevron><i className="fa fa-chevron-right" /></Chevron>}
             </ActionLink>
         )
     }
@@ -239,7 +244,7 @@ const ActionDetails = ({ owner }) => {
 
     return (
         <ActionsContainer>
-            {action && <Action {...action} />}
+            {action && <Action noLink {...action} />}
             {actions.map(action => (
                 <Action key={action.id} {...action} owner={owner} />
             ))}
