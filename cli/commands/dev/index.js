@@ -112,6 +112,16 @@ const dev = async () => {
         } else {
             ui.log.write('installed dependancies')
         }
+
+        // ui.log.write('downloading dependancies locally')
+        fileSync.download('node_modules',{
+            client,
+            sessionId,
+        }).then(() => {
+            // ui.log.write('downloaded dependancies locally')
+        }).catch(e => {
+            // ui.log.write('error downloading dependancies locally: '+e)
+        })
         
         firstTime = false
 

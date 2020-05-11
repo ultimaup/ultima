@@ -1,10 +1,18 @@
 const fse = require('fs-extra')
 const path = require('path')
 const spawn = require('@expo/spawn-async')
+const tar = require('tar-fs')
+const { createGzip } = require('zlib')
 
 const getFileHash = async absPath => {
 	const { stdout } = await spawn(`sha1sum`, [absPath])
 	return stdout.split('/n')[0].split(' ')[0]
+}
+
+const downloadDir = (wkdir, dir) => {
+	const tarStream = tar.pack(path.resolve(wkdir, dir))
+	const gzipStream = createGzip()
+	return tarStream.pipe(gzipStream)
 }
 
 const restoreCache = async (cacheType, hash) => {
@@ -44,12 +52,12 @@ const installDeps = async (wkdir, force, msgCb) => {
 			const lockfileHash = await getFileHash(lockfileLocation)
 			await restoreCache('npm', lockfileHash)
 			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
-			
+
 			p.child.stdout.on('data', msgCb)
 			p.child.stderr.on('data', msgCb)
 			
 			await p
-			
+
 			return
 		} else {
 			console.log('using npm install')
@@ -75,5 +83,6 @@ const shouldRunInstallDeps = async (filePath, wkdir) => {
 
 module.exports = {
 	installDeps,
+	downloadDir,
 	shouldRunInstallDeps,
 }

@@ -2,6 +2,9 @@ const chokidar = require('chokidar')
 const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
+const tar = require('tar-fs')
+const p = require('path')
+const gunzip = require('gunzip-maybe')
 
 const pipeline = promisify(stream.pipeline)
 
@@ -92,6 +95,19 @@ const init = async ({ sessionId, client }, progressCallback, initCallback) => {
     })
 }
 
+const download = (path, { client, sessionId }) => {
+    return pipeline(
+        client.stream.get(`download/${path}`, {
+            headers: {
+                'x-session-id': sessionId,
+            },
+        }),
+        gunzip(),
+        tar.extract(p.resolve('.', path))
+    )
+}
+
 module.exports = {
     init,
+    download,
 }
