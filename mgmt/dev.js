@@ -5,6 +5,7 @@ const { createGzip } = require('zlib')
 const uuid = require('uuid').v4
 const path = require('path')
 const got = require('got')
+const fse = require('fs-extra')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
@@ -16,7 +17,7 @@ const {
 	S3_ENDPOINT,
     BUILDER_BUCKET_ID,
     ENDPOINTS_ENDPOINT,
-	MGMT_ENDPOINT,
+	INTERNAL_MGMT_ENDPOINT,
 } = process.env
 
 const router = new Router()
@@ -24,13 +25,15 @@ const router = new Router()
 router.use(bodyParser.json())
 
 const ensureDevelopmentBundle = async lang => {
-	const key = `development/${lang}.tar.gz`
+	const builderPath = path.resolve(__dirname, 'development', lang)
+	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
+	const key = `development/${lang}-${builderPkg.version}.tar.gz`
 
 	const existing = await s3.headObject({ Key: key })
 
 	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: key })
-		const tarStream = tar.pack(path.resolve(__dirname, 'development', lang))
+		const tarStream = tar.pack(builderPath)
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
@@ -78,7 +81,7 @@ const startDevSession = async ({ user, details: { repoName, owner } }) => {
         env: {
             ...schemaEnv,
             ULTIMA_CACHE_TOKEN: await sign({ actorType: 'development', user: owner, repo: repoName, deploymentId: devEndpointId }, { expiresIn: '1 week' }),
-            MGMT_ENDPOINT,
+            ULTIMA_CACHE_ENDPOINT: INTERNAL_MGMT_ENDPOINT,
         },
         repoName: `${owner}/${repoName}`,
     })

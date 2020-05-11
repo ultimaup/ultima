@@ -2,6 +2,7 @@ const got = require('got')
 const unzip = require('unzip-stream')
 const tar = require('tar-fs')
 const tarStream = require('tar-stream')
+const fse = require('fs-extra')
 const path = require('path')
 const uuid = require('uuid').v4
 const { createGzip } = require('zlib')
@@ -27,7 +28,7 @@ const {
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
-	MGMT_ENDPOINT,
+	INTERNAL_MGMT_ENDPOINT,
 } = process.env
 
 const streamToBuf = stream => {
@@ -44,13 +45,15 @@ const streamToBuf = stream => {
 const pipeline = promisify(stream.pipeline);
 
 const ensureBuilderBundle = async lang => {
-	const builderKey = `builders/${lang}.tar.gz`
+	const builderPath = path.resolve(__dirname, 'builders', lang)
+	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
+	const builderKey = `builders/${lang}-${builderPkg.version}.tar.gz`
 
 	const existing = await s3.headObject({ Key: builderKey })
 
 	if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
-		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
+		const tarStream = tar.pack(builderPath)
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
@@ -261,7 +264,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				env: {
 					...schemaEnv,
 					CI: true,
-					MGMT_ENDPOINT,
+					ULTIMA_CACHE_ENDPOINT: INTERNAL_MGMT_ENDPOINT,
 					ULTIMA_CACHE_TOKEN: await jwt.sign({ actorType: 'builder', user, repo, deploymentId: builderEndpointId }, { expiresIn: '1 hour' }),
 				},
 			})

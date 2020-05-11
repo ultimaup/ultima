@@ -14,6 +14,7 @@ const migrate = require('./db/migrate')
 
 const {
     PORT = 3000,
+    PUBLIC_ROUTE_ROOT_PROTOCOL,
 } = process.env
 
 const app = express()
@@ -27,7 +28,7 @@ graphql(app)
 buildCache(app)
 
 app.get('/', (req, res) => {
-    res.redirect(`build.${req.hostname}`)
+    res.redirect(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${req.hostname}`)
 })
 
 app.listen({ port: PORT }, () => {

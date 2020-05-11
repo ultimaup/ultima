@@ -33,7 +33,7 @@ const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
         ].join('\n'))
 
         ctr++
-    }, spinner.interval)
+    }, spinner.interval * 2)
 }
 
 const dev = async () => {
@@ -149,9 +149,11 @@ const dev = async () => {
             ui.updateBottomBar(`uploading files ${completed}/${total}`)
             
             if (total === completed && !runnerStarted) {
-                // start runner
-                runnerStarted = true
-                runner.start({ sessionId })
+                setTimeout(() => {
+                    // start runner
+                    runnerStarted = true
+                    runner.start({ sessionId })
+                }, 500)
                 ui.updateBottomBar(`starting app...`)
             }
             if (total === completed && isInitialized) {

@@ -21,35 +21,42 @@ const restoreCache = async (cacheType, hash, wkdir) => {
 	const result = await buildCache.head(hash)
 	if (result.statusCode === 200) {
 		console.log('cache found')
-		await extractStreamToDir(buildCache.getStream(hash), wkdir)
+		await extractStreamToDir(buildCache.getStream(hash), path.resolve(wkdir, 'node_modules'))
 		console.log(`cache restored`)
 		return true
 	} else {
-		console.log(`no cache found`)
+		console.log(`no cache found`, result.statusCode)
 		return false
 	}
 }
 
 const populateCache = async (cacheType, hash, wkdir) => {
 	console.log(`populating ${cacheType} cache for hash ${hash}`)
-	const result = await buildCache.head(hash)
-	if (result.statusCode === 404) {
-		const tarStream = tar.pack(wkdir)
-		const gzipStream = createGzip()
+	try {
+		const result = await buildCache.head(hash)
+		console.log('cache result:', result.statusCode)
+		if (result.statusCode === 404) {
+			const tarStream = tar.pack(path.resolve(wkdir, 'node_modules'))
+			const gzipStream = createGzip()
 
-		await pipeline(
-			tarStream,
-			gzipStream,
-		)
+			await pipeline(
+				tarStream,
+				gzipStream,
+				buildCache.postStream(hash),
+			)
 
-		console.log(`cache populated`)
-		return true
-	} else {
-		return false
+			console.log(`cache populated`)
+			return true
+		} else {
+			console.log('cache result', result.statusCode)
+			return false
+		}
+	} catch (e) {
+		console.error(e)
 	}
 }
 
-const decidePackageManager = async () => {
+const decidePackageManager = async (wkdir) => {
 	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
 	if (useYarn) {
 		const lockfileLocation = path.resolve(wkdir, 'yarn.lock')
@@ -83,27 +90,31 @@ const decidePackageManager = async () => {
 const installDeps = async (wkdir) => {
 	console.log('installing dependencies')
 
-	const { useYarn, lockfileHash } = await decidePackageManager()
+	const { useYarn, lockfileHash } = await decidePackageManager(wkdir)
 
 	if (useYarn) {
 		console.log('using yarn')
 
-		await restoreCache('yarn', lockfileHash, wkdir)
+		const restoredCache = await restoreCache('yarn', lockfileHash, wkdir)
 		await spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, stdio: 'inherit' })
 
-		return () => populateCache('yarn', lockfileHash, wkdir)
+		return {
+			promise: !restoredCache && populateCache('yarn', lockfileHash, wkdir),
+		}
 	} else {
 		if (lockfileHash) {
 			console.log('using npm ci')
-			await restoreCache('npm', lockfileHash, wkdir)
+			const restoredCache = await restoreCache('npm', lockfileHash, wkdir)
 			await spawn('npm',['ci'], { cwd: wkdir, stdio: 'inherit' })
 
-			return () => populateCache('npm', lockfileHash, wkdir)
+			return {
+				promise: !restoredCache && populateCache('npm', lockfileHash, wkdir),
+			}
 		} else {
 			console.log('using npm install')
 			await spawn('npm', ['install'], { cwd: wkdir, stdio: 'inherit' })
 
-			return () => null
+			return {}
 		}
 	}
 }

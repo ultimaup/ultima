@@ -99,8 +99,8 @@ app.post('/', async (req, res) => {
 
 		try {
 			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-				const populateCache = await installDeps(wkdir)
-				depCachePromise = populateCache()
+				const { promise } = await installDeps(wkdir)
+				depCachePromise = promise
 				await doBuild(wkdir)
 				await doTest(wkdir)
 			}
@@ -124,12 +124,12 @@ app.post('/', async (req, res) => {
 			gzipStream,
 			res
 		)
+			
+		if (depCachePromise) {
+			await depCachePromise
+		}
 	} catch (e) {
 		console.error(e)
-	}
-
-	if (depCachePromise) {
-		await depCachePromise
 	}
 	
 	process.exit()
