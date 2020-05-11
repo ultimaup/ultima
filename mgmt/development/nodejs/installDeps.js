@@ -15,6 +15,13 @@ const getFileHash = async absPath => {
 	const { stdout } = await spawn(`sha1sum`, [absPath])
 	return stdout.split('/n')[0].split(' ')[0]
 }
+
+const downloadDir = (wkdir, dir) => {
+	const tarStream = tar.pack(path.resolve(wkdir, dir))
+	const gzipStream = createGzip()
+	return tarStream.pipe(gzipStream)
+}
+
 const restoreCache = async (cacheType, hash, wkdir) => {
 	console.log(`restoring ${cacheType} cache for hash ${hash}`)
 	const result = await buildCache.head(hash)
@@ -103,7 +110,9 @@ const installDeps = async (wkdir, force, msgCb) => {
 		await p
 
 		if (!restoredCache) {
-			populateCache('yarn', lockfileHash, wkdir, msgCb).catch(msgCb)
+			return {
+				promise: populateCache('yarn', lockfileHash, wkdir, msgCb).catch(msgCb)
+			}
 		}
 		
 		return
@@ -112,7 +121,7 @@ const installDeps = async (wkdir, force, msgCb) => {
 			msgCb('found package-lock.json so using npm ci')
 			const restoredCache = await restoreCache('npm', lockfileHash, wkdir)
 			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
-			
+
 			p.child.stdout.on('data', msgCb)
 			p.child.stderr.on('data', msgCb)
 
@@ -121,7 +130,7 @@ const installDeps = async (wkdir, force, msgCb) => {
 			if (!restoredCache) {
 				populateCache('npm', lockfileHash, wkdir, msgCb).catch(msgCb)
 			}
-			
+
 			return
 		} else {
 			msgCb('using npm install')
@@ -147,5 +156,6 @@ const shouldRunInstallDeps = async (filePath, wkdir) => {
 
 module.exports = {
 	installDeps,
+	downloadDir,
 	shouldRunInstallDeps,
 }

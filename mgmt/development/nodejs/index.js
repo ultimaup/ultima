@@ -4,7 +4,7 @@ const socketIO = require('socket.io')
 
 const fileHandler = require('./fileHandler')
 const runner = require('./runner')
-const { installDeps, shouldRunInstallDeps } = require('./installDeps')
+const { installDeps, shouldRunInstallDeps, downloadDir } = require('./installDeps')
 
 const {
     PORT = 4489,
@@ -66,6 +66,14 @@ const server = spdy
             res.end(JSON.stringify({ sessionId }))
     
             return
+        }
+
+        if (req.url.startsWith('/download')) {
+            const sessionId = req.headers['x-session-id']
+            const wkdir = path.resolve('/tmp', sessionId)
+
+            const stream = downloadDir(wkdir, req.url.split('/download/')[1])
+            return stream.pipe(res)
         }
 
         res.writeHead(404, { 'Content-Type': 'application/json' })
