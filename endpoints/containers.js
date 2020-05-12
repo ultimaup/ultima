@@ -316,10 +316,9 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 }
 
 const listContainers = async () => {
-	const containers = await docker.listContainers({
-		state: 'stopped',
-	})
-	const containerInfo = await Promise.all(containers.map(c => docker.inspect(c.Id)))
+	const containers = await docker.listContainers()
+	const containerInfo = await Promise.all(containers.map(c => docker.getContainer(c.Id).inspect()))
+	return containerInfo
 }
 
 module.exports = {
