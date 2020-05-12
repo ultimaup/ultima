@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { ApolloProvider } from '@apollo/client'
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
+import Modal from 'react-modal'
 
 import Navbar from './components/Navbar'
 import DeploymentInfo from './components/DeploymentInfo'
@@ -51,6 +52,7 @@ const gitea = () => {
             </React.StrictMode>,
             environmentsContainer
         )
+        Modal.setAppElement('#environment-container')
     }
 
     const deploymentInfoContainer = document.getElementById('ultima-deployment-info')

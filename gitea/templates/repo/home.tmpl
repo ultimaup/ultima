@@ -152,6 +152,15 @@
 	</div>
 	<script>
 		(function(){
+			if (window.location.pathname.includes('src/branch')) {
+				document.getElementById('code-view').style.display = 'block'
+				document.querySelectorAll('.item').forEach(ele => {
+					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith('#')) {
+						ele.classList.remove('active')
+					}
+				})
+				return
+			}
 			function updateHash() {
 				document.querySelectorAll('.item').forEach((ele) => {
 					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith(window.location.pathname+(window.location.hash || '#'))) {
@@ -164,12 +173,18 @@
 			updateHash()
 			if (window.location.hash === '#/code') {
 				document.getElementById('code-view').style.display = 'block'
+				document.getElementById('environment-container').style.display = 'none'
+			} else {
+				document.getElementById('code-view').style.display = 'none'
+				document.getElementById('environment-container').style.display = 'block'
 			}
 			window.addEventListener("hashchange", function() {
 				if (window.location.hash === '#/code') {
 					document.getElementById('code-view').style.display = 'block'
+					document.getElementById('environment-container').style.display = 'none'
 				} else {
 					document.getElementById('code-view').style.display = 'none'
+					document.getElementById('environment-container').style.display = 'block'
 				}
 				updateHash()
 			}, false)

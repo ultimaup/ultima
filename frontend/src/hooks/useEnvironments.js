@@ -6,6 +6,13 @@ const GET_ENVIRONMENTS = gql`
             id
             createdAt
             stage
+            startedAt
+            stoppedAt
+            hash
+            routes {
+                id
+                url
+            }
         }
     }
 `

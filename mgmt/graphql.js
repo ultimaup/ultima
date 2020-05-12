@@ -66,12 +66,21 @@ const typeDefs = gql`
         ssh_url: String
     }
 
+    type Route {
+        id: ID
+        url: String
+    }
+
     type Environment {
         id: ID
         repoName: String
         stage: String
         owner: String
         createdAt: DateTime
+        startedAt: DateTime
+        stoppedAt: DateTime
+        hash: String
+        routes: [Route]
     }
 
     type Query {
@@ -118,10 +127,19 @@ const resolvers = {
 
             const deployments = await q
 
+            const routes = await Route.query().whereIn('deploymentId', deployments.map(d => d.id))
+
             return deployments.map(d => {
                 return {
                     ...d,
                     owner: d.id.split('-')[0],
+                    routes: routes.filter(r => r.deploymentId === d.id).map(r => {
+                        return {
+                            ...r,
+                            id: r.source+r.createdAt,
+                            url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                        }
+                    }),
                 }
             })
         },

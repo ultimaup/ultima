@@ -235,6 +235,8 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			await Deployment.ensure({
 				id: builderEndpointId,
 				stage: 'builder',
+				repoName: repository.full_name,
+				owner: user,
 				bundleLocation: await ensureBuilderBundle(lang),
 			})
 			container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))

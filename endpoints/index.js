@@ -104,7 +104,7 @@ const markStoppedContainers = async () => {
         return {
             deploymentId: c.Name.split('/')[1],
             startedAt: c.State.StartedAt,
-            stoppedAt: c.State.FinishedAt,
+            stoppedAt: c.State.FinishedAt.startsWith('0001') ? null : c.State.FinishedAt,
         }
     })
 
@@ -114,8 +114,8 @@ const markStoppedContainers = async () => {
     }))
 
     await Promise.all([
-        ...newContainerInfo,
         ...unknownContainers,
+        ...newContainerInfo,
     ].map(({ deploymentId, startedAt, stoppedAt }) => {
         return Deployment.query().findById(deploymentId).patch({ startedAt, stoppedAt }).skipUndefined()
     }))
