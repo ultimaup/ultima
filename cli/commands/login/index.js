@@ -1,5 +1,5 @@
 const { promisify } = require('util')
-const commandExists = require('command-exists')
+const commandExists = require('command-exists-promise')
 const SSHConfig = require('ssh-config')
 const fse = require('fs-extra')
 const homedir = require('os').homedir()
