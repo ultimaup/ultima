@@ -155,7 +155,7 @@
 			if (window.location.pathname.includes('src/branch')) {
 				document.getElementById('code-view').style.display = 'block'
 				document.querySelectorAll('.item').forEach(ele => {
-					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith('#')) {
+					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith('#/')) {
 						ele.classList.remove('active')
 					}
 				})
@@ -163,7 +163,7 @@
 			}
 			function updateHash() {
 				document.querySelectorAll('.item').forEach((ele) => {
-					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith(window.location.pathname+(window.location.hash || '#'))) {
+					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith(window.location.pathname+(window.location.hash || '#/'))) {
 						ele.classList.add('active')
 					} else {
 						ele.classList.remove('active')

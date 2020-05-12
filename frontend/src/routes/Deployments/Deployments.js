@@ -9,7 +9,7 @@ import { Badge } from '../../components/Badge'
 import { LogFrame } from '../Logs/Logs'
 import StatusDot from '../../components/StatusDot'
 
-const ActionContainer = styled.div`
+export const ActionContainer = styled.div`
     display: flex;
     padding: 16px 12px;
     border-radius: 4px;
@@ -157,7 +157,7 @@ const Chevron = styled.div`
     margin-left: 16px;
 `
 
-const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to }) => {
+const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
     const data = JSON.parse(metadata)
 
     if (!title) {
@@ -171,7 +171,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
         }
 
         return (
-            <ActionLink to={to}>
+            <ActionLink to={to} onClick={onClick}>
                 <Status>
                     {completedAt ? (type === 'error' ? <Badge variant="danger">Failed</Badge> : <Badge variant="success">Success</Badge>) : <BadgeSpinner variant="warning">Deploying <Spinner /></BadgeSpinner>}
                 </Status>
@@ -195,7 +195,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
 
     return (
         <>
-            <ActionContainer>
+            <ActionContainer onClick={onClick}>
                 <StatusDot status={type} complete={!!completedAt} />
                 <Body>
                     <strong>
@@ -252,7 +252,7 @@ const ActionDetails = ({ owner }) => {
     )
 }
 
-const ActionList = ({ owner, repoName }) => {
+export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick }) => {
     const { loading, error, actions } = useActions({ owner, repoName })
 
     if (loading) {
@@ -270,8 +270,8 @@ const ActionList = ({ owner, repoName }) => {
 
     return (
         <ActionsContainer>
-            {actions.map(action => (
-                <Action key={action.id} {...action} to={`/${action.id}`} />
+            {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
+                <Action key={action.id} {...action} to={`/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )

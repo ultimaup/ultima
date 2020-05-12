@@ -2,12 +2,15 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import moment from 'moment'
 import Modal from 'react-modal'
+import { HashRouter as Router } from 'react-router-dom'
 
 import Octicon, { GitBranch, Terminal, LinkExternal } from '@primer/octicons-react'
 
 import useEnvironments from '../../hooks/useEnvironments'
 
 import StatusDot from '../../components/StatusDot'
+
+import { ActionList, ActionContainer } from '../Deployments/Deployments'
 
 const LangLogo = styled.div`
     width: 75px;
@@ -73,6 +76,8 @@ const Env = styled.a`
 
     h4 {
         margin-bottom: 6px;
+        display: flex;
+        align-items: center;
     }
 
     position: relative;
@@ -82,6 +87,11 @@ const Env = styled.a`
         right: 8px;
         top: 8px;
         opacity: 0.6;
+    }
+
+    ${ActionContainer} {
+        margin-top: 8px !important;
+        margin-bottom: 8px !important;
     }
 `
 
@@ -139,6 +149,10 @@ const EnvironmentsContainer = styled.div`
     }
 
     h3 {
+        margin-top: -18px !important;
+        margin-left: -12px !important;
+        width: calc(100% + 24px) !important;
+
         a, a:hover {
             color: white;
         }
@@ -157,9 +171,17 @@ const EnvList = styled.div`
     flex-direction: row;
 `
 
+const DeploymentsContainer = styled.div`
+    margin-top: 4px;
+    > div > a {
+        margin-top: 8px !important;
+        margin-bottom: 0 !important;
+    }
+`
+
 const Environments = ({ owner, repoName }) => {
     const { loading, error, environments } = useEnvironments({ owner, repoName })
-    const [dbConnectionInstructions, setDbConnectionInstructions] = useState(null)
+    const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
 
     if (loading) {
         return 'loading...'
@@ -172,7 +194,7 @@ const Environments = ({ owner, repoName }) => {
     let r = [...environments].reverse()
 
     return (
-        <>
+        <Router>
             {groupByStage(r).sort(([a],[b]) => {
                 if (a.startsWith('refs/heads/') && !b.startsWith('refs/heads/')) {
                     return -1
@@ -186,7 +208,7 @@ const Environments = ({ owner, repoName }) => {
 
                 return (
                     <EnvironmentsContainer key={stage}>
-                        <h3>
+                        <h3 className="ui top attached header">
                             <a href={`/${owner}/${repoName}/src/branch/${name}`}>
                                 <Octicon icon={stage.startsWith('refs/heads/') ? GitBranch : Terminal} size={21} />
                                 {name}
@@ -213,6 +235,12 @@ const Environments = ({ owner, repoName }) => {
                                 <Route>Click for Connection Instructions</Route>
                             </Env>
                         </EnvList>
+                        <h5>Recent Deployments</h5>
+                        <DeploymentsContainer>
+                            <ActionList owner={owner} repoName={repoName} branch={name} limit={3} onClick={(id) => {
+                                window.location.href = window.location.pathname + `/activity/deployments#/${id}`
+                            }} />
+                        </DeploymentsContainer>
                     </EnvironmentsContainer>
                 )
             })}
@@ -257,7 +285,7 @@ const Environments = ({ owner, repoName }) => {
                     {/* </div> */}
                 </div>
             </Modal>
-        </>
+        </Router>
     )
 }
 
