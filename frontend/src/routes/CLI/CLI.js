@@ -78,19 +78,13 @@ const Chrome = styled.div`
     }
 `
 
-const CLI = () => {
+export const TerminalContent = () => {
     const [copySuccess, setCopySuccess] = useState(null)
     const token = localStorage.getItem('token')
     const pkg = "@ultimaup/cli"
 
-    if (!token) {
-        window.location.href = '/user/login?redirect_to=/cli'
-    }
-
     return (
-        <Container>
-            <h2>Ultima CLI</h2>
-            <p>Make sure you have <a href="https://nodejs.org/en/">nodejs</a> installed <br />then just run the following commands in your terminal to get started:</p>
+        <>
             <Terminal>
                 <Chrome>
                     <div />
@@ -99,19 +93,33 @@ const CLI = () => {
                 </Chrome>
                 <Body>
                     {!token && <LoginBtn />}
-                    <code><i>$</i>npm i -g {pkg}</code>
+                    <code><i>$</i>npm i -g {pkg} {'&&'} \</code>
                     <code><i>$</i>ultima login {token}</code>
-                    <Clipboard data-clipboard-text={`ultima login ${token}`} onSuccess={() => {
-                        setCopySuccess(true)
-                        setTimeout(() => {
-                            setCopySuccess(false)
-                        }, 1000)
-                    }}>
-                        {copySuccess ? 'Copied' : 'Copy'}
-                    </Clipboard>
-                    <code><i>$</i>ultima init {'$PROJECT_NAME'}</code>
                 </Body>
             </Terminal>
+            <Clipboard className="ui button green" data-clipboard-text={`npm i -g ${pkg} && ultima login ${token}`} onSuccess={() => {
+                setCopySuccess(true)
+                setTimeout(() => {
+                    setCopySuccess(false)
+                }, 1000)
+            }}>
+                {copySuccess ? 'Copied' : 'Copy'}
+            </Clipboard>
+        </>
+    )
+}
+
+const CLI = () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+        window.location.href = '/user/login?redirect_to=/cli'
+    }
+
+    return (
+        <Container>
+            <h2>Ultima CLI</h2>
+            <p>Make sure you have <a href="https://nodejs.org/en/">nodejs</a> installed <br />then just run the following commands in your terminal to get started:</p>
+            <TerminalContent />
             <a href="/" style={{ marginTop: 32 }}>
                {'<--'} Back to Ultima
             </a>
