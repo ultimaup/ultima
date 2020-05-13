@@ -20,6 +20,8 @@ const LangLogo = styled.div`
     background-position: center;
     background-repeat: no-repeat;
     background-color: white;
+
+    ${({ isStatic }) => isStatic && `background-size: 75%; background-image: url('${require('programming-languages-logos/src/html/html.png')}')`}
 `
 
 const stageToName = stage => {
@@ -33,6 +35,10 @@ const stageToName = stage => {
 const Route = styled.div`
     background: #176615;
     padding: 8px;
+    font-size: 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 `
 
 const Env = styled.a`
@@ -96,24 +102,27 @@ const Env = styled.a`
 `
 
 const Environment = ({ id, stage, createdAt, startedAt, stoppedAt, routes = [], className }) => {
-    return (
-        <Env href={routes[0].url} target="_blank">
-            <Octicon icon={LinkExternal} className="ext" />
-            <div>
-                <LangLogo />
+    return routes.map(({ id, url }) => {
+        const isStatic = url.includes('//static')
+        return (
+            <Env href={url} target="_blank">
+                <Octicon icon={LinkExternal} className="ext" />
                 <div>
-                    <h4>
-                        <StatusDot complete status={stoppedAt ? 'error' : 'success'} />
-                        NodeJS API
-                    </h4>
-                    <span>Created on {moment(startedAt || createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
-                    {stoppedAt && <span>stopped on {moment(stoppedAt).format('YYYY-MM-DD [at] HH:mm A')}</span>}
-                    {stoppedAt && <span>Live for {moment.duration(moment(stoppedAt).diff(startedAt || createdAt)).humanize()}</span>}
+                    <LangLogo isStatic={isStatic} />
+                    <div>
+                        <h4>
+                            <StatusDot complete status={stoppedAt ? 'error' : 'success'} />
+                            {isStatic ? 'Static Frontend' : 'NodeJS API'}
+                        </h4>
+                        <span>Created on {moment(startedAt || createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
+                        {stoppedAt && <span>stopped on {moment(stoppedAt).format('YYYY-MM-DD [at] HH:mm A')}</span>}
+                        {stoppedAt && <span>Live for {moment.duration(moment(stoppedAt).diff(startedAt || createdAt)).humanize()}</span>}
+                    </div>
                 </div>
-            </div>
-            {routes.length ? routes.map(r => <Route>{r.url}</Route>) : null}
-        </Env>
-    )
+                <Route>{url}</Route>
+            </Env>
+        )
+    })
 }
 
 const groupByStage = (environments) => {
