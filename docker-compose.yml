@@ -94,7 +94,7 @@ services:
       PG_BROKER_PORT: 4497
       PUBLIC_ROUTE_ROOT: onultima.local
 
-      NEXUS_ENDPOINT: http://nexus:8081
+      NEXUS_ENDPOINT: http://192.168.190.128:4493
 
   dind:
     image: docker:dind
