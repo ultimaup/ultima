@@ -10,6 +10,7 @@ const {promisify} = require('util');
 const yaml = require('js-yaml');
 const gunzip = require('gunzip-maybe')
 const mime = require('mime-types')
+const fse = require('fs-extra')
 
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
@@ -130,7 +131,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		console.log('done')
 		return null
 	}
-
+	let schemaEnv = {}
 	const commitMessage = commits.find(c => c.id === after)
 
 	const actionData = {
@@ -219,6 +220,26 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 		}
 
+		if (hasAPI) {
+			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
+
+			try {
+				const schemaInfo = {
+					username: `${repository.full_name.split('/').join('-')}-${branch}`,
+					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
+					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
+				}
+
+				await ensureSchema(schemaInfo)
+
+				schemaEnv = getSchemaEnv(schemaInfo)
+				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
+			} catch (e) {
+				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
+				throw e
+			}
+		}
+
 		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
 		const lang = 'nodejs'
@@ -236,6 +257,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				id: builderEndpointId,
 				stage: 'builder',
 				bundleLocation: await ensureBuilderBundle(lang),
+				env: {
+					CI: true,
+					...schemaEnv,
+				}
 			})
 			container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
 
@@ -343,25 +368,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let resultingEndpointId
 		if (hasAPI) {
 			resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
-
-			let schemaEnv = {}
-			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
-
-			try {
-				const schemaInfo = {
-					username: `${repository.full_name.split('/').join('-')}-${branch}`,
-					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
-					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
-				}
-
-				await ensureSchema(schemaInfo)
-
-				schemaEnv = getSchemaEnv(schemaInfo)
-				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
-			} catch (e) {
-				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
-				throw e
-			}
 
 			const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
 
