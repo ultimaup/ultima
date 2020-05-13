@@ -215,6 +215,8 @@ const Environments = ({ owner, repoName }) => {
                 // const history = environments.filter(e => !!e.stoppedAt)
                 const name = stageToName(stage)
 
+                const hasAPI = live[0].routes.find(r => !r.url.includes('//static'))
+
                 return (
                     <EnvironmentsContainer key={stage}>
                         <h3 className="ui top attached header">
@@ -227,6 +229,7 @@ const Environments = ({ owner, repoName }) => {
                         <EnvList>
                             {!!live.length && live.map(env => <Environment key={env.id} {...env} />)}
 
+                            {hasAPI && (
                             <Env onClick={() => {
                                 setDbConnectionInstructions(name)
                             }}>
@@ -242,7 +245,7 @@ const Environments = ({ owner, repoName }) => {
                                     </div>
                                 </div>
                                 <Route>Click for Connection Instructions</Route>
-                            </Env>
+                            </Env>)}
                         </EnvList>
                         <h5>Recent Deployments</h5>
                         <DeploymentsContainer>
