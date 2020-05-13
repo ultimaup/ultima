@@ -43,9 +43,9 @@ const streamToBuf = stream => {
 const pipeline = promisify(stream.pipeline);
 
 const ensureBuilderBundle = async lang => {
-	const builderPath = path.resolve(__dirname, 'builder', lang)
+	const builderPath = path.resolve(__dirname, 'builders', lang)
 	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
-	const key = `builder/${lang}-${builderPkg.version}.tar.gz`
+	const key = `builders/${lang}-${builderPkg.version}.tar.gz`
 
 	const existing = await s3.headObject({ Key: key })
 

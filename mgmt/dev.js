@@ -5,6 +5,7 @@ const { createGzip } = require('zlib')
 const uuid = require('uuid').v4
 const path = require('path')
 const got = require('got')
+const fse = require('fs-extra')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
