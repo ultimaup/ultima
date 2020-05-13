@@ -43,19 +43,21 @@ const streamToBuf = stream => {
 const pipeline = promisify(stream.pipeline);
 
 const ensureBuilderBundle = async lang => {
-	const builderKey = `builders/${lang}.tar.gz`
+	const builderPath = path.resolve(__dirname, 'builder', lang)
+	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
+	const key = `builder/${lang}-${builderPkg.version}.tar.gz`
 
-	const existing = await s3.headObject({ Key: builderKey })
+	const existing = await s3.headObject({ Key: key })
 
 	if (!existing) {
-		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
-		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
+		const { writeStream, promise } = s3.uploadStream({ Key: key })
+		const tarStream = tar.pack(builderPath)
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
 	}
 
-	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
 
 const removeLeadingSlash = (str) => {
