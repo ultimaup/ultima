@@ -32,7 +32,12 @@ const server = spdy
                     io.to(sessionId).emit('event', {
                         event: 'install-deps-start',
                     })
-                    await installDeps(wkdir)
+                    await installDeps(wkdir, false, (msg) => {
+                        io.to(sessionId).emit('event',{
+                            event: 'stdout',
+                            data: msg.toString('utf8'),
+                        })
+                    })
                     io.to(sessionId).emit('event', {
                         event: 'install-deps-complete',
                     })
