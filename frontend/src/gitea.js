@@ -67,7 +67,7 @@ const gitea = () => {
     }
 
     const [notificationContainer] = document.querySelectorAll(`.item[href="/${owner}/${repoName}/activity/deployments"]`)
-        
+
     if (notificationContainer) {
         const div = document.createElement('div')
         notificationContainer.appendChild(div)
