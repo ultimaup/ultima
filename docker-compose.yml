@@ -94,7 +94,7 @@ services:
       PG_BROKER_PORT: 4497
       PUBLIC_ROUTE_ROOT: onultima.local
 
-      NEXUS_ENDPOINT: http://192.168.190.128:4493
+      REGISTRY_CACHE_ENDPOINT: http://192.168.190.128:4493/
 
   dind:
     image: docker:dind
@@ -260,7 +260,9 @@ services:
       - SERVER_BASEPATH=/kibana
       - SERVER_REWRITEBASEPATH=true
 
-  nexus:
-    image: sonatype/nexus3
+  registry-cache:
+    image: nginx
     ports:
-      - 4493:8081
+      - 4493:80
+    volumes:
+      - ./registry-cache/nginx.conf:/etc/nginx/nginx.conf:ro

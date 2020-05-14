@@ -12,6 +12,15 @@ const installDeps = async (wkdir) => {
 
 	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
 
+	if (await fse.pathExists(path.resolve(wkdir, '.npmrc'))) {
+		await spawn('sed', ['-i', `s //registry.npmjs.org/ ${npm_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.npmrc')])
+	}
+
+	if (await fse.pathExists(path.resolve(wkdir, '.yarnrc'))) {
+		await spawn('sed', ['-i', `s //registry.npmjs.org/ ${npm_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.yarnrc')])
+		await spawn('sed', ['-i', `s //registry.yarnpkg.com/ ${yarn_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.yarnrc')])
+	}
+
 	if (useYarn) {
 		console.log('using yarn')
 		
