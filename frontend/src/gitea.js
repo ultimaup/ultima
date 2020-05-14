@@ -11,13 +11,25 @@ import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 import NewRepoRoute from './routes/NewRepo'
 import Environments from './routes/Environments'
-
+import CLIModal from './components/CLIModal'
 import client from './graphql'
 
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
     ele.classList.add('active')
 })
 
+const [cliLink] = document.querySelectorAll('.cli-link')
+
+if (cliLink) {
+    const cliModalContainer = document.createElement('div')
+    cliLink.insertAdjacentElement('afterend', cliModalContainer)
+    ReactDOM.render(
+        <React.StrictMode>
+            <CLIModal triggerEle={cliLink} />
+        </React.StrictMode>,
+        cliModalContainer
+    )
+}
 const gitea = () => {
     const navbar = document.getElementById('ultima-navbar')
 
@@ -96,7 +108,7 @@ const gitea = () => {
             ReactDOM.render(
                 <React.StrictMode>
                     <ApolloProvider client={client}>
-                        <GettingStarted />
+                        <GettingStarted cliLink={cliLink} />
                     </ApolloProvider>
                 </React.StrictMode>,
                 div

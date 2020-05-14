@@ -26,7 +26,6 @@ const App = () => (
                     <Route path="/admin/waitlist" component={WaitlistAdmin} />
                     <Route path="/community" component={SlackRedirect} />
                     <Route path="/user/login" component={Login} />
-                    <Route path="/cli" component={CLI} />
                     <Route path="/legals" component={Legals} />
                     <Route path="/security" component={Security} />
                     <Route path="/.well-known/security.txt" component={SecurityRedirect} />

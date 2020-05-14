@@ -43,7 +43,7 @@ const Welcome = styled.div`
     }
 `
 
-const GettingStarted = () => {
+const GettingStarted = ({ cliLink }) => {
     return (
         <Welcome>
             <h2>Welcome to the Ultima Alpha</h2>
@@ -57,8 +57,7 @@ const GettingStarted = () => {
                     </a>
                 </li>
                 <li>
-                    
-                    <a href="/cli"><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
+                    <a onClick={() => cliLink.click()}><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
                 </li>
                 <li>
                     
