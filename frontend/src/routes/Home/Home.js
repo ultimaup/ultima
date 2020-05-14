@@ -72,7 +72,7 @@ const Home = () => (
             <span>About</span>
             <a href="https://twitter.com/ultimaup">Twitter</a>
             <a href="https://medium.com/words-from-ultima">Medium</a>
-            <a href="mailto:buildonultima@gmail.com">Contact</a>
+            <a href="mailto:josh@onultima.com">Contact</a>
         </div>
       </div>
     </div>
