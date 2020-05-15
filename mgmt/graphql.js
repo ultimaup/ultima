@@ -69,6 +69,7 @@ const typeDefs = gql`
     type Route {
         id: ID
         url: String
+        routeType: String
     }
 
     type Environment {
@@ -137,7 +138,8 @@ const resolvers = {
                         return {
                             ...r,
                             id: r.source+r.createdAt,
-                            url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                            url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.alias || r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                            routeType: r.source.startsWith('static-') ? 'static' : 'api',
                         }
                     }),
                 }

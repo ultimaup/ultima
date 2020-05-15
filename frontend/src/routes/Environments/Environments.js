@@ -102,8 +102,8 @@ const Env = styled.a`
 `
 
 const Environment = ({ id, stage, createdAt, startedAt, stoppedAt, routes = [], className }) => {
-    return routes.map(({ id, url }) => {
-        const isStatic = url.includes('//static')
+    return routes.map(({ id, url, routeType }) => {
+        const isStatic = routeType === 'static'
         return (
             <Env href={url} target="_blank">
                 <Octicon icon={LinkExternal} className="ext" />
@@ -215,7 +215,7 @@ const Environments = ({ owner, repoName }) => {
                 // const history = environments.filter(e => !!e.stoppedAt)
                 const name = stageToName(stage)
 
-                const hasAPI = live[0].routes.find(r => !r.url.includes('//static'))
+                const hasAPI = live[0].routes.find(r => r.routeType === 'api')
 
                 return (
                     <EnvironmentsContainer key={stage}>

@@ -12,6 +12,7 @@ const GET_ENVIRONMENTS = gql`
             routes {
                 id
                 url
+                routeType
             }
         }
     }
