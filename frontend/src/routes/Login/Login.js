@@ -22,7 +22,39 @@ const LoginContainer = styled.div`
     flex-direction: column;
     width: 100%;
     height: 100vh;
-    background: #181818;
+
+    @media (prefers-color-scheme: light) {
+        svg {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    }
+        
+    @media (prefers-color-scheme: dark) {
+        background: #313131;
+        color: #F9F9F9;
+
+        a {
+            color: #F9F9F9;
+        }
+        .ready, .nav {
+            background: #191919;
+        }
+
+        .nav a, .link-list a {
+            color: #F9F9F9;
+        }
+
+        .logo-img {
+            background-image: url('./logo-circle-white.svg');
+        }
+        .logo-text {
+            color: #F9F9F9;
+        }
+        .top .grid:after {
+            opacity: 0.3;
+        }
+    }
 
     h1 {
         font-size: 48px;
