@@ -94,6 +94,8 @@ services:
       PG_BROKER_PORT: 4497
       PUBLIC_ROUTE_ROOT: onultima.local
 
+      REGISTRY_CACHE_ENDPOINT: http://192.168.190.128:4493/
+
   dind:
     image: docker:dind
     privileged: true
@@ -257,3 +259,10 @@ services:
       - XPACK_SECURITY_ENCRYPTIONKEY=something_at_least_32_characterssomething_at_least_32_characters
       - SERVER_BASEPATH=/kibana
       - SERVER_REWRITEBASEPATH=true
+
+  registry-cache:
+    image: nginx
+    ports:
+      - 4493:80
+    volumes:
+      - ./registry-cache/nginx.conf:/etc/nginx/nginx.conf:ro
