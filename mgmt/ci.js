@@ -417,10 +417,18 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				destination: endpointUrl,
 				deploymentId: resultingEndpointId,
 			}
-			endpointRouteUrl = await route.set(endpointRoute)
+
+			// check if any other routes are using the alias before using
+			if (config.api && config.api['branch-domains']) {
+				if (config.api['branch-domains'][branch]) {
+					endpointRoute.alias = config.api['branch-domains'][branch]
+				}
+			}
+
 			if (currentRoute) {
 				await removeDeployment(currentRoute.deploymentId)
 			}
+			endpointRouteUrl = await route.set(endpointRoute)
 			await markActionComplete(routeActionId, { data: { endpointUrl, endpointRouteUrl } })
 		}
 
@@ -428,13 +436,25 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		if (staticUrl) {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating static route' })
 			// add static route
+			const [currentRoute] = await route.get(`static-${branch}-${repo}-${user}`)
 			const staticRoute = {
 				subdomain: `static-${branch}-${repo}-${user}`,
 				destination: staticUrl,
 				extensions: ['index.html'],
 				deploymentId: `${repository.full_name.split('/').join('-')}-${after}`,
 			}
+
+			// check if any other routes are using the alias before using
+			if (config.web['branch-domains']) {
+				if (config.web['branch-domains'][branch]) {
+					staticRoute.alias = config.web['branch-domains'][branch]
+				}
+			}
+
 			staticRouteUrl = await route.set(staticRoute)
+			if (currentRoute) {
+				await removeDeployment(currentRoute.deploymentId)
+			}
 			await markActionComplete(routeActionId, { data: { staticUrl, staticRouteUrl } })
 		}
 

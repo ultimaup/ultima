@@ -2,11 +2,10 @@ const got = require('got')
 const {
     ROUTER_MGMT_ENDPOINT,
 } = process.env
-const Route = require('./db/Route')
 
-const set = ({ source, subdomain, destination, deploymentId, extensions }) => (
+const set = ({ source, subdomain, destination, alias, deploymentId, extensions }) => (
     got.post(`${ROUTER_MGMT_ENDPOINT}/route`, {
-		json: { source, subdomain, destination, extensions, deploymentId },
+		json: { source, subdomain, destination, alias, extensions, deploymentId },
 	}).json()
 )
 

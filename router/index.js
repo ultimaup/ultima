@@ -47,10 +47,18 @@ const parseUrl = url => {
 
 const sourceToKey = (source, extensions) => source.split('.').join('-').split('/').join('-') + (extensions ? extensions.length : 0)
 
-const genConfig = ({ source, destination, extensions = [] }) => {
+const aliasConfig = ({ alias, prefix, key }) => (alias ? `
+[http.routers.${key}-alias]
+    rule = "Host(\`${alias}\`)"
+    ${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}
+    service = "${key}"` : ''
+)
+
+const genConfig = ({ source, destination, alias, extensions = [] }) => {
     console.log('genConfig called', {
         source,
         destination, extensions,
+        alias,
     })
     const key = sourceToKey(source, extensions)
     const url = parseUrl(destination) // URL doesn't support http2 or hostnames
@@ -73,11 +81,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
 
     if (extensions && extensions.includes('tcp')) {
         return (
-            `${!CERT_RESOLVER ? `
-            [entryPoints]
-                [entryPoints.${key}]
-                    address=":${port}"
-            ` : ''}
+            `
             [tcp]
                 [tcp.routers]
                     [tcp.routers.${key}]
@@ -87,9 +91,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
                             certResolver = "${CERT_RESOLVER}"
                             [[tcp.routers.${key}.tls.domains]]
                                 main = "*.${subdomainMinusOne}"
-                                sans = ["*.${subdomainMinusOne}"]` : `
-                        entryPoints = ["${key}"]
-                        `}
+                                sans = ["*.${subdomainMinusOne}"]` : ``}
                 [tcp.services]
                     [tcp.services.${key}.loadBalancer]
                         [[tcp.services.${key}.loadBalancer.servers]]
@@ -106,7 +108,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
                         ${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}
                         service = "${key}"${CERT_RESOLVER ? `
                         [http.routers.${key}.tls]
-                            certResolver = "${CERT_RESOLVER}"` : ''}${prefix ? `
+                            certResolver = "${CERT_RESOLVER}"` : ''}${aliasConfig({ alias, prefix, key })}${prefix ? `
                 [http.middlewares]
                     [http.middlewares.${key}]
                         [http.middlewares.${key}.addPrefix]
@@ -142,7 +144,7 @@ const genConfig = ({ source, destination, extensions = [] }) => {
                 certResolver = "${CERT_RESOLVER}"
                 [[http.routers.${key}.tls.domains]]
                     main = "*.${subdomainMinusOne}"
-                    sans = ["*.${subdomainMinusOne}"]` : ''}${prefix ? `
+                    sans = ["*.${subdomainMinusOne}"]` : ''}${aliasConfig({ alias, prefix, key })}${prefix ? `
     [http.middlewares]
         [http.middlewares.${key}.addPrefix]
             prefix = "${prefix}"` : ''}
@@ -182,10 +184,10 @@ const defaultConfigs = () => {
     ]
 }
 
-const ensureConfig = async ({ source, destination, extensions = [] }) => {
+const ensureConfig = async ({ source, destination, alias, extensions = [] }) => {
     const key = sourceToKey(source, extensions)
     const fileName = path.resolve(CONFIG_DIR, `${key}.toml`)
-    const config = genConfig({ source, destination, extensions })
+    const config = genConfig({ source, alias, destination, extensions })
     await fse.outputFile(fileName, config)
     // console.log('route set', source, '->', destination, extensions)
 }
@@ -212,15 +214,15 @@ const ensurePropogation = async key => {
 }
 
 app.post('/route', async (req, res) => {
-    let { subdomain, source, destination, extensions, deploymentId } = req.body
+    let { subdomain, source, destination, alias, extensions, deploymentId } = req.body
     source = source || `${subdomain}.${PUBLIC_ROUTE_ROOT}`
 
-    await ensureConfig({ source, destination, extensions })
-    await Route.set({ source, destination, extensions, deploymentId })
+    await ensureConfig({ source, alias, destination, extensions })
+    await Route.set({ source, destination, alias, extensions, deploymentId })
 
     await ensurePropogation(sourceToKey(source))
 
-    res.json(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://${source}${PUBLIC_ROUTE_ROOT_PORT ? `:${PUBLIC_ROUTE_ROOT_PORT}` : ''}`)
+    res.json(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://${alias || source}${PUBLIC_ROUTE_ROOT_PORT ? `:${PUBLIC_ROUTE_ROOT_PORT}` : ''}`)
 })
 
 app.post('/route/get', async (req, res) => {
