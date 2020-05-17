@@ -236,6 +236,8 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			await Deployment.ensure({
 				id: builderEndpointId,
 				stage: 'builder',
+				repoName: repository.full_name,
+				owner: user,
 				bundleLocation: await ensureBuilderBundle(lang),
 				env: {
 					npm_config_registry: REGISTRY_CACHE_ENDPOINT,

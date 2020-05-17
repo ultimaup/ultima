@@ -4,7 +4,8 @@ const io = require('socket.io')(server, { path: '/ws/container' })
 const uuid = require('uuid').v4
 const got = require('got')
 
-const { ensureContainerForDeployment, removeContainerFromDeployment, exec } = require('./containers')
+const Deployment = require('./db/Deployment')
+const { ensureContainerForDeployment, removeContainerFromDeployment, exec, listContainers } = require('./containers')
 
 const {
     PORT = 3001,
@@ -92,6 +93,37 @@ io.on('connection', (socket) => {
         }
     })
 })
+
+const markStoppedContainers = async () => {
+    const [containers, runningDeployments] = await Promise.all([
+        listContainers(),
+        Deployment.query().whereNull('stoppedAt')
+    ])
+
+    const newContainerInfo = containers.map(c => {
+        return {
+            deploymentId: c.Name.split('/')[1],
+            startedAt: c.State.StartedAt,
+            stoppedAt: c.State.FinishedAt.startsWith('0001') ? null : c.State.FinishedAt,
+        }
+    })
+
+    const unknownContainers = runningDeployments.filter(d => !containers.find(c => c.Name === `/${d.id}`)).map(d => ({
+        deploymentId: d.id,
+        stoppedAt: new Date(),
+    }))
+
+    await Promise.all([
+        ...unknownContainers,
+        ...newContainerInfo,
+    ].map(({ deploymentId, startedAt, stoppedAt }) => {
+        return Deployment.query().findById(deploymentId).patch({ startedAt, stoppedAt }).skipUndefined()
+    }))
+}
+
+setInterval(() => {
+    markStoppedContainers().catch(console.error)
+}, 1000 * 10)
 
 server.listen(PORT, (err) => {
 	if (err) {

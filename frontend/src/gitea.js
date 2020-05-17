@@ -2,16 +2,16 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { ApolloProvider } from '@apollo/client'
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
+import Modal from 'react-modal'
 
 import Navbar from './components/Navbar'
-import DeploymentInfo from './components/DeploymentInfo'
 import DeploymentNotification from './components/DeploymentNotification'
 import GettingStarted from './components/GettingStarted'
 import Deployments from './routes/Deployments'
 import Logs from './routes/Logs'
 import NewRepoRoute from './routes/NewRepo'
+import Environments from './routes/Environments'
 import CLIModal from './components/CLIModal'
-
 import client from './graphql'
 
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
@@ -41,43 +41,44 @@ const gitea = () => {
             navbar
         )
     }
-
-    const deploymentInfoContainer = document.getElementById('ultima-deployment-info')
-
-    if (deploymentInfoContainer) {
-        const url = window.location.pathname
+    
+    const url = window.location.pathname
         
-        let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
-        if (_ === '_edit') {
-            branch = __
-        }
-        if (!branch) {
-            branch = 'master'
-        }
+    let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
+    
+    if (_ === '_edit') {
+        branch = __
+    }
+    if (!branch) {
+        branch = 'master'
+    }
 
+    const environmentsContainer = document.getElementById('environment-container')
+    if (environmentsContainer) {
         ReactDOM.render(
             <React.StrictMode>
                 <ApolloProvider client={client}>
-                    <DeploymentInfo owner={owner} repoName={repoName} branch={branch} />
+                    <Environments owner={owner} repoName={repoName} />
                 </ApolloProvider>
             </React.StrictMode>,
-            deploymentInfoContainer
+            environmentsContainer
         )
+        Modal.setAppElement('#environment-container')
+    }
 
-        const [notificationContainer] = document.querySelectorAll(`.item[href="/${owner}/${repoName}/activity/deployments"]`)
-        
-        if (notificationContainer) {
-            const div = document.createElement('div')
-            notificationContainer.appendChild(div)
-            ReactDOM.render(
-                <React.StrictMode>
-                    <ApolloProvider client={client}>
-                        <DeploymentNotification owner={owner} repoName={repoName} />
-                    </ApolloProvider>
-                </React.StrictMode>,
-                div
-            )
-        }
+    const [notificationContainer] = document.querySelectorAll(`.item[href="/${owner}/${repoName}/activity/deployments"]`)
+
+    if (notificationContainer) {
+        const div = document.createElement('div')
+        notificationContainer.appendChild(div)
+        ReactDOM.render(
+            <React.StrictMode>
+                <ApolloProvider client={client}>
+                    <DeploymentNotification owner={owner} repoName={repoName} />
+                </ApolloProvider>
+            </React.StrictMode>,
+            div
+        )
     }
 
     const logsDeployments = document.getElementById('logsDeployments')

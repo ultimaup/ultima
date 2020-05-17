@@ -13,6 +13,7 @@
     "graphql": "^15.0.0",
     "jwt-decode": "^2.2.0",
     "moment": "^2.24.0",
+    "programming-languages-logos": "^0.0.3",
     "react": "^16.13.1",
     "react-clipboard.js": "^2.0.16",
     "react-dom": "^16.13.1",

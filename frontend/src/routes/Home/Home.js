@@ -1,4 +1,5 @@
 import React from 'react'
+import Octicon, { MarkGithub } from '@primer/octicons-react'
 import './Home.css'
 
 const Home = () => (
@@ -62,13 +63,16 @@ const Home = () => (
         <div className="link-list">
             <span>Developers</span>
             <a href="#" className="disabled">Documentation</a>
-            <a id="login" href="/user/login">Log in</a>
+            <a id="login" href="/auth/github">
+              <Octicon icon={MarkGithub} />
+              &nbsp;&nbsp;Log in
+            </a>
         </div>
         <div className="link-list">
             <span>About</span>
             <a href="https://twitter.com/ultimaup">Twitter</a>
             <a href="https://medium.com/words-from-ultima">Medium</a>
-            <a href="mailto:buildonultima@gmail.com">Contact</a>
+            <a href="mailto:josh@onultima.com">Contact</a>
         </div>
       </div>
     </div>
