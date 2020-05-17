@@ -1,6 +1,14 @@
 const fse = require('fs-extra')
 const path = require('path')
 const spawn = require('@expo/spawn-async')
+const tar = require('tar-fs')
+const { createGzip } = require('zlib')
+
+const downloadDir = (wkdir, dir) => {
+	const tarStream = tar.pack(path.resolve(wkdir, dir))
+	const gzipStream = createGzip()
+	return tarStream.pipe(gzipStream)
+}
 
 const {
 	yarn_config_registry,
@@ -38,12 +46,12 @@ const installDeps = async (wkdir, force, msgCb) => {
 			console.log('found package-lock.json so using npm ci')
 			await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
-			
+
 			p.child.stdout.on('data', msgCb)
 			p.child.stderr.on('data', msgCb)
 			
 			await p
-			
+
 			return
 		} else {
 			console.log('using npm install')
@@ -69,5 +77,6 @@ const shouldRunInstallDeps = async (filePath, wkdir) => {
 
 module.exports = {
 	installDeps,
+	downloadDir,
 	shouldRunInstallDeps,
 }

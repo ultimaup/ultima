@@ -10,6 +10,7 @@ const {promisify} = require('util');
 const yaml = require('js-yaml');
 const gunzip = require('gunzip-maybe')
 const mime = require('mime-types')
+const fse = require('fs-extra')
 
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
@@ -43,19 +44,21 @@ const streamToBuf = stream => {
 const pipeline = promisify(stream.pipeline);
 
 const ensureBuilderBundle = async lang => {
-	const builderKey = `builders/${lang}.tar.gz`
+	const builderPath = path.resolve(__dirname, 'builders', lang)
+	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
+	const key = `builders/${lang}-${builderPkg.version}.tar.gz`
 
-	const existing = await s3.headObject({ Key: builderKey })
+	const existing = await s3.headObject({ Key: key })
 
 	if (!existing) {
-		const { writeStream, promise } = s3.uploadStream({ Key: builderKey })
-		const tarStream = tar.pack(path.resolve(__dirname, 'builders', lang))
+		const { writeStream, promise } = s3.uploadStream({ Key: key })
+		const tarStream = tar.pack(builderPath)
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
 	}
 
-	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${builderKey}`
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
 
 const removeLeadingSlash = (str) => {
@@ -131,7 +134,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		console.log('done')
 		return null
 	}
-
+	let schemaEnv = {}
 	const commitMessage = commits.find(c => c.id === after)
 
 	const actionData = {
@@ -220,6 +223,26 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 		}
 
+		if (hasAPI) {
+			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
+
+			try {
+				const schemaInfo = {
+					username: `${repository.full_name.split('/').join('-')}-${branch}`,
+					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
+					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
+				}
+
+				await ensureSchema(schemaInfo)
+
+				schemaEnv = getSchemaEnv(schemaInfo)
+				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
+			} catch (e) {
+				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
+				throw e
+			}
+		}
+
 		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
 		const lang = 'nodejs'
@@ -240,8 +263,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				owner: user,
 				bundleLocation: await ensureBuilderBundle(lang),
 				env: {
+					CI: true,
 					npm_config_registry: REGISTRY_CACHE_ENDPOINT,
 					yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
+					...schemaEnv,
 				},
 			})
 			container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
@@ -350,25 +375,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let resultingEndpointId
 		if (hasAPI) {
 			resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
-
-			let schemaEnv = {}
-			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
-
-			try {
-				const schemaInfo = {
-					username: `${repository.full_name.split('/').join('-')}-${branch}`,
-					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
-					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
-				}
-
-				await ensureSchema(schemaInfo)
-
-				schemaEnv = getSchemaEnv(schemaInfo)
-				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
-			} catch (e) {
-				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
-				throw e
-			}
 
 			const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
 

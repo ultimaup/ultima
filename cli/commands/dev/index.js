@@ -33,7 +33,7 @@ const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
         ].join('\n'))
 
         ctr++
-    }, spinner.interval)
+    }, spinner.interval * 2)
 }
 
 const dev = async () => {
@@ -112,6 +112,16 @@ const dev = async () => {
         } else {
             ui.log.write('installed dependancies')
         }
+
+        // ui.log.write('downloading dependancies locally')
+        fileSync.download('node_modules',{
+            client,
+            sessionId,
+        }).then(() => {
+            // ui.log.write('downloaded dependancies locally')
+        }).catch(e => {
+            // ui.log.write('error downloading dependancies locally: '+e)
+        })
         
         firstTime = false
 
@@ -149,9 +159,12 @@ const dev = async () => {
             ui.updateBottomBar(`uploading files ${completed}/${total}`)
             
             if (total === completed && !runnerStarted) {
-                // start runner
-                runnerStarted = true
-                runner.start({ sessionId })
+                setTimeout(() => {
+                    // start runner
+                    runnerStarted = true
+                    runner.start({ sessionId })
+                }, 500)
+                
                 ui.updateBottomBar(`starting app...`)
             }
             if (total === completed && isInitialized) {
