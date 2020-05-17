@@ -4,22 +4,16 @@ const spawn = require('@expo/spawn-async')
 const tar = require('tar-fs')
 const { createGzip } = require('zlib')
 
-const getFileHash = async absPath => {
-	const { stdout } = await spawn(`sha1sum`, [absPath])
-	return stdout.split('/n')[0].split(' ')[0]
-}
-
 const downloadDir = (wkdir, dir) => {
 	const tarStream = tar.pack(path.resolve(wkdir, dir))
 	const gzipStream = createGzip()
 	return tarStream.pipe(gzipStream)
 }
 
-const restoreCache = async (cacheType, hash) => {
-	console.log(`restoring ${cacheType} cache for hash ${hash}`)
-
-	// TODO: actually do this
-}
+const {
+	yarn_config_registry,
+	npm_config_registry,
+} = process.env
 
 let ranBefore = false
 
@@ -34,8 +28,9 @@ const installDeps = async (wkdir, force, msgCb) => {
 
 	if (useYarn) {
 		console.log('found yarn.lock so using yarn')
-		const lockfileHash = await getFileHash(path.resolve(wkdir, 'yarn.lock'))
-		await restoreCache('yarn', lockfileHash)
+
+		await spawn('sed', ['-i', `s https://registry.yarnpkg.com/ ${yarn_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
+		await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
 
 		const p = spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, ignoreStdio: true })
 
@@ -49,8 +44,7 @@ const installDeps = async (wkdir, force, msgCb) => {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
 			console.log('found package-lock.json so using npm ci')
-			const lockfileHash = await getFileHash(lockfileLocation)
-			await restoreCache('npm', lockfileHash)
+			await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
 
 			p.child.stdout.on('data', msgCb)

@@ -17,6 +17,7 @@ const {
 	S3_ENDPOINT,
     BUILDER_BUCKET_ID,
     ENDPOINTS_ENDPOINT,
+    REGISTRY_CACHE_ENDPOINT,
 } = process.env
 
 const router = new Router()
@@ -77,7 +78,11 @@ const startDevSession = async ({ user, details: { repoName, owner } }) => {
 		stage: 'development',
         bundleLocation: await ensureDevelopmentBundle(lang),
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
-        env: schemaEnv,
+        env: {
+            ...schemaEnv,
+            npm_config_registry: REGISTRY_CACHE_ENDPOINT,
+            yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
+        },
         repoName: `${owner}/${repoName}`,
     })
 

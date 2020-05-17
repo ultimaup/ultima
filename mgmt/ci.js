@@ -27,6 +27,7 @@ const {
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
+	REGISTRY_CACHE_ENDPOINT,
 } = process.env
 
 const streamToBuf = stream => {
@@ -261,8 +262,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				bundleLocation: await ensureBuilderBundle(lang),
 				env: {
 					CI: true,
+					npm_config_registry: REGISTRY_CACHE_ENDPOINT,
+					yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
 					...schemaEnv,
-				}
+				},
 			})
 			container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
 
