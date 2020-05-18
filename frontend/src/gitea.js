@@ -12,6 +12,7 @@ import Logs from './routes/Logs'
 import NewRepoRoute from './routes/NewRepo'
 import Environments from './routes/Environments'
 import CLIModal from './components/CLIModal'
+import ConfigEditor from './components/ConfigEditor'
 import client from './graphql'
 
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
@@ -125,6 +126,21 @@ const gitea = () => {
                 </ApolloProvider>
             </React.StrictMode>,
             newRepo
+        )
+    }
+
+    const configEditor = document.getElementById('ultima-config-editor')
+    if (configEditor) {
+        const { io } = configEditor.dataset
+        const ioEle = document.getElementById(io)
+
+        ReactDOM.render(
+            <React.StrictMode>
+                <ApolloProvider client={client}>
+                    <ConfigEditor ioEle={ioEle} />
+                </ApolloProvider>
+            </React.StrictMode>,
+            configEditor
         )
     }
 }
