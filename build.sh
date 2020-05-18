@@ -4,35 +4,48 @@ set -e
 # get dependencies
 echo "Getting Endpoint deps"
 cd endpoints
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ..
 
 echo "Getting file-manager deps"
 cd file-manager
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ..
 
 echo "Getting router-mgmt deps"
 cd router
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ..
 
 echo "Getting frontend deps"
 cd frontend
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ..
 
 echo "Getting mgmt deps"
 cd mgmt
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 
 echo "Getting builder/nodejs deps"
 cd builders/nodejs
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' package-lock.json
 npm ci
 cd ../..
 
 echo "Getting development/nodejs deps"
 cd development/nodejs
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ../..
 
@@ -40,6 +53,8 @@ cd ..
 
 echo "Getting deployer deps"
 cd deployer
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile
 cd ..
 
