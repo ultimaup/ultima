@@ -15,6 +15,7 @@ const fse = require('fs-extra')
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
 const Action = require('./db/Action')
+const RouteModel = require('./db/Route')
 const route = require('./route')
 
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
@@ -96,7 +97,12 @@ const markActionComplete = async (id, updates = {}) => {
 	await Action.query().where('id', id).update({
 		completedAt: new Date(),
 		...updates,
-	})
+	}).skipUndefined()
+}
+
+const checkAliasUse = async ({ alias, subdomain }) => {
+	const existing = await RouteModel.query().where({ alias })
+	return !!existing.find(route => !route.startsWith(subdomain))
 }
 
 const logAction = async (parentId, { type, title, description, data, completedAt }) => {
@@ -408,54 +414,67 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		let endpointRouteUrl
 		if (endpointUrl) {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
+			const subdomain = `${branch}-${repo}-${user}`
 			// get current route
-			const [currentRoute] = await route.get(`${branch}-${repo}-${user}`)
+			const [currentRoute] = await route.get(subdomain)
 
 			// add endpoint route
 			const endpointRoute = {
-				subdomain: `${branch}-${repo}-${user}`,
+				subdomain,
 				destination: endpointUrl,
 				deploymentId: resultingEndpointId,
-			}
-
-			// check if any other routes are using the alias before using
-			if (config.api && config.api['branch-domains']) {
-				if (config.api['branch-domains'][branch]) {
-					endpointRoute.alias = config.api['branch-domains'][branch]
-				}
 			}
 
 			if (currentRoute) {
 				await removeDeployment(currentRoute.deploymentId)
 			}
+			
+			let message
+			if (config.api && config.api['branch-domains']) {
+				const alias = config.api['branch-domains'][branch]
+				if (alias) {
+					if (await checkAliasUse({ alias, subdomain })) {
+						message = 'updating endpoint route warning: unable to use custom domain as it\'s currently in use by another project.'
+					} else {
+						endpointRoute.alias = alias
+					}
+				}
+			}
+
 			endpointRouteUrl = await route.set(endpointRoute)
-			await markActionComplete(routeActionId, { data: { endpointUrl, endpointRouteUrl } })
+			await markActionComplete(routeActionId, { message, data: { endpointUrl, endpointRouteUrl } })
 		}
 
 		let staticRouteUrl
 		if (staticUrl) {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating static route' })
 			// add static route
-			const [currentRoute] = await route.get(`static-${branch}-${repo}-${user}`)
+			const subdomain = `static-${branch}-${repo}-${user}`
+			const [currentRoute] = await route.get(subdomain)
 			const staticRoute = {
-				subdomain: `static-${branch}-${repo}-${user}`,
+				subdomain,
 				destination: staticUrl,
 				extensions: ['index.html'],
 				deploymentId: `${repository.full_name.split('/').join('-')}-${after}`,
 			}
+			if (currentRoute) {
+				await removeDeployment(currentRoute.deploymentId)
+			}
 
-			// check if any other routes are using the alias before using
+			let message
 			if (config.web['branch-domains']) {
-				if (config.web['branch-domains'][branch]) {
-					staticRoute.alias = config.web['branch-domains'][branch]
+				const alias = config.web['branch-domains'][branch]
+				if (alias) {
+					if (await checkAliasUse({ alias, subdomain })) {
+						message = 'updating static route warning: unable to use custom domain as it\'s currently in use by another project.'
+					} else {
+						staticRoute.alias = alias
+					}
 				}
 			}
 
 			staticRouteUrl = await route.set(staticRoute)
-			if (currentRoute) {
-				await removeDeployment(currentRoute.deploymentId)
-			}
-			await markActionComplete(routeActionId, { data: { staticUrl, staticRouteUrl } })
+			await markActionComplete(routeActionId, { message, data: { staticUrl, staticRouteUrl } })
 		}
 
 		await markActionComplete(parentActionId, {
