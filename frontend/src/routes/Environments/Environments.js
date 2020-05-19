@@ -188,7 +188,7 @@ const DeploymentsContainer = styled.div`
     }
 `
 
-const Environments = ({ owner, repoName }) => {
+const Environments = ({ owner, repoName, hasConfig }) => {
     const { loading, error, environments } = useEnvironments({ owner, repoName })
     const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
 
@@ -204,6 +204,8 @@ const Environments = ({ owner, repoName }) => {
 
     return (
         <Router>
+            <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Project Config</a>
+
             {groupByStage(r).sort(([a],[b]) => {
                 if (a.startsWith('refs/heads/') && !b.startsWith('refs/heads/')) {
                     return -1

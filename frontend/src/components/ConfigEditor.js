@@ -126,7 +126,9 @@ const ConfigEditor = ({ ioEle }) => {
             }
             
             const data = YAML.parse(ioEle.value)
-            setV(data)
+            if (data) {
+                setV(data)
+            }
             
             ioEle.addEventListener('change', c)
         }
@@ -217,7 +219,26 @@ const ConfigEditor = ({ ioEle }) => {
                                         }} />
                                     </div>
                                 )}
-                                <BranchDomainMap value={value.web['branch-domains']} onChange={v => {
+                                {(module.type === 'api' || key === 'api') && (
+                                    <div className="inline required field">
+                                        <strong>Website built output location</strong>
+                                        <select disabled onChange={(e) => {
+                                            setValue({
+                                                ...value,
+                                                [key]: {
+                                                    ...value[key],
+                                                    'runtime': e.target.value,
+                                                }
+                                            })
+                                        }} value={value[key].runtime} className="ui search normal selection dropdown">
+                                            <option value="nodejs">Node JS</option>
+                                            <option value="go">Go</option>
+                                            <option value="dotnet">.net core</option>
+                                        </select>
+                                        <span>Coming soon</span>
+                                    </div>
+                                )}
+                                <BranchDomainMap value={value[key]['branch-domains']} onChange={v => {
                                     setValue({
                                         ...value,
                                         [key]: {
