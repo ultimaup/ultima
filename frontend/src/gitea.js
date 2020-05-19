@@ -59,7 +59,7 @@ const gitea = () => {
         ReactDOM.render(
             <React.StrictMode>
                 <ApolloProvider client={client}>
-                    <Environments owner={owner} repoName={repoName} />
+                    <Environments owner={owner} repoName={repoName} hasConfig={!!document.querySelector('a[title=".ultima.yml"]')} />
                 </ApolloProvider>
             </React.StrictMode>,
             environmentsContainer

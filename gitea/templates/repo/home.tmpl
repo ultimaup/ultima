@@ -93,7 +93,6 @@
 						</a>
 					{{end}}
 				</div>
-
 			</div>
 			<div class="fitted item">
 				{{if eq $n 0}}
@@ -162,13 +161,15 @@
 				return
 			}
 			function updateHash() {
-				document.querySelectorAll('.item').forEach((ele) => {
-					if (ele.getAttribute('href') && ele.getAttribute('href').endsWith(window.location.pathname+(window.location.hash || '#/'))) {
-						ele.classList.add('active')
-					} else {
-						ele.classList.remove('active')
-					}
-				})
+				if (!window.location.pathname.includes('_edit')) {
+					document.querySelectorAll('.item').forEach((ele) => {
+						if (ele.getAttribute('href') && ele.getAttribute('href').endsWith(window.location.pathname+(window.location.hash || '#/'))) {
+							ele.classList.add('active')
+						} else {
+							ele.classList.remove('active')
+						}
+					})
+				}
 			}
 			updateHash()
 			if (window.location.hash === '#/code') {
