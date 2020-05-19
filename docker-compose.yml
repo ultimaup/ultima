@@ -93,6 +93,8 @@ services:
 
       PG_BROKER_PORT: 4497
       PUBLIC_ROUTE_ROOT: onultima.local
+      PUBLIC_IPV4: '78.46.16.197'
+      PUBLIC_IPV6: 2a01:4f8:201:206f::2
 
       REGISTRY_CACHE_ENDPOINT: http://192.168.190.128:4493/
 

@@ -10,6 +10,8 @@ const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
 const { runTests } = require('./ci')
 
+const { getCname } = require('./dns')
+
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
@@ -18,6 +20,9 @@ const {
     PG_BROKER_PORT,
 
     ADMIN_USERNAME,
+
+    PUBLIC_IPV4,
+    PUBLIC_IPV6,
 } = process.env
 
 const admins = [
@@ -83,6 +88,24 @@ const typeDefs = gql`
         routes: [Route]
     }
 
+    type DNSResult {
+        ipv4: [String]
+        ipv6: [String]
+        cname: [String]
+    }
+
+    type CNameResult {
+        id: ID
+        cfResult: DNSResult,
+        googleResult: DNSResult
+    }
+
+    type DNSInfo {
+        cname: String
+        ipv4: String
+        ipv6: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -92,12 +115,14 @@ const typeDefs = gql`
         getMyRepos: [Repo]
         getPGEndpoint: String
         getEnvironments(owner: String, repoName: String): [Environment]
+        getDNSRecords: DNSInfo
     }
 
     type Mutation {
         activateUser(id: ID, activated: Boolean): User
         addSSHkey(key: String, title: String) : Boolean
         createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
+        queryCname(hostname: String): CNameResult
     }
 `
 
@@ -108,6 +133,13 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
 
 const resolvers = {
     Query: {
+        getDNSRecords: async () => {
+            return {
+                ipv4: PUBLIC_IPV4,
+                ipv6: PUBLIC_IPV6,
+                cname: PUBLIC_ROUTE_ROOT,
+            }
+        },
         getEnvironments: async (parent, { repoName, owner }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
@@ -210,6 +242,17 @@ const resolvers = {
         },
     },
     Mutation: {
+        queryCname: async (parent, { hostname }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            const result = await getCname(hostname)
+            return {
+                id: hostname,
+                ...result,
+            }
+        },
         activateUser: async (parent, { id, activated }, context) => {
             if (!context.user || !admins.includes(context.user.username)) {
                 if (context.user.username) {
