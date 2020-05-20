@@ -8,7 +8,6 @@ import CNameDebugger from './CNameDebugger'
 import useDNSInfo from '../hooks/useDNSInfo'
 
 const BranchDomains = styled.div`
-    padding-top: 8px;
     .heading {
         display: flex;
         label {
@@ -20,6 +19,9 @@ const BranchDomains = styled.div`
 
 const BranchDomainRow = styled.div`
     display: flex;
+    label {
+        font-weight: bold;
+    }
 `
 
 const Module = styled.div`
@@ -29,11 +31,22 @@ const Module = styled.div`
     border-radius: 4px;
     max-width: 720px;
 
-    margin-top: 12px;
+    :not(:first-child) {
+        margin-top: 12px;
+    }
 `
 
 const ModuleBody = styled.div`
     padding: 16px;
+`
+
+const EmptyState = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    button {
+        margin-right: 8px;
+    }
 `
 
 const BranchDomainMap = ({ value, onChange }) => {
@@ -55,11 +68,14 @@ const BranchDomainMap = ({ value, onChange }) => {
             <UltimaModal isOpen={isOpen} onRequestClose={() => setIsOpen(false)} title="DNS Debugger">
                 <CNameDebugger dnsInfo={dnsInfo} />
             </UltimaModal>
-            <BranchDomainRow className="heading">
-                <label>Branch</label>
-                <label>Custom Domain</label>
-                <button className="ui button red" style={{visibility: 'hidden', height: 0}}>x</button>
-            </BranchDomainRow>
+            {Object.entries(value || {}).length !== 0 && (
+                <BranchDomainRow className="heading">
+                    <label>Branch</label>
+                    <label>Custom Domain</label>
+                    <button className="ui button red" style={{visibility: 'hidden', height: 0}}>x</button>
+                </BranchDomainRow>
+            )}
+            
 
             {Object.entries(value || {}).map(([branch, domain]) => {
                 return (
@@ -90,14 +106,29 @@ const BranchDomainMap = ({ value, onChange }) => {
                 )
             })}
 
-            <button className="ui green button" onClick={(e) => {
-                e.preventDefault()
-                const a = Object.keys(value || {}).filter(s => s.startsWith('branch')).length
-                onChange({
-                    ...value,
-                    [`branch${a ? a+1 : ''}`]: 'domain.com',
-                })
-            }}>+</button>
+            {Object.entries(value || {}).length === 0 ? (
+                <EmptyState>
+                    <button className="ui green button" onClick={(e) => {
+                        e.preventDefault()
+                        const a = Object.keys(value || {}).filter(s => s.startsWith('branch')).length
+                        onChange({
+                            ...value,
+                            [`branch${a ? a+1 : ''}`]: 'domain.com',
+                        })
+                    }}>Use custom domain with a branch</button>
+                </EmptyState>
+            ) : (
+                <button className="ui green button" onClick={(e) => {
+                    e.preventDefault()
+                    const a = Object.keys(value || {}).filter(s => s.startsWith('branch')).length
+                    onChange({
+                        ...value,
+                        [`branch${a ? a+1 : ''}`]: 'domain.com',
+                    })
+                }}>+</button>
+            )}
+
+            
         </BranchDomains>
     )
 }
@@ -109,87 +140,60 @@ const ConfigEditor = ({ ioEle }) => {
     const [newResourceType, setNewResourceType] = useState('api')
 
     useEffect(() => {
-        const c = (e) => {
-            const data = YAML.parse(e.target.value)
-            setV(data)
+        let codeMirror
+        const onChange = () => {
+            const data = YAML.parse(codeMirror.getValue())
+            setV(data || {})
         }
         if (ioEle) {
-            if (ioEle.nextSibling && ioEle.nextSibling.style) {
-                ioEle.nextSibling.style.display = 'none'
+            codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
+            if (codeMirror) {
+                codeMirror.on('change', onChange)
             } else {
                 let a = setInterval(() => {
-                    if (ioEle.nextSibling && ioEle.nextSibling.style) {
-                        ioEle.nextSibling.style.display = 'none'
+                    codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
+                    if (codeMirror) {
+                        codeMirror.on('change', onChange)
                         clearInterval(a)
                     }
                 },50)
             }
-            
+
             const data = YAML.parse(ioEle.value)
             if (data) {
                 setV(data)
             }
-            
-            ioEle.addEventListener('change', c)
         }
-        
 
         return () => {
-            ioEle && ioEle.removeEventListener('change', c)
+            codeMirror && codeMirror.off('change', onChange)
         }
     }, [ioEle])
 
     const setValue = newValue => {
         if (!Object.keys(newValue).length) {
-            ioEle.textContent = ''
+            ioEle.nextSibling.CodeMirror.setValue('')
         } else {
-            ioEle.textContent = YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n')
+            ioEle.nextSibling.CodeMirror.setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n'))
         }
+        // window.CodeMirror.signal(ioEle.nextSibling.CodeMirror, 'keydown', { which: 32, keyCode: 32 })
         document.getElementById('commit-button').disabled = false
-        setV(newValue)
     }
 
     return (
         <div>
-            <form className="ui form" onSubmit={e => e.preventDefault()}>
-                <h3 className="ui top attached header">
+            <form className="ui form" onSubmit={e => e.preventDefault()} style={{ position: 'initial' }}>
+                <h3 className="ui top attached header" style={{
+                    position: 'absolute',
+                    width: '100%',
+                    zIndex: 10,
+                    top: 0,
+                }}>
                     Manage Project Config
                 </h3>
-                
-                <div className="ui attached segment">
-                    
-                    <div className="inline field">
-                        <label>Add Module</label>
-                        <select onChange={(e) => {
-                            setNewResourceType(e.target.value)
-                        }} value={newResourceType} className="ui search normal selection dropdown">
-                            <option value="api">API</option>
-                            <option value="web">Website</option>
-                        </select>
-                        <button style={{ marginLeft: 12 }} className="ui button green" onClick={() => {
-                            if (newResourceType === 'api') {
-                                setValue({
-                                    ...value,
-                                    api: {
-                                        type: 'api'
-                                    },
-                                })
-                            } else {
-                                setValue({
-                                    ...value,
-                                    web: {
-                                        type: 'web',
-                                        buildLocation: '/build'
-                                    },
-                                })
-                            }
-                        }} disabled={!!value[newResourceType]}>
-                            Add
-                        </button>
-                        <span>(currently max 1 api and 1 web resource)</span>
-                    </div>
 
-                    {Object.entries(value).map(([key, module]) => (
+                <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
+                    {Object.entries(value || {}).map(([key, module]) => (
                         <Module>
                             <h3 className="ui attached header top" style={{
                                 display: 'flex',
@@ -222,7 +226,7 @@ const ConfigEditor = ({ ioEle }) => {
                                 )}
                                 {(module.type === 'api' || key === 'api') && (
                                     <div className="inline required field">
-                                        <strong>Website built output location</strong>
+                                        <strong>Runtime</strong>
                                         <select disabled onChange={(e) => {
                                             setValue({
                                                 ...value,
@@ -236,9 +240,10 @@ const ConfigEditor = ({ ioEle }) => {
                                             <option value="go">Go</option>
                                             <option value="dotnet">.net core</option>
                                         </select>
-                                        <span>Coming soon</span>
+                                        <span style={{ marginLeft: 8 }}>More Coming soon</span>
                                     </div>
                                 )}
+                                <div className="ui divider"></div>
                                 <BranchDomainMap value={value[key]['branch-domains']} onChange={v => {
                                     setValue({
                                         ...value,
@@ -251,6 +256,42 @@ const ConfigEditor = ({ ioEle }) => {
                             </ModuleBody>
                         </Module>
                     ))}
+
+                    <div className="inline field">
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <label style={{ width: 150 }}>Add Module</label>
+                                <select onChange={(e) => {
+                                    setNewResourceType(e.target.value)
+                                }} value={newResourceType} className="ui search normal selection dropdown">
+                                    <option value="api">API</option>
+                                    <option value="web">Website</option>
+                                </select>
+                            </div>
+                            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => {
+                                if (newResourceType === 'api') {
+                                    setValue({
+                                        ...value,
+                                        api: {
+                                            type: 'api',
+                                            runtime: 'nodejs',
+                                        },
+                                    })
+                                } else {
+                                    setValue({
+                                        ...value,
+                                        web: {
+                                            type: 'web',
+                                            buildLocation: '/build'
+                                        },
+                                    })
+                                }
+                            }} disabled={!!value[newResourceType]}>
+                                Add
+                            </button>
+                            <span>(Currently max 1 API and 1 Website per project)</span>
+                        </div>
+                    </div>
                 </div>
                 
             </form>

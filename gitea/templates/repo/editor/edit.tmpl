@@ -52,7 +52,7 @@
 					<a class="item" data-tab="diff" data-url="{{.RepoLink}}/_preview/{{.BranchName | EscapePound}}/{{.TreePath | EscapePound}}" data-context="{{.BranchLink}}">{{svg "octicon-diff" 16}} {{.i18n.Tr "repo.editor.preview_changes"}}</a>
 					{{end}}
 				</div>
-				<div class="ui bottom attached active tab segment" data-tab="write">
+				<div class="ui bottom attached active tab segment" data-tab="write" {{if eq .TreePath ".ultima.yml" }} id="config-editor-container" {{end}}>
 					{{if eq .TreePath ".ultima.yml" }}
 						<div id="ultima-config-editor" data-io="edit_area"></div>
 					{{end}}
