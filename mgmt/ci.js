@@ -268,7 +268,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				repoName: repository.full_name,
 				owner: user,
 				bundleLocation: await ensureBuilderBundle(lang),
-				runtime: config.api.runtime || 'node',
+				runtime: (config.api && config.api.runtime) || 'node',
 				env: {
 					CI: true,
 					npm_config_registry: REGISTRY_CACHE_ENDPOINT,
@@ -393,7 +393,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				stage: ref,
 				bundleLocation: resultingBundleLocation,
 				env: schemaEnv,
-				runtime: config.api.runtime || 'node',
+				runtime: (config.api && config.api.runtime) || 'node',
 			})
 			
 			try {
