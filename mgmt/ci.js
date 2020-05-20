@@ -430,10 +430,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 			
 			let message
+			let type
 			if (config && config.api && config.api['branch-domains']) {
 				const alias = config.api['branch-domains'][branch]
 				if (alias) {
 					if (await checkAliasUse({ alias, subdomain })) {
+						type = 'warning'
 						message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
 					} else {
 						endpointRoute.alias = alias
@@ -442,7 +444,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 
 			endpointRouteUrl = await route.set(endpointRoute)
-			await markActionComplete(routeActionId, { description: message, data: { endpointUrl, endpointRouteUrl } })
+			await markActionComplete(routeActionId, { type, description: message, data: { endpointUrl, endpointRouteUrl } })
 		}
 
 		let staticRouteUrl
@@ -462,10 +464,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 
 			let message
+			let type
 			if (config && config.web && config.web['branch-domains']) {
 				const alias = config.web['branch-domains'][branch]
 				if (alias) {
 					if (await checkAliasUse({ alias, subdomain })) {
+						type = 'warning'
 						message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
 					} else {
 						staticRoute.alias = alias
@@ -474,7 +478,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 
 			staticRouteUrl = await route.set(staticRoute)
-			await markActionComplete(routeActionId, { description: message, data: { staticUrl, staticRouteUrl } })
+			await markActionComplete(routeActionId, { type, description: message, data: { staticUrl, staticRouteUrl } })
 		}
 
 		await markActionComplete(parentActionId, {

@@ -23,6 +23,12 @@ const StatusDot = styled.div`
             `
         }
 
+        if (status === 'warning') {
+            return css`
+                background: #f1e05a;
+            `
+        }
+
         return ''
     }}
 `
