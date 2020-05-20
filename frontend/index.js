@@ -1,4 +1,5 @@
 const express = require('express')
+const compression = require('compression')
 const path = require('path')
 const {
     PORT,
@@ -6,6 +7,7 @@ const {
 
 const app = express()
 
+app.use(compression())
 app.use(express.static('build'))
 app.use('/assets',express.static('build'))
 app.use((req, res, next) => {
