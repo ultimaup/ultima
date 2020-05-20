@@ -236,7 +236,7 @@ const ConfigEditor = ({ ioEle }) => {
                                                 }
                                             })
                                         }} value={value[key].runtime} className="ui search normal selection dropdown">
-                                            <option value="nodejs">Node JS</option>
+                                            <option value="node">Node JS</option>
                                             <option value="go">Go</option>
                                             <option value="dotnet">.net core</option>
                                         </select>
@@ -274,7 +274,7 @@ const ConfigEditor = ({ ioEle }) => {
                                         ...value,
                                         api: {
                                             type: 'api',
-                                            runtime: 'nodejs',
+                                            runtime: 'node',
                                         },
                                     })
                                 } else {
