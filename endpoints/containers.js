@@ -30,13 +30,13 @@ if(!IN_PROD) {
 
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
-docker.pull('node:latest').then((stream) => {
-	docker.modem.followProgress(stream, () => {
-		console.log('node:latest', 'downloaded')
-	}, (e) => {
-		console.log('node:latest', 'progress:', e)
-	})
-})
+// docker.pull('node:latest').then((stream) => {
+// 	docker.modem.followProgress(stream, () => {
+// 		console.log('node:latest', 'downloaded')
+// 	}, (e) => {
+// 		console.log('node:latest', 'progress:', e)
+// 	})
+// })
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
@@ -195,7 +195,7 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		},{ })
 
 		const config = {
-			Image: 'node',
+			Image: deployment.runtime || 'node',
 			Cmd: ['npm', 'start'],
 			WorkingDir: '/app',
 			name: deploymentId,
