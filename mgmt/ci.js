@@ -102,7 +102,7 @@ const markActionComplete = async (id, updates = {}) => {
 
 const checkAliasUse = async ({ alias, subdomain }) => {
 	const existing = await RouteModel.query().where({ alias })
-	return !!existing.find(route => !route.startsWith(subdomain))
+	return !!existing.find(route => !route.source.startsWith(subdomain))
 }
 
 const logAction = async (parentId, { type, title, description, data, completedAt }) => {
@@ -430,7 +430,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 			
 			let message
-			if (config.api && config.api['branch-domains']) {
+			if (config && config.api && config.api['branch-domains']) {
 				const alias = config.api['branch-domains'][branch]
 				if (alias) {
 					if (await checkAliasUse({ alias, subdomain })) {
@@ -462,7 +462,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 
 			let message
-			if (config.web['branch-domains']) {
+			if (config && config.web && config.web['branch-domains']) {
 				const alias = config.web['branch-domains'][branch]
 				if (alias) {
 					if (await checkAliasUse({ alias, subdomain })) {

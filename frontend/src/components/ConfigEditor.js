@@ -141,10 +141,11 @@ const ConfigEditor = ({ ioEle }) => {
 
     const setValue = newValue => {
         if (!Object.keys(newValue).length) {
-            ioEle.value = ''
+            ioEle.textContent = ''
         } else {
-            ioEle.value = YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n')
+            ioEle.textContent = YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n')
         }
+        document.getElementById('commit-button').disabled = false
         setV(newValue)
     }
 
