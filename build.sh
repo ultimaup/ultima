@@ -65,7 +65,7 @@ set +e
 yarn build
 set -e
 rm -rf node_modules
-npm install express
+npm install express compression
 cd ..
 
 echo "Creating tarball"
