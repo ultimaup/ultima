@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node .",
-    "build": "pkg --target node13-linux-x64"
+    "build": "pkg --target node13-linux-x64 ."
   },
   "bin": {
     "ultima-builder": "./index.js"

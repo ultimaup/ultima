@@ -13,8 +13,9 @@ const {
 } = process.env
 
 const getBundle = async url => {
-	const Key = url.split(BUILDER_BUCKET_ID)[1]
-	return s3.getStream({ Key })
+	const [Bucket, ...Key] = url.split('/')
+
+	return s3.getStream({ Bucket, Key: Key.join('/') })
 }
 
 let docker = undefined
@@ -219,6 +220,8 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		}
 
 		console.log(requestId, 'creating container', config)
+
+		const image = await docker.pull(config.Image)
 
 		const container = await docker.createContainer(config)
 

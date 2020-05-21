@@ -27,7 +27,8 @@
     "tar-stream": "^2.1.2",
     "tough-cookie": "^3.0.0",
     "unzip-stream": "^0.3.0",
-    "uuid": "^7.0.1"
+    "uuid": "^7.0.1",
+    "yaml": "^1.10.0"
   },
   "scripts": {
     "start": "node .",

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node .",
     "dev": "nodemon .",
-    "build": "pkg --target node13-linux-x64"
+    "build": "pkg --target node13-linux-x64 ."
   },
   "bin": {
     "ultima-dev": "./index.js"

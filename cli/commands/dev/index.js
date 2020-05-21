@@ -54,7 +54,7 @@ const dev = async () => {
 
     let ultimaCfg
     if (await fse.exists('./.ultima.yml')) {
-        ultimaCfg = await fse.readFile('./.ultima.yml')
+        ultimaCfg = await fse.readFile('./.ultima.yml', 'utf-8')
     }
 
     const api = API.init(program.server, cfg.token, ultimaCfg, {owner, repoName})

@@ -31,7 +31,7 @@ const ensureDevelopmentBundle = async () => {
         githash = await fse.readFile('.githash')
     }
 
-	return `${S3_ENDPOINT}/build-artifacts/dev-agent/build-${githash}.tar.gz`
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/build-${githash}.tar.gz`
 }
 
 
@@ -57,6 +57,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
 
     let runtime = 'node'
+
     if (envCfg.api && envCfg.api.runtime) {
         runtime = envCfg.api.runtime
     }
