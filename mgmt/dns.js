@@ -7,16 +7,15 @@ const getCnameFromNs = async (ns, hostname) => {
         // doesn't promisify nicely for some reason :(
         resolver.resolveCname(hostname, (err, cname) => {
             if (err && err.code === 'ENOTFOUND') {
-                return resolve(['cannot resolve'])
-            }
-            if (err && err.code === 'ENODATA') {
-                return resolver.resolve4(hostname, (err, ipv4) => {
+                resolve(['cannot resolve'])
+            } else if (err && err.code === 'ENODATA') {
+                resolver.resolve4(hostname, (err, ipv4) => {
                     if (err) {
-                        return reject(err)
+                        reject(err)
                     } else {
-                        return resolver.resolve6(hostname, (err, ipv6) => {
+                        resolver.resolve6(hostname, (err, ipv6) => {
                             if (err && err.code !== 'ENODATA') {
-                                return reject(err)
+                                reject(err)
                             } else {
                                 resolve({
                                     ipv4,
@@ -26,9 +25,8 @@ const getCnameFromNs = async (ns, hostname) => {
                         })
                     }
                 })
-            }
-            if (err) {
-                return reject(err)
+            } else if (err) {
+                reject(err)
             } else {
                 resolve({ cname })
             }
