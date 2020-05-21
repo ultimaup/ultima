@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ."
+    "start": "node .",
+    "build": "pkg --target node13-linux-x64"
   },
   "bin": {
     "ultima-builder": "./index.js"
@@ -19,5 +20,8 @@
     "gunzip-maybe": "^1.4.1",
     "tar-fs": "^2.0.0",
     "yaml": "^1.10.0"
+  },
+  "devDependencies": {
+    "pkg": "^4.4.8"
   }
 }

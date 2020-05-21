@@ -25,22 +25,13 @@ const router = new Router()
 
 router.use(bodyParser.json())
 
-const ensureDevelopmentBundle = async lang => {
-	const builderPath = path.resolve(__dirname, 'development', lang)
-	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
-	const key = `development/${lang}-${builderPkg.version}.tar.gz`
+const ensureDevelopmentBundle = async () => {
+    let githash = 'dev'
+    if (await fse.exists('.githash')) {
+        githash = await fse.readFile('.githash')
+    }
 
-	const existing = await s3.headObject({ Key: key })
-
-	//if (!existing) {
-		const { writeStream, promise } = s3.uploadStream({ Key: key })
-		const tarStream = tar.pack(builderPath)
-		tarStream.pipe(createGzip()).pipe(writeStream)
-
-		await promise
-	//}
-
-	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
+	return `${S3_ENDPOINT}/build-artifacts/dev-agent/build-${githash}.tar.gz`
 }
 
 
