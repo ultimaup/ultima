@@ -39,7 +39,7 @@ yarn install --frozen-lockfile --cache-folder /tmp/ultima/mgmt &
 echo "Getting builder/nodejs deps"
 cd builders/nodejs
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' package-lock.json
-npm ci &
+yarn install --frozen-lockfile --cache-folder /tmp/ultima/nodejs &
 cd ../..
 
 echo "Getting development/nodejs deps"
