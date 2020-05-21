@@ -46,7 +46,7 @@ const CNameDebugger = ({ dnsInfo }) => {
             <form className="ui form" onSubmit={e => {
                 e.preventDefault()
                 if (value.startsWith('http')) {
-                    queryCName(value.split('//')[1].split('/')[1])
+                    queryCName(value.split('//')[1].split('/')[0])
                 } else {
                     queryCName(value)
                 }
