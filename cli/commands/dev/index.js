@@ -2,6 +2,7 @@ const { cli } = require('cli-ux')
 const { program } = require('commander')
 const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
+const fse = require('fs-extra')
 
 const apiClient = require('./client')
 const fileSync = require('./fileSync')
@@ -50,7 +51,13 @@ const dev = async () => {
     const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
     await cli.action.start('starting session...')
-    const api = API.init(program.server, cfg.token, {owner, repoName})
+
+    let ultimaCfg
+    if (await fse.exists('./.ultima.yml')) {
+        ultimaCfg = await fse.readFile('./.ultima.yml')
+    }
+
+    const api = API.init(program.server, cfg.token, ultimaCfg, {owner, repoName})
 
     const server = await api.getDeploymentUrl()
     if (server.status === 'error') {
@@ -62,7 +69,8 @@ const dev = async () => {
     
     const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
     const { data: { sessionId }, client } = await apiClient.initSession({
-        rootEndpoint: server.url
+        rootEndpoint: server.url,
+        ultimaCfg,
     })
 
     await cli.action.stop()

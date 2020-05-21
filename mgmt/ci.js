@@ -391,6 +391,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				repoName: repository.full_name,
 				hash: after,
 				stage: ref,
+				command: config.api.start,
 				bundleLocation: resultingBundleLocation,
 				env: schemaEnv,
 				runtime: (config.api && config.api.runtime) || 'node',

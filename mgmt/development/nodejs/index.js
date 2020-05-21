@@ -1,6 +1,7 @@
 const spdy = require('spdy')
 const path = require('path')
 const socketIO = require('socket.io')
+const YAML = require('yaml')
 
 const fileHandler = require('./fileHandler')
 const runner = require('./runner')
@@ -11,6 +12,7 @@ const {
 } = process.env
 
 const sessions = {}
+const sessionConfigs = {}
 
 let io
 
@@ -20,19 +22,20 @@ const server = spdy
         if (req.url === '/file') {
             const filePath = req.headers['x-event-path']
             const sessionId = req.headers['x-session-id']
+            const cfg = sessionConfigs[sessionId]
+            
             fileHandler(
                 req.headers['x-event-type'],
                 filePath,
                 sessionId,
                 req,
             ).then(async (result) => {
-                const wkdir = path.resolve('/tmp', sessionId)
-                if (await shouldRunInstallDeps(filePath, wkdir)) {
+                if (await shouldRunInstallDeps(filePath, cfg)) {
                     const wkdir = path.resolve('/tmp', sessionId)
                     io.to(sessionId).emit('event', {
                         event: 'install-deps-start',
                     })
-                    await installDeps(wkdir, false, (msg) => {
+                    await installDeps(wkdir, cfg, (msg) => {
                         io.to(sessionId).emit('event',{
                             event: 'stdout',
                             data: msg.toString('utf8'),
@@ -49,7 +52,7 @@ const server = spdy
                 res.writeHead(500, { 'Content-Type': 'application/json' })
                 res.end(JSON.stringify({ error: err, status: 'error' }))
             })
-    
+
             return
         }
 
@@ -62,6 +65,8 @@ const server = spdy
 
         if (req.url === '/new-session') {
             const sessionId = 'static-session-id'
+            const { ultimaCfg } = req.body ? JSON.parse(req.body) : {}
+            sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg).api : {}
             res.writeHead(200, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ sessionId }))
     
@@ -90,7 +95,7 @@ const createSession = async sessionId => {
         event: 'install-deps-start',
     })
     // install deps
-    await installDeps(wkdir, true, (msg) => {
+    await installDeps(wkdir, (msg) => {
         io.to(sessionId).emit('event',{
             event: 'stdout',
             data: msg.toString('utf8'),
@@ -100,7 +105,9 @@ const createSession = async sessionId => {
         event: 'install-deps-complete',
     })
 
-    const session = await runner({ wkdir })
+    const cfg = sessionConfigs[sessionId]
+
+    const session = await runner({ wkdir, cfg })
 
     session.on('message', ({ type }) => {
         io.to(sessionId).emit('event', {

@@ -7,12 +7,13 @@ const {
     CHILD_DEBUG_PORT = 4491,
 } = process.env
 
-function spawnNodemon({ nodeArgs, script, exec, cwd, env }) {
+function spawnNodemon({ nodeArgs, watch, ignore, exec, cwd, env }) {
   return spawn('npx', [
       'nodemon',
       ...nodeArgs,
-      ...(script ? [script] : ['--exec', exec]),
-      '--watch', '.',
+      ...(['--exec', exec]),
+      ...watch.map(glob => ['--watch', glob]).flat(),
+      ...ignore.map(glob => ['--ignore', glob]).flat(),
     ], {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
         cwd,
@@ -23,41 +24,19 @@ function spawnNodemon({ nodeArgs, script, exec, cwd, env }) {
   })
 }
 
-const getNodemonOpts = async ({ wkdir }) => {
-    const pkg = await fse.readJSON(path.resolve(wkdir, 'package.json'))
-
+const getNodemonOpts = async ({ wkdir, cfg }) => {
     let opts = {
-        ext: 'js json',
         cwd: wkdir,
+        exec: cfg.dev.command,
         env: {
             PORT: CHILD_PORT,
         },
+		watch: cfg.dev.watch.filter(glob => !glob.startsWith('!')),
+		ignore: [
+            ...cfg.dev.watch.filter(glob => glob.startsWith('!')).map(glob => glob.substring(1)),
+            ...cfg.dev.ignore,
+        ],
         nodeArgs: [`--inspect=0.0.0.0:${CHILD_DEBUG_PORT}`]
-    }
-
-    if (pkg.scripts && pkg.scripts.start) {
-        opts.exec = `npm run start`
-    }
-    if (pkg.scripts && pkg.scripts.watch) {
-        opts.exec = `npm run watch`
-    }
-    if (pkg.scripts && pkg.scripts.dev) {
-        opts.exec = `npm run dev`
-    }
-
-    if (!opts.exec) {
-        opts.script = 'index.js'
-    }
-
-    if (pkg.nodemonConfig) {
-        opts = {
-            ...opts,
-            ...pkg.nodemonConfig,
-            env: {
-                ...opts.env,
-                ...(pkg.nodemonConfig.env || {}),
-            },
-        }
     }
 
     console.log('using nodemon opts', JSON.stringify(opts))
@@ -65,8 +44,8 @@ const getNodemonOpts = async ({ wkdir }) => {
     return opts
 }
 
-const start = async ({ wkdir }) => {
-    const opts = await getNodemonOpts({ wkdir })
+const start = async ({ wkdir, cfg }) => {
+    const opts = await getNodemonOpts({ wkdir, cfg })
     return spawnNodemon(opts)
 }
 

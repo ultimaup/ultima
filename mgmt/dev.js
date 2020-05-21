@@ -6,6 +6,7 @@ const uuid = require('uuid').v4
 const path = require('path')
 const got = require('got')
 const fse = require('fs-extra')
+const YAML = require('yaml')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
@@ -31,13 +32,13 @@ const ensureDevelopmentBundle = async lang => {
 
 	const existing = await s3.headObject({ Key: key })
 
-	if (!existing) {
+	//if (!existing) {
 		const { writeStream, promise } = s3.uploadStream({ Key: key })
 		const tarStream = tar.pack(builderPath)
 		tarStream.pipe(createGzip()).pipe(writeStream)
 
 		await promise
-	}
+	//}
 
 	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
 }
@@ -55,12 +56,19 @@ router.use('/dev-session', async (req, res, next) => {
     }
 })
 
-const startDevSession = async ({ user, details: { repoName, owner } }) => {
+const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }) => {
     const invocationId = uuid()
     const lang = 'nodejs'
 
+    const envCfg = ultimaCfg ? YAML.parse(ultimaCfg) : {}
+
     const devEndpointId = `${user.username}-dev-${uuid()}`.toLowerCase()
     console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
+
+    let runtime = 'node'
+    if (envCfg.api && envCfg.api.runtime) {
+        runtime = envCfg.api.runtime
+    }
 
     const schemaInfo = {
         username: devEndpointId,
@@ -78,6 +86,7 @@ const startDevSession = async ({ user, details: { repoName, owner } }) => {
 		stage: 'development',
         bundleLocation: await ensureDevelopmentBundle(lang),
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
+        runtime,
         env: {
             ...schemaEnv,
             npm_config_registry: REGISTRY_CACHE_ENDPOINT,

@@ -12,7 +12,9 @@ const initSession = async (config) => {
         http2: true,
     })
 
-    const data = await client.post(`new-session`).json()
+    const data = await client.post(`new-session`, {
+        body: config.ultimaCfg,
+    }).json()
 
     if (!data) {
         throw new Error('unable to connect to allocated development session')

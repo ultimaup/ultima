@@ -1,8 +1,8 @@
-const fse = require('fs-extra')
 const path = require('path')
 const spawn = require('@expo/spawn-async')
 const tar = require('tar-fs')
 const { createGzip } = require('zlib')
+const minimatch = require('minimatch')
 
 const downloadDir = (wkdir, dir) => {
 	const tarStream = tar.pack(path.resolve(wkdir, dir))
@@ -15,64 +15,34 @@ const {
 	npm_config_registry,
 } = process.env
 
-let ranBefore = false
-
-const installDeps = async (wkdir, force, msgCb) => {
-	if (!force && !ranBefore) {
-		return
-	}
-	ranBefore = true
+const installDeps = async (wkdir, cfg, msgCb) => {
 	console.log('installing dependencies')
 
-	const useYarn = await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))
+	await spawn('sed', ['-i', `s //registry.npmjs.org/ ${npm_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.npmrc')])
+	await spawn('sed', ['-i', `s //registry.npmjs.org/ ${npm_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.yarnrc')])
+	await spawn('sed', ['-i', `s //registry.yarnpkg.com/ ${yarn_config_registry.split('http://').join('//').split('https://').join('//')} g`, path.resolve(wkdir, '.yarnrc')])
+	await spawn('sed', ['-i', `s https://registry.yarnpkg.com/ ${yarn_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
+	await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
+	await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 
-	if (useYarn) {
-		console.log('found yarn.lock so using yarn')
+	const p = spawn('bash', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
 
-		await spawn('sed', ['-i', `s https://registry.yarnpkg.com/ ${yarn_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
-		await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
-
-		const p = spawn('yarn', ['install', '--frozen-lockfile' ,'--non-interactive'], { cwd: wkdir, ignoreStdio: true })
-
-		p.child.stdout.on('data', msgCb)
-		p.child.stderr.on('data', msgCb)
-
-		await p
-		
-		return
-	} else {
-		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
-		if (await fse.pathExists(lockfileLocation)) {
-			console.log('found package-lock.json so using npm ci')
-			await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.json')])
-			const p = spawn('npm',['ci'], { cwd: wkdir, ignoreStdio: true })
-
-			p.child.stdout.on('data', msgCb)
-			p.child.stderr.on('data', msgCb)
-			
-			await p
-
-			return
-		} else {
-			console.log('using npm install')
-			const p = spawn('npm', ['install'], { cwd: wkdir, ignoreStdio: true })
-			
-			p.child.stdout.on('data', msgCb)
-			p.child.stderr.on('data', msgCb)
-			
-			await p
-			
-			return
-		}
-	}
+	p.child.stdout.on('data', msgCb)
+	p.child.stderr.on('data', msgCb)
 }
 
-const shouldRunInstallDeps = async (filePath, wkdir) => {
-	return filePath.endsWith('yarn.lock') || filePath.endsWith('package-lock.json') || (
-		filePath.endsWith('package.json') && 
-		!(await fse.pathExists(path.resolve(wkdir, 'yarn.lock'))) &&  
-		!(await fse.pathExists(path.resolve(wkdir, 'package-lock.json')))
-	)
+const shouldRunInstallDeps = async (filePath, cfg) => {
+	if (cfg.install && cfg.install.watch) {
+		const positive = cfg.install.watch.filter(glob => !glob.startsWith('!'))
+		const negators = [...cfg.install.watch.filter(glob => glob.startsWith('!')), ...cfg.ignore]
+
+		return (
+			positive.some(glob => minimatch(filePath, glob)) && 
+			!negators.some(glob => minimatch(filePath, glob))
+		)
+	}
+
+	return false
 }
 
 module.exports = {

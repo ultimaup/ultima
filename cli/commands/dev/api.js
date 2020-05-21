@@ -1,6 +1,6 @@
 const fetch = require('node-fetch')
 
-const init = (rootEndpoint, token, { repoName, owner }) => {
+const init = (rootEndpoint, token, ultimaCfg, { repoName, owner }) => {
     const apiFetch = (endpoint, ...args) => {
         return fetch(`${rootEndpoint}${endpoint}`, ...args)
     }
@@ -14,6 +14,7 @@ const init = (rootEndpoint, token, { repoName, owner }) => {
         body: JSON.stringify({
             repoName,
             owner,
+            ultimaCfg,
         }),
     }).then(r => r.json())
 
