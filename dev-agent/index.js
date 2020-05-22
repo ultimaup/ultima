@@ -33,7 +33,7 @@ app.post('/file', async (req, res) => {
         req,
     )
     
-    if (await shouldRunInstallDeps(filePath, cfg)) {
+    if (shouldRunInstallDeps(filePath, cfg)) {
         const wkdir = path.resolve('/tmp', sessionId)
         io.to(sessionId).emit('event', {
             event: 'install-deps-start',
@@ -48,6 +48,16 @@ app.post('/file', async (req, res) => {
             event: 'install-deps-complete',
         })
     }
+
+    if (runner.shouldRestart(filePath, cfg)) {
+        const session = sessions[sessionId]
+        if (session) {
+            session.emit('restart')
+        } else {
+            console.error('tried to restart but no session', session)
+        }
+    }
+
     res.json({
         status: 'success', data: result
     })
@@ -98,7 +108,7 @@ const createSession = async sessionId => {
         event: 'install-deps-complete',
     })
 
-    const session = await runner({ wkdir, cfg })
+    const session = runner.start({ wkdir, cfg })
 
     session.on('message', ({ type }) => {
         io.to(sessionId).emit('event', {
@@ -144,10 +154,8 @@ io.on('connection', (socket) => {
 
         if (!sessions[sessionId]) {
             console.log(sessionId, 'creating session')
-            sessions[sessionId] = createSession(sessionId)
+            sessions[sessionId] = await createSession(sessionId)
         }
-
-        await sessions[sessionId]
 
         socket.on('force', command => {
             sessions[sessionId].emit(command)
