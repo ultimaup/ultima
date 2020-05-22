@@ -3,9 +3,9 @@ const got = require('got')
 
 const agent = new http2.Agent()
 
-const initSession = async (config) => {
+const initSession = async ({ rootEndpoint, ultimaCfg }) => {
     const client = got.extend({
-        prefixUrl: config.rootEndpoint,
+        prefixUrl: rootEndpoint,
         agent: {
             http2: agent,
         },
@@ -13,7 +13,7 @@ const initSession = async (config) => {
     })
 
     const data = await client.post(`new-session`, {
-        body: config.ultimaCfg,
+        json: {ultimaCfg},
     }).json()
 
     if (!data) {

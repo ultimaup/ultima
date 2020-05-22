@@ -121,15 +121,17 @@ const dev = async () => {
             ui.log.write('installed dependancies')
         }
 
-        // ui.log.write('downloading dependancies locally')
-        fileSync.download('node_modules',{
-            client,
-            sessionId,
-        }).then(() => {
-            // ui.log.write('downloaded dependancies locally')
-        }).catch(e => {
-            // ui.log.write('error downloading dependancies locally: '+e)
-        })
+        if (cfg.dev && cfg.dev.dependencyDir) {
+            // ui.log.write('downloading dependancies locally')
+            fileSync.download(cfg.dev.dependencyDir,{
+                client,
+                sessionId,
+            }).then(() => {
+                // ui.log.write('downloaded dependancies locally')
+            }).catch(e => {
+                // ui.log.write('error downloading dependancies locally: '+e)
+            })
+        }
         
         firstTime = false
 

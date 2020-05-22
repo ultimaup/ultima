@@ -13,9 +13,9 @@ const {
 } = process.env
 
 const getBundle = async url => {
-	const [Bucket, ...Key] = url.split('/')
+	const Key = url.split(BUILDER_BUCKET_ID)[1]
 
-	return s3.getStream({ Bucket, Key: Key.join('/') })
+	return s3.getStream({ Key })
 }
 
 let docker = undefined

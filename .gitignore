@@ -17,4 +17,5 @@ yarn-error.log*
 secrets.env
 
 # agents binaries
-node13-linux-x64
+dev-agent-bin
+build-agent-bin

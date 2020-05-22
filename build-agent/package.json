@@ -1,6 +1,6 @@
 {
-  "name": "nodejs",
-  "version": "1.0.21",
+  "name": "build-agent-bin",
+  "version": "1.0.20",
   "description": "",
   "main": "index.js",
   "scripts": {

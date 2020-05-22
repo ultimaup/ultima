@@ -27,11 +27,19 @@ router.use(bodyParser.json())
 
 const ensureDevelopmentBundle = async () => {
     let githash = 'dev'
+
     if (await fse.exists('.githash')) {
         githash = await fse.readFile('.githash')
+        return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
     }
 
-	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/build-${githash}.tar.gz`
+    const Key = `development/dev-agent-${githash}.tar.gz`
+    const builderPath = path.resolve(__dirname, 'dev-agent')
+    const { writeStream, promise } = s3.uploadStream({ Key })
+    const tarStream = tar.pack(builderPath)
+    tarStream.pipe(createGzip()).pipe(writeStream)
+
+    return await promise
 }
 
 
@@ -72,13 +80,17 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
 
     const schemaEnv = getSchemaEnv(schemaInfo)
 
+    const bundleLocation = await ensureDevelopmentBundle(lang)
+    // const command = bundleLocation.split('/')[bundleLocation.split('/').length - 1].split('.tar.gz')[0]
+
 	// ensure dev endpoint exists
 	await Deployment.ensure({
 		id: devEndpointId,
 		stage: 'development',
-        bundleLocation: await ensureDevelopmentBundle(lang),
+        bundleLocation,
         ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
         runtime,
+        command: `./dev-agent-bin`,
         env: {
             ...schemaEnv,
             npm_config_registry: REGISTRY_CACHE_ENDPOINT,

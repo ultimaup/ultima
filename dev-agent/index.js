@@ -2,6 +2,8 @@ const spdy = require('spdy')
 const path = require('path')
 const socketIO = require('socket.io')
 const YAML = require('yaml')
+const express = require('express')
+const bodyParser = require('body-parser')
 
 const fileHandler = require('./fileHandler')
 const runner = require('./runner')
@@ -16,86 +18,77 @@ const sessionConfigs = {}
 
 let io
 
-const server = spdy
-    .createServer({ spdy: { plain: true, ssl: false, protocols: ['h2', 'http'] } }, (req, res) => {
-        console.log('got request', req.url)
-        if (req.url === '/file') {
-            const filePath = req.headers['x-event-path']
-            const sessionId = req.headers['x-session-id']
-            const cfg = sessionConfigs[sessionId]
-            
-            fileHandler(
-                req.headers['x-event-type'],
-                filePath,
-                sessionId,
-                req,
-            ).then(async (result) => {
-                if (await shouldRunInstallDeps(filePath, cfg)) {
-                    const wkdir = path.resolve('/tmp', sessionId)
-                    io.to(sessionId).emit('event', {
-                        event: 'install-deps-start',
-                    })
-                    await installDeps(wkdir, cfg, (msg) => {
-                        io.to(sessionId).emit('event',{
-                            event: 'stdout',
-                            data: msg.toString('utf8'),
-                        })
-                    })
-                    io.to(sessionId).emit('event', {
-                        event: 'install-deps-complete',
-                    })
-                }
-                res.writeHead(200, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ status: 'success', data: result }))
-            }).catch(err => {
-                console.error(err)
-                res.writeHead(500, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ error: err, status: 'error' }))
+const options = { spdy: { plain: true, ssl: false, protocols: ['h2', 'http'] } }
+const app = express()
+
+app.post('/file', async (req, res) => {
+    const filePath = req.headers['x-event-path']
+    const sessionId = req.headers['x-session-id']
+    const cfg = sessionConfigs[sessionId]
+
+    const result = await fileHandler(
+        req.headers['x-event-type'],
+        filePath,
+        sessionId,
+        req,
+    )
+    
+    if (await shouldRunInstallDeps(filePath, cfg)) {
+        const wkdir = path.resolve('/tmp', sessionId)
+        io.to(sessionId).emit('event', {
+            event: 'install-deps-start',
+        })
+        await installDeps(wkdir, cfg, (msg) => {
+            io.to(sessionId).emit('event',{
+                event: 'stdout',
+                data: msg.toString('utf8'),
             })
-
-            return
-        }
-
-        if (req.url === '/health') {
-            res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify(true))
-    
-            return
-        }
-
-        if (req.url === '/new-session') {
-            const sessionId = 'static-session-id'
-            const { ultimaCfg } = req.body ? JSON.parse(req.body) : {}
-            sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg).api : {}
-            res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ sessionId }))
-    
-            return
-        }
-
-        if (req.url.startsWith('/download')) {
-            const sessionId = req.headers['x-session-id']
-            const wkdir = path.resolve('/tmp', sessionId)
-
-            const stream = downloadDir(wkdir, req.url.split('/download/')[1])
-            return stream.pipe(res)
-        }
-
-        res.writeHead(404, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({}))
+        })
+        io.to(sessionId).emit('event', {
+            event: 'install-deps-complete',
+        })
+    }
+    res.json({
+        status: 'success', data: result
     })
-    .on('error', (err) => console.error(err))
+})
+
+app.get('/health', (req, res) => {
+    res.json(true)
+})
+
+app.post('/new-session', bodyParser.json(), (req, res) => {
+    const sessionId = 'static-session-id'
+    const { ultimaCfg } = req.body
+    sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg).api : {}
+    console.log('using config', sessionConfigs[sessionId])
+
+    res.json({
+        sessionId,
+    })
+})
+
+app.all('/download/*', (req, res) => {
+    const sessionId = req.headers['x-session-id']
+    const wkdir = path.resolve('/tmp', sessionId)
+
+    const stream = downloadDir(wkdir, req.url.split('/download/')[1])
+    return stream.pipe(res)
+})
+
+const server = spdy.createServer(options, app)
 
 io = socketIO(server)
 
 const createSession = async sessionId => {
     const wkdir = path.resolve('/tmp', sessionId)
+    const cfg = sessionConfigs[sessionId]
 
     io.to(sessionId).emit('event', {
         event: 'install-deps-start',
     })
     // install deps
-    await installDeps(wkdir, (msg) => {
+    await installDeps(wkdir, cfg, (msg) => {
         io.to(sessionId).emit('event',{
             event: 'stdout',
             data: msg.toString('utf8'),
@@ -104,8 +97,6 @@ const createSession = async sessionId => {
     io.to(sessionId).emit('event', {
         event: 'install-deps-complete',
     })
-
-    const cfg = sessionConfigs[sessionId]
 
     const session = await runner({ wkdir, cfg })
 

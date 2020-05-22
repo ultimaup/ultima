@@ -82,7 +82,7 @@ cd ..
 echo "building build-agent"
 cd build-agent
 yarn build
-mv nodejs ../../build-agent
+mv build-agent-bin ../../build-agent
 tar -cpzf ../../build-agent-${DRONE_COMMIT_SHA}.tar.gz ../../build-agent
 rm -rf node_modules
 cd ..
@@ -90,7 +90,7 @@ cd ..
 echo "building dev-agent"
 cd dev-agent
 yarn build
-mv nodejs ../../dev-agent
+mv dev-agent-bin ../../dev-agent
 tar -cpzf ../../dev-agent-${DRONE_COMMIT_SHA}.tar.gz ../../dev-agent
 rm -rf node_modules
 cd ..
