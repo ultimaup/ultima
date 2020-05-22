@@ -60,6 +60,20 @@
     border: 1px solid white;
 }
 
+#config-editor-container {
+    display: flex;
+    position: relative;
+}
+
+#config-editor-container #ultima-config-editor {
+    flex: 1;
+}
+
+#config-editor-container .CodeMirror {
+    width: 520px;
+    margin-top: 46px;
+}
+
 /*
 body {
     background: #363636;
