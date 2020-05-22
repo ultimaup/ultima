@@ -34,11 +34,18 @@ const start = ({ wkdir, cfg }) => {
     const stdout = new PassThrough()
     const stderr = new PassThrough()
 
+    stdout.on('end', function () {
+        console.log('stdout end');
+    })
+    stdout.on('close', function () {
+        console.log('stdout close');
+    })
+
     const runnerIn = new EventEmitter()
     const runnerOut = new EventEmitter()
 
     const forkArgs = [
-        'bash', 
+        'sh', 
         ['-c', opts.exec], 
         {
             stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
@@ -53,28 +60,33 @@ const start = ({ wkdir, cfg }) => {
 
     let child
 
+    const stdoutHandler = d => stdout.write(d)
+    const stderrHandler = d => stderr.write(d)
+
     const exitHandler = (code, signal) => {
         console.log('child.on exit', code, signal)
         if (signal !== 'SIGTERM') {
             runnerOut.emit('message', ({ type: 'exited' }))
         } else {
-            child.stdout.unpipe(stdout)
-            child.stderr.unpipe(stderr)
+            child.stdout.removeListener('data', stdoutHandler)
+            child.stderr.removeListener('data', stderrHandler)
 
             runnerOut.emit('message', ({ type: 'restart' }))
 
             child = spawn(...forkArgs)
             child.on('close', exitHandler)
-            child.stdout.pipe(stdout)
-            child.stderr.pipe(stderr)
+            child.stdout.on('data', stdoutHandler)
+            child.stderr.on('data', stderrHandler)
             child.on('error', console.error)
         }
     }
 
     child = spawn(...forkArgs)
     child.on('close', exitHandler)
-    child.stdout.pipe(stdout)
-    child.stderr.pipe(stderr)
+
+    child.stdout.on('data', stdoutHandler)
+    child.stderr.on('data', stderrHandler)
+
     child.on('error', console.error)
 
     runnerOut.emit('message', ({ type: 'start' }))
