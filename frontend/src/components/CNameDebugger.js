@@ -15,12 +15,13 @@ const RecordType = styled.div`
 
     background: ${({ children }) => {
         switch (children) {
-            case 'CNAME':
-                return '#fd79a8'
             case 'A':
                 return '#0984e3'
             case 'AAAA':
                 return '#6c5ce7'
+            default:
+            case 'CNAME':
+                return '#fd79a8'
         }
     }};
 `
@@ -36,7 +37,7 @@ const Results = ({ ipv4, ipv6, cname }) => {
 }
 
 const CNameDebugger = ({ dnsInfo }) => {
-    const { loading, queryCName, results } = useQueryCName()
+    const { queryCName, results } = useQueryCName()
     const [value, setValue] = useState('')
 
     return (
