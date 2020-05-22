@@ -45,10 +45,10 @@ const gitea = () => {
     
     const url = window.location.pathname
         
-    let [___,owner, repoName, _,__,branch = 'master'] = url.split('/')
+    let [owner, repoName, _operation,_optBranch,branch = 'master'] = url.split('/').slice(1)
     
-    if (_ === '_edit') {
-        branch = __
+    if (_operation === '_edit') {
+        branch = _optBranch
     }
     if (!branch) {
         branch = 'master'

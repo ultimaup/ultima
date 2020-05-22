@@ -112,7 +112,7 @@ const Login = () => {
             window.localStorage.removeItem('authRedirect')
             window.location.href = redirectTo
         }
-    }, [auth])
+    }, [auth, isWaitlist])
 
     let me
     if (isWaitlist && auth) {

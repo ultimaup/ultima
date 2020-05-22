@@ -45,8 +45,8 @@ const User = ({ id, username, imageUrl, activated }) => {
 
     return (
         <li>
-            <img src={imageUrl} style={{ width: 64, height: 64, marginRight: 16 }} />
-            <a href={`https://github.com/${username}`} target="_blank">{username}</a>
+            <img src={imageUrl} alt={`${username}'s profile pic`} style={{ width: 64, height: 64, marginRight: 16 }} />
+            <a href={`https://github.com/${username}`} target="_blank" rel="noopener noreferrer">{username}</a>
             <button style={{ marginLeft: 16 }} disabled={loading} onClick={(e) => {
                 e.preventDefault()
                 activateUser({ variables: { id, activated: !activated } })

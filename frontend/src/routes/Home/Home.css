@@ -354,6 +354,7 @@ a:hover {
     background-repeat: no-repeat;
     background-position: center;
     background-color: #F9F9F9;
+    color: transparent;
 }
 
 a.disabled {

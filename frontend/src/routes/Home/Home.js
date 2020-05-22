@@ -76,7 +76,7 @@ const Home = () => (
         </div>
       </div>
     </div>
-    <a className="chat-bubble animated bounceInUp" href="/community"></a>
+    <a className="chat-bubble animated bounceInUp" href="/community">Join Slack</a>
 </>
 )
 
