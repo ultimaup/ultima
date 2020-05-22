@@ -225,7 +225,7 @@ services:
   elasticsearch:
     image: elasticsearch:7.6.2
     volumes:
-      - ./tmp/elasticsearch:/usr/share/elasticsearch/data
+      - es-data:/usr/share/elasticsearch/data
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
@@ -266,3 +266,6 @@ services:
       - 4493:80
     volumes:
       - ./registry-cache/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  es-data:
