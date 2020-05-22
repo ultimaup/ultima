@@ -217,7 +217,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
                 // const history = environments.filter(e => !!e.stoppedAt)
                 const name = stageToName(stage)
 
-                const hasAPI = live && live.length && live[0].routes.find(r => !r.url.includes('//static'))
+                const hasAPI = live && live[0] && live[0].routes.find(r => !r.url.includes('//static'))
 
                 return (
                     <EnvironmentsContainer key={stage}>
