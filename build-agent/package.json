@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node .",
-    "build": "pkg --target node13-linux-x64 ."
+    "build": "pkg --target node13-linux-x64 .",
+    "build:dev": "yarn build && cp build-agent-bin ../mgmt/build-agent/build-agent-bin"
   },
   "bin": {
     "ultima-builder": "./index.js"

@@ -108,11 +108,9 @@ app.post('/', async (req, res) => {
 		}
 
 		try {
-			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-				await installDeps(wkdir, config)
-				await doBuild(wkdir, config)
-				await doTest(wkdir, config)
-			}
+			await installDeps(wkdir, config.api)
+			await doBuild(wkdir, config.api)
+			await doTest(wkdir, config.api)
 		} catch (e) {
 			console.error(e)
 		}

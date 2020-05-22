@@ -46,12 +46,21 @@ const pipeline = promisify(stream.pipeline);
 
 const ensureBuilderBundle = async () => {
     let githash = 'dev'
+
     if (await fse.exists('.githash')) {
         githash = await fse.readFile('.githash')
+        return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/builders/build-agent-${githash}.tar.gz`
     }
 
-	return `${S3_ENDPOINT}/build-artifacts/build-agent/build-${githash}.tar.gz`
+    const Key = `builders/build-agent-${githash}.tar.gz`
+    const builderPath = path.resolve(__dirname, 'build-agent')
+    const { writeStream, promise } = s3.uploadStream({ Key })
+    const tarStream = tar.pack(builderPath)
+    tarStream.pipe(createGzip()).pipe(writeStream)
+
+    return await promise
 }
+
 
 const removeLeadingSlash = (str) => {
 	if (str[0] === '/') {
@@ -258,6 +267,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				stage: 'builder',
 				repoName: repository.full_name,
 				owner: user,
+				command: './build-agent-bin',
 				bundleLocation: await ensureBuilderBundle(lang),
 				runtime: (config.api && config.api.runtime) || 'node',
 				env: {
