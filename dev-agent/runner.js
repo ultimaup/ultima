@@ -1,27 +1,31 @@
 const { fork } = require('child_process')
 
-require('./nodemon')
-
 const {
     CHILD_PORT = 4490,
     CHILD_DEBUG_PORT = 4491,
 } = process.env
 
-function spawnNodemon({ nodeArgs, watch, ignore, exec, cwd, env }) {
+function spawnNodemon({ nodeArgs, watch, ignore, exec, ext, cwd, env }) {
     const nodemon = require.resolve('./nodemon')
-    
-    return fork(nodemon, [
-        ...nodeArgs,
-        ...(['--exec', exec]),
-        ...watch.map(glob => ['--watch', glob]).flat(),
-        ...ignore.map(glob => ['--ignore', glob]).flat(),
-        ], {
-            stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-            cwd,
-            env : {
-                ...process.env,
-                ...env,
-            },
+    const args = JSON.stringify({
+        nodeArgs, watch, ignore, exec, cwd, env,
+    })
+    // const args = [
+    //     ...nodeArgs,
+    //     ...(['--exec', exec]),
+    //     ...(ext.length ? ['--ext', ext.join(',')] : []),
+    //     ...watch.map(glob => ['--watch', glob]).flat(),
+    //     ...ignore.map(glob => ['--ignore', glob]).flat(),
+    // ]
+    console.log('running nodemon with', args)
+
+    return fork(nodemon, [args], {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+        cwd,
+        env : {
+            ...process.env,
+            ...env,
+        },
     })
 }
 
@@ -35,6 +39,7 @@ const getNodemonOpts = async ({ wkdir, cfg }) => {
         env: {
             PORT: CHILD_PORT,
         },
+        ext: cfg.dev.watch.filter(g => g.includes('.')).map(g => g.split('.')[1]),
 		watch: watch.filter(glob => !glob.startsWith('!')),
 		ignore: [
             ...watch.filter(glob => glob.startsWith('!')).map(glob => glob.substring(1)),
