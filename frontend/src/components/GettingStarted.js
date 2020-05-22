@@ -51,13 +51,13 @@ const GettingStarted = ({ cliLink }) => {
             <ul>
                 <li>
                     
-                    <a target="_blank" href="https://www.notion.so/Alpha-1-ab9d40e30e11442c86810992306da713">
+                    <a target="_blank" rel="noopener noreferrer" href="https://www.notion.so/Alpha-1-ab9d40e30e11442c86810992306da713">
                         <Octicon icon={Rocket} size={32} />
                         <span>Ultima Getting Started</span>
                     </a>
                 </li>
                 <li>
-                    <a onClick={() => cliLink.click()}><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
+                    <a href="#" onClick={() => cliLink.click()}><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
                 </li>
                 <li>
                     

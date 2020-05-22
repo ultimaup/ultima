@@ -11,7 +11,7 @@ const Container = styled.div`
 `
 
 const DeploymentNotification = ({ owner, repoName }) => {
-    const { loading, error, actions } = useActions({ owner, repoName, pollInterval: 1000 })
+    const { actions } = useActions({ owner, repoName, pollInterval: 1000 })
     const hasLiveAction = actions && actions.some(a => !a.completedAt)
 
     return (

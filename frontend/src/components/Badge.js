@@ -30,18 +30,19 @@ export const Badge = styled.div`
                     border: 1px solid #2AA827;
                 `
             }
-            case 'warning': {
-                return css`
-                    color: #FF8C47;
-                    background: #301607;
-                    border: 1px solid #FF8C47;
-                `
-            }
             case 'danger': {
                 return css`
                     color: #E01E5A;
                     background: #300613;
                     border: 1px solid #E01E5A;
+                `
+            }
+            default:
+            case 'warning': {
+                return css`
+                    color: #FF8C47;
+                    background: #301607;
+                    border: 1px solid #FF8C47;
                 `
             }
         }

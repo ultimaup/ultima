@@ -39,7 +39,7 @@ export const useActions = ({ owner, repoName, parentId, pollInterval = 3000 }) =
     useEffect(() => {
         startPolling(pollInterval)
         return stopPolling
-    }, [])
+    }, [startPolling, pollInterval, stopPolling])
 
     return {
         loading,
@@ -55,7 +55,7 @@ export const useAction = (id) => {
     useEffect(() => {
         startPolling(1000)
         return stopPolling
-    }, [])
+    }, [startPolling, stopPolling])
 
     return {
         loading,
