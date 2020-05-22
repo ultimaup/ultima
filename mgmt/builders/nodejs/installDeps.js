@@ -33,7 +33,7 @@ const installDeps = async (wkdir) => {
 		const lockfileLocation = path.resolve(wkdir, 'package-lock.json')
 		if (await fse.pathExists(lockfileLocation)) {
 			console.log('using npm ci')
-			await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
+			await spawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.json')])
 
 			await spawn('npm',['ci'], { cwd: wkdir, stdio: 'inherit' })
 
