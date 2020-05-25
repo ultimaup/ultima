@@ -146,7 +146,7 @@ const genConfig = ({ source, destination, alias, extensions = [] }) => {
             ${(prefix) ? `middlewares = ["${key}"]`: ''}
             service = "${key}"${CERT_RESOLVER ? `
             [http.routers.${key}.tls]
-                certResolver = "${CERT_RESOLVER}"
+                certResolver = "${CERT_RESOLVER}-http"
                 [[http.routers.${key}.tls.domains]]
                     main = "*.${subdomainMinusOne}"
                     sans = ["*.${subdomainMinusOne}"]` : ''}${aliasConfig({ alias, prefix, key, middlewares: `${(prefix) ? `middlewares = ["${key}"]`: ''}` })}${prefix ? `
