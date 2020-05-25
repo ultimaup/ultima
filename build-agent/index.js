@@ -94,17 +94,8 @@ app.post('/', async (req, res) => {
 			config = await YAML.parse(configYml)
 		}
 
-		let removeNodeModules = false
 		if (!config) {
 			console.log('no .ultima.yml found, assuming nodejs api app')
-		} else {
-			if (config.web) {
-				console.log('static website found')
-			}
-			if (config.hasAPI === false) {
-				console.log('not an api, will remove node_modules folder from resulting output')
-				removeNodeModules = true
-			}
 		}
 
 		try {
@@ -115,9 +106,12 @@ app.post('/', async (req, res) => {
 			console.error(e)
 		}
 
-		if (removeNodeModules) {
-			console.log('removing node_modules folder')
-			await exec(`rm -rf ${path.resolve(wkdir, 'node_modules')}`)
+		if (config.api.removePaths) {
+			config.api.removePaths.map(async (p) => {
+				console.log('removing', p)
+				await exec(`rm -rf ${path.resolve(wkdir, p)}`)
+				console.log('removed', p)
+			})
 		}
 
 		const filesAfter = await fse.readdir(wkdir)
