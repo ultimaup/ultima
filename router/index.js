@@ -53,7 +53,7 @@ const aliasConfig = ({ alias, middlewares, key }) => (alias ? `
     ${middlewares}
     service = "${key}"${CERT_RESOLVER ? `
     [http.routers.${key}-alias.tls]
-        certResolver = "${CERT_RESOLVER}"
+        certResolver = "${CERT_RESOLVER}-http"
         [[http.routers.${key}.tls.domains]]
             main = "${alias}"
             sans = ["${alias}"]` : ''}` : ''
