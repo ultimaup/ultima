@@ -47,11 +47,16 @@ const parseUrl = url => {
 
 const sourceToKey = (source, extensions) => source.split('.').join('-').split('/').join('-') + (extensions ? extensions.length : 0)
 
-const aliasConfig = ({ alias, prefix, key }) => (alias ? `
+const aliasConfig = ({ alias, middlewares, key }) => (alias ? `
 [http.routers.${key}-alias]
     rule = "Host(\`${alias}\`)"
-    ${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}
-    service = "${key}"` : ''
+    ${middlewares}
+    service = "${key}"${CERT_RESOLVER ? `
+    [http.routers.${key}-alias.tls]
+        certResolver = "${CERT_RESOLVER}"
+        [[http.routers.${key}.tls.domains]]
+            main = "${alias}"
+            sans = ["${alias}"]` : ''}` : ''
 )
 
 const genConfig = ({ source, destination, alias, extensions = [] }) => {
@@ -108,7 +113,7 @@ const genConfig = ({ source, destination, alias, extensions = [] }) => {
                         ${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}
                         service = "${key}"${CERT_RESOLVER ? `
                         [http.routers.${key}.tls]
-                            certResolver = "${CERT_RESOLVER}"` : ''}${aliasConfig({ alias, prefix, key })}${prefix ? `
+                            certResolver = "${CERT_RESOLVER}"` : ''}${aliasConfig({ alias, prefix, key, middlewares: `${(prefix) ? `middlewares = ["${key}", "strip-prefix-1", "add-index", "error-page"]`: ''}` })}${prefix ? `
                 [http.middlewares]
                     [http.middlewares.${key}]
                         [http.middlewares.${key}.addPrefix]
@@ -144,7 +149,7 @@ const genConfig = ({ source, destination, alias, extensions = [] }) => {
                 certResolver = "${CERT_RESOLVER}"
                 [[http.routers.${key}.tls.domains]]
                     main = "*.${subdomainMinusOne}"
-                    sans = ["*.${subdomainMinusOne}"]` : ''}${aliasConfig({ alias, prefix, key })}${prefix ? `
+                    sans = ["*.${subdomainMinusOne}"]` : ''}${aliasConfig({ alias, prefix, key, middlewares: `${(prefix) ? `middlewares = ["${key}"]`: ''}` })}${prefix ? `
     [http.middlewares]
         [http.middlewares.${key}.addPrefix]
             prefix = "${prefix}"` : ''}
