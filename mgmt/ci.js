@@ -124,10 +124,10 @@ const removeDeployment = async deploymentId => {
 	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
 }
 
-const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId }) => {
+const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
-	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder' })
+	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder', data: { resourceName } })
 
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
 
@@ -153,7 +153,7 @@ const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTar
 		})
 		container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
 
-		await markActionComplete(builderAlocation, { data: { builderEndpointId } })
+		await markActionComplete(builderAlocation, { data: { builderEndpointId, resourceName } })
 	} catch (e) {
 		await markActionComplete(builderAlocation, { type: 'error' })
 		throw e
@@ -163,7 +163,7 @@ const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTar
 	// pipe tarStream to builder endpoint, response is stream of result
 	let resultingBundleLocation
 	let builtBundleKey
-	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId } })
+	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId, resourceName } })
 	try {
 		builtBundleKey = `${repository.full_name.split('/').join('-')}/${resourceName}/${after}.tar.gz`
 		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
@@ -190,8 +190,7 @@ const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTar
 
 	await removeDeployment(builderEndpointId)
 
-	await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation } })
-
+	await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation, resourceName } })
 	return {
 		resultingBundleLocation,
 		builtBundleKey,
@@ -199,11 +198,11 @@ const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTar
 	}
 }
 
-const deployWebResource = async ({ parentActionId, after, builtBundleKey, staticContentLocation }) => {
+const deployWebResource = async ({ ref, resourceName, parentActionId, after, builtBundleKey, staticContentLocation }) => {
 	const bucketName = after.substring(0,8)
 	const actualBucketName = await s3.ensureWebBucket(bucketName)
 	console.log('uploading', staticContentLocation, 'to', actualBucketName)
-	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying static website' })
+	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying static website', data: { resourceName } })
 
 	// TODO: use stream from earlier instead of fetching from s3 again
 	const builtBundleStream = s3.getStream({ Key: builtBundleKey })
@@ -257,7 +256,7 @@ const deployWebResource = async ({ parentActionId, after, builtBundleKey, static
 	
 	const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 
-	await markActionComplete(deployActionId, { data: { staticUrl } })
+	await markActionComplete(deployActionId, { data: { url: staticUrl, resourceName } })
 
 	return {
 		resourceName,
@@ -265,10 +264,10 @@ const deployWebResource = async ({ parentActionId, after, builtBundleKey, static
 	}
 }
 
-const deployApiResource = async ({ repository, config, resourceName, after, resultingBundleLocation, schemaEnv }) => {
+const deployApiResource = async ({ ref, invocationId, repository, config, resourceName, after, parentActionId, resultingBundleLocation, schemaEnv }) => {
 	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
 	let endpointUrl
-	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
+	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
 	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
 	await Deployment.ensure({
@@ -286,13 +285,13 @@ const deployApiResource = async ({ repository, config, resourceName, after, resu
 		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
 		endpointUrl = container.hostname
 	} catch (e) {
-		await markActionComplete(deployActionId, { type: 'error', title: 'deployment failed', data: { error: e } })
+		await markActionComplete(deployActionId, { type: 'error', title: 'deployment failed', data: { error: e, resourceName } })
 		throw e
 	}
 
 	if (endpointUrl) {
 		console.log(invocationId, `deployed ${resultingEndpointId} to`, endpointUrl)
-		await markActionComplete(deployActionId, { title: 'deployment succeeded', data: { endpointUrl } })
+		await markActionComplete(deployActionId, { title: 'deployment succeeded', data: { url: endpointUrl, resourceName } })
 	} else {
 		console.error(invocationId, endpointUrl, 'deployment failed')
 		throw new Error('deployment failed')
@@ -301,6 +300,46 @@ const deployApiResource = async ({ repository, config, resourceName, after, resu
 	return {
 		resourceName,
 		url: endpointUrl,
+		deploymentId: resultingEndpointId,
+	}
+}
+
+const deployRoute = async ({ config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
+	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route', data: { resourceName } })
+	const subdomain = `${resourceName}-${branch}-${repo}-${user}`
+	// get current route
+	const [currentRoute] = await route.get(subdomain)
+
+	// add endpoint route
+	const resourceRoute = {
+		subdomain,
+		destination: url,
+		deploymentId,
+		extensions: config[resourceName].type === 'api' ? [] : ['index.html']
+	}
+
+	let type
+	let message
+	const alias = config && config[resourceName] && config[resourceName]['branch-domains']
+	if (alias) {
+		if (await checkAliasUse({ alias, subdomain })) {
+			type = 'warning'
+			message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
+		} else {
+			resourceRoute.alias = alias
+		}
+	}
+
+	const resourceUrl = await route.set(resourceRoute)
+	if (currentRoute && currentRoute.deploymentId) {
+		await removeDeployment(currentRoute.deploymentId)
+	}
+	
+	await markActionComplete(routeActionId, { type, message, data: { resourceUrl, url } })
+	
+	return {
+		resourceUrl,
+		resourceName,
 	}
 }
 
@@ -395,7 +434,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		}
 
 		const hasAPI = !config || Object.values(config).some(cfg => cfg.type === 'api')
-		let staticContentLocation = undefined
 		if (!config) {
 			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
@@ -426,53 +464,18 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
 			return buildResource({
-				resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId,
-			})
-		}).map(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
-			if (config[resourceName].type === 'api') {
-				return deployApiResource({ repository, config, resourceName, after, resultingBundleLocation, schemaEnv })
-			} else {
-				return deployWebResource({ parentActionId, after, builtBundleKey, staticContentLocation })
-			}
-		}))
-
-		const liveResourceRoutes = await Promise.all(resourceRoutes.map(async ({ resourceName, url }) => {
-			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
-			const subdomain = `${resourceName}-${branch}-${repo}-${user}`
-			// get current route
-			const [currentRoute] = await route.get(subdomain)
-
-			// add endpoint route
-			const resourceRoute = {
-				subdomain,
-				destination: url,
-				deploymentId: resultingEndpointId,
-				extensions = config[resourceName].type === 'api' ? [] : ['index.html']
-			}
-			let type
-			let message
-			const alias = config && config[resourceName] && config[resourceName]['branch-domains']
-			if (alias) {
-				if (await checkAliasUse({ alias, subdomain })) {
-					type = 'warning'
-					message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
+				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after,
+			}).then(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
+				if (config[resourceName].type === 'api') {
+					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv })
 				} else {
-					resourceRoute.alias = alias
+					const staticContentLocation = repoRelative(config[resourceName].buildLocation)
+					return deployWebResource({ ref, invocationId, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
 				}
-			}
-
-			const resourceUrl = await route.set(resourceRoute)
-			if (currentRoute && currentRoute.deploymentId) {
-				await removeDeployment(currentRoute.deploymentId)
-			}
-			
-			await markActionComplete(routeActionId, { type, message, data: { resourceUrl, url } })
-			
-			return {
-				resourceUrl,
-				resourceName,
-			}
+			})
 		}))
+
+		const liveResourceRoutes = await Promise.all(resourceRoutes.map(route => deployRoute({ ...route, config, parentActionId ,branch, repo, user })))
 
 		await markActionComplete(parentActionId, {
 			data: {
