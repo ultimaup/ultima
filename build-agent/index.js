@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 })
 
 app.post('/', async (req, res) => {
-	const { 'x-parent-invocation-id': invocationId } = req.headers
+	const { 'x-parent-invocation-id': invocationId, 'x-resource-name': resourceName } = req.headers
 	console.log('invoked from deployment', invocationId)
 
 	try {
@@ -98,20 +98,24 @@ app.post('/', async (req, res) => {
 			console.log('no .ultima.yml found, assuming nodejs api app')
 		}
 
+		if (config) {
+			wkdir = path.resolve(wkdir, config.directory || '')
+		}
+
 		try {
-			await installDeps(wkdir, config.api)
-			await doBuild(wkdir, config.api)
-			await doTest(wkdir, config.api)
+			await installDeps(wkdir, config[resourceName])
+			await doBuild(wkdir, config[resourceName])
+			await doTest(wkdir, config[resourceName])
 		} catch (e) {
 			console.error(e)
 		}
 
-		if (config.api.removePaths) {
-			config.api.removePaths.map(async (p) => {
+		if (config[resourceName].removePaths) {
+			await Promise.all(config[resourceName].removePaths.map(async (p) => {
 				console.log('removing', p)
 				await exec(`rm -rf ${path.resolve(wkdir, p)}`)
 				console.log('removed', p)
-			})
+			}))
 		}
 
 		const filesAfter = await fse.readdir(wkdir)

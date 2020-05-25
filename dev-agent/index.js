@@ -34,7 +34,7 @@ app.post('/file', async (req, res) => {
     )
     
     if (shouldRunInstallDeps(filePath, cfg)) {
-        const wkdir = path.resolve('/tmp', sessionId)
+        const wkdir = path.resolve('/tmp', sessionId, cfg.directory || '')
         io.to(sessionId).emit('event', {
             event: 'install-deps-start',
         })
@@ -70,7 +70,7 @@ app.get('/health', (req, res) => {
 app.post('/new-session', bodyParser.json(), (req, res) => {
     const sessionId = 'static-session-id'
     const { ultimaCfg } = req.body
-    sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg).api : {}
+    sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg)[process.env.ULTIMA_RESOURCE_NAME] : {}
     console.log('using config', sessionConfigs[sessionId])
 
     res.json({
@@ -80,7 +80,8 @@ app.post('/new-session', bodyParser.json(), (req, res) => {
 
 app.all('/download/*', (req, res) => {
     const sessionId = req.headers['x-session-id']
-    const wkdir = path.resolve('/tmp', sessionId)
+    const cfg = sessionConfigs[sessionId]
+    const wkdir = path.resolve('/tmp', sessionId, cfg.directory || '')
 
     const stream = downloadDir(wkdir, req.url.split('/download/')[1])
     return stream.pipe(res)
@@ -91,8 +92,8 @@ const server = spdy.createServer(options, app)
 io = socketIO(server)
 
 const createSession = async sessionId => {
-    const wkdir = path.resolve('/tmp', sessionId)
     const cfg = sessionConfigs[sessionId]
+    const wkdir = path.resolve('/tmp', sessionId, cfg.directory || '')
 
     io.to(sessionId).emit('event', {
         event: 'install-deps-start',

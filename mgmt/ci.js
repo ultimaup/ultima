@@ -124,6 +124,186 @@ const removeDeployment = async deploymentId => {
 	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
 }
 
+const buildResource = async ({ resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId }) => {
+	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
+
+	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder' })
+
+	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
+
+	console.log(invocationId, `ensuring ${runtime} builder endpoint exists with id ${builderEndpointId}`)
+
+	let container
+	try {
+		// ensure builder endpoint exists
+		await Deployment.ensure({
+			id: builderEndpointId,
+			stage: 'builder',
+			repoName: repository.full_name,
+			owner: user,
+			command: './build-agent-bin',
+			bundleLocation: await ensureBuilderBundle(),
+			runtime,
+			env: {
+				CI: true,
+				npm_config_registry: REGISTRY_CACHE_ENDPOINT,
+				yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
+				...schemaEnv,
+			},
+		})
+		container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
+
+		await markActionComplete(builderAlocation, { data: { builderEndpointId } })
+	} catch (e) {
+		await markActionComplete(builderAlocation, { type: 'error' })
+		throw e
+	}
+
+	console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
+	// pipe tarStream to builder endpoint, response is stream of result
+	let resultingBundleLocation
+	let builtBundleKey
+	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId } })
+	try {
+		builtBundleKey = `${repository.full_name.split('/').join('-')}/${resourceName}/${after}.tar.gz`
+		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
+
+		await pipeline(
+			giteaStream(codeTarUrl),
+			got.stream.post(container.hostname, {
+				headers: {
+					// 'content-type': 'application/octet-stream',
+					'x-parent-invocation-id': invocationId,
+					'x-resource-name': resourceName,
+				},
+			}),
+			writeStream
+		)
+
+		console.log(invocationId, `piping built result to ${builtBundleKey}`)
+		resultingBundleLocation = await promise
+		console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
+	} catch (e) {
+		await markActionComplete(buildActionId, { type: 'error' })
+		throw e
+	}
+
+	await removeDeployment(builderEndpointId)
+
+	await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation } })
+
+	return {
+		resultingBundleLocation,
+		builtBundleKey,
+		resourceName,
+	}
+}
+
+const deployWebResource = async ({ parentActionId, after, builtBundleKey, staticContentLocation }) => {
+	const bucketName = after.substring(0,8)
+	const actualBucketName = await s3.ensureWebBucket(bucketName)
+	console.log('uploading', staticContentLocation, 'to', actualBucketName)
+	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying static website' })
+
+	// TODO: use stream from earlier instead of fetching from s3 again
+	const builtBundleStream = s3.getStream({ Key: builtBundleKey })
+
+	const ts = tarStream.extract()
+	ts.on('entry', (header, stream, next) => {
+		const loc = header.name
+		console.log('found', loc)
+		if (loc === staticContentLocation || header.type !== 'file') {
+			console.log('skipping', loc)
+			stream.resume()
+			stream.on('end', next)
+			return
+		}
+		if (!loc.startsWith(staticContentLocation)) {
+			console.log('skipping', loc)
+			
+			stream.resume()
+			stream.on('end', next)
+			return
+		} else {
+			const realPath = loc.substring(staticContentLocation.length)
+			console.log('uploading', loc)
+			const { writeStream, promise } = s3.uploadStream({
+				Key: removeLeadingSlash(realPath),
+				Bucket: actualBucketName,
+				ContentType: mime.lookup(realPath) || 'application/octet-stream',
+			})
+			stream.pipe(writeStream)
+			promise.then(() => {
+				console.log('uploaded', realPath, 'to', actualBucketName)
+				next()
+			}).catch(e => {
+				console.error('failed to upload', realPath, 'to', actualBucketName, e)
+				throw e
+			})
+		}
+	})
+
+	try {
+		await pipeline(
+			builtBundleStream,
+			gunzip(),
+			ts,
+		)
+	} catch (e) {
+		await markActionComplete(deployActionId, { type: 'error' })
+		console.error(e)
+		throw e
+	}
+	
+	const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
+
+	await markActionComplete(deployActionId, { data: { staticUrl } })
+
+	return {
+		resourceName,
+		url: staticUrl,
+	}
+}
+
+const deployApiResource = async ({ repository, config, resourceName, after, resultingBundleLocation, schemaEnv }) => {
+	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+	let endpointUrl
+	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
+	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
+	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+	await Deployment.ensure({
+		id: resultingEndpointId,
+		repoName: repository.full_name,
+		hash: after,
+		stage: ref,
+		command: config[resourceName].start,
+		bundleLocation: resultingBundleLocation,
+		env: schemaEnv,
+		runtime,
+	})
+	
+	try {
+		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
+		endpointUrl = container.hostname
+	} catch (e) {
+		await markActionComplete(deployActionId, { type: 'error', title: 'deployment failed', data: { error: e } })
+		throw e
+	}
+
+	if (endpointUrl) {
+		console.log(invocationId, `deployed ${resultingEndpointId} to`, endpointUrl)
+		await markActionComplete(deployActionId, { title: 'deployment succeeded', data: { endpointUrl } })
+	} else {
+		console.error(invocationId, endpointUrl, 'deployment failed')
+		throw new Error('deployment failed')
+	}
+
+	return {
+		resourceName,
+		url: endpointUrl,
+	}
+}
+
 const runTests = async ({ ref, after, repository, pusher, commits }) => {
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
@@ -214,19 +394,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			throw new Error(shouldDie)
 		}
 
-		let hasAPI = true
+		const hasAPI = !config || Object.values(config).some(cfg => cfg.type === 'api')
 		let staticContentLocation = undefined
 		if (!config) {
 			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
-			if (config.web) {
-				staticContentLocation = repoRelative(config.web.buildLocation)
-				logAction(parentActionId, { type: 'debug', title: 'static website found', description: `will host resulting ${staticContentLocation} folder`, completedAt: true })
-			}
-			if (config.hasAPI === false) {
-				hasAPI = false
-				logAction(parentActionId, { type: 'debug', title: 'not hosting an API', description: `hasAPI key found to be false`, completedAt: true })
-			}
+			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} resources`, completedAt: true })
 		}
 
 		if (hasAPI) {
@@ -251,259 +424,67 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
-		const lang = 'nodejs'
-
-		const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${uuid()}`
-
-		const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder' })
-
-		console.log(invocationId, `ensuring builder endpoint for lang ${lang} exists with id ${builderEndpointId}`)
-
-		let container
-		try {
-			// ensure builder endpoint exists
-			await Deployment.ensure({
-				id: builderEndpointId,
-				stage: 'builder',
-				repoName: repository.full_name,
-				owner: user,
-				command: './build-agent-bin',
-				bundleLocation: await ensureBuilderBundle(lang),
-				runtime: (config.api && config.api.runtime) || 'node',
-				env: {
-					CI: true,
-					npm_config_registry: REGISTRY_CACHE_ENDPOINT,
-					yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
-					...schemaEnv,
-				},
+		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
+			return buildResource({
+				resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId,
 			})
-			container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
-
-			await markActionComplete(builderAlocation, { data: { builderEndpointId } })
-		} catch (e) {
-			await markActionComplete(builderAlocation, { type: 'error' })
-			throw e
-		}
-
-		console.log(invocationId, `builder endpoint with id ${builderEndpointId} exists`)
-		// pipe tarStream to builder endpoint, response is stream of result
-		let resultingBundleLocation
-		let builtBundleKey
-		const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId } })
-		try {
-			builtBundleKey = `${repository.full_name.split('/').join('-')}/${after}.tar.gz`
-			const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
-
-			await pipeline(
-				giteaStream(codeTarUrl),
-				got.stream.post(container.hostname, {
-					headers: {
-						// 'content-type': 'application/octet-stream',
-						'x-parent-invocation-id': invocationId,
-					},
-				}),
-				writeStream
-			)
-
-			console.log(invocationId, `piping built result to ${builtBundleKey}`)
-			resultingBundleLocation = await promise
-			console.log(invocationId, `piped built result to ${builtBundleKey}`, resultingBundleLocation)
-		} catch (e) {
-			await markActionComplete(buildActionId, { type: 'error' })
-			throw e
-		}
-
-		await removeDeployment(builderEndpointId)
-
-		await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation } })
-
-		let staticUrl
-		if (staticContentLocation) {
-			const bucketName = after.substring(0,8)
-			const actualBucketName = await s3.ensureWebBucket(bucketName)
-			console.log('uploading', staticContentLocation, 'to', actualBucketName)
-			const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying static website' })
-
-			// TODO: use stream from earlier instead of fetching from s3 again
-			const builtBundleStream = s3.getStream({ Key: builtBundleKey })
-
-			const ts = tarStream.extract()
-			ts.on('entry', (header, stream, next) => {
-				const loc = header.name
-				console.log('found', loc)
-				if (loc === staticContentLocation || header.type !== 'file') {
-					console.log('skipping', loc)
-					stream.resume()
-					stream.on('end', next)
-					return
-				}
-				if (!loc.startsWith(staticContentLocation)) {
-					console.log('skipping', loc)
-					
-					stream.resume()
-					stream.on('end', next)
-					return
-				} else {
-					const realPath = loc.substring(staticContentLocation.length)
-					console.log('uploading', loc)
-					const { writeStream, promise } = s3.uploadStream({
-						Key: removeLeadingSlash(realPath),
-						Bucket: actualBucketName,
-						ContentType: mime.lookup(realPath) || 'application/octet-stream',
-					})
-					stream.pipe(writeStream)
-					promise.then(() => {
-						console.log('uploaded', realPath, 'to', actualBucketName)
-						next()
-					}).catch(e => {
-						console.error('failed to upload', realPath, 'to', actualBucketName, e)
-						throw e
-					})
-				}
-			})
-
-			try {
-				await pipeline(
-					builtBundleStream,
-					gunzip(),
-					ts,
-				)
-			} catch (e) {
-				await markActionComplete(deployActionId, { type: 'error' })
-				console.error(e)
-				throw e
-			}
-
-			await markActionComplete(deployActionId, { data: { staticUrl } })
-
-			staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
-		}
-
-		let endpointUrl
-		let resultingEndpointId
-		if (hasAPI) {
-			resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
-
-			const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api' })
-
-			console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
-			await Deployment.ensure({
-				id: resultingEndpointId,
-				repoName: repository.full_name,
-				hash: after,
-				stage: ref,
-				command: config.api.start,
-				bundleLocation: resultingBundleLocation,
-				env: schemaEnv,
-				runtime: (config.api && config.api.runtime) || 'node',
-			})
-			
-			try {
-				const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
-				endpointUrl = container.hostname
-			} catch (e) {
-				await markActionComplete(deployActionId, { type: 'error', title: 'deployment failed', data: { error: e } })
-				throw e
-			}
-
-			if (endpointUrl) {
-				console.log(invocationId, `deployed ${resultingEndpointId} to`, endpointUrl)
-				await markActionComplete(deployActionId, { title: 'deployment succeeded', data: { endpointUrl } })
+		}).map(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
+			if (config[resourceName].type === 'api') {
+				return deployApiResource({ repository, config, resourceName, after, resultingBundleLocation, schemaEnv })
 			} else {
-				console.error(invocationId, endpointUrl, 'deployment failed')
-				return {}
+				return deployWebResource({ parentActionId, after, builtBundleKey, staticContentLocation })
 			}
-		}
+		}))
 
-		let endpointRouteUrl
-		if (endpointUrl) {
+		const liveResourceRoutes = await Promise.all(resourceRoutes.map(async ({ resourceName, url }) => {
 			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route' })
-			const subdomain = `${branch}-${repo}-${user}`
+			const subdomain = `${resourceName}-${branch}-${repo}-${user}`
 			// get current route
 			const [currentRoute] = await route.get(subdomain)
 
 			// add endpoint route
-			const endpointRoute = {
+			const resourceRoute = {
 				subdomain,
-				destination: endpointUrl,
+				destination: url,
 				deploymentId: resultingEndpointId,
+				extensions = config[resourceName].type === 'api' ? [] : ['index.html']
+			}
+			let type
+			let message
+			const alias = config && config[resourceName] && config[resourceName]['branch-domains']
+			if (alias) {
+				if (await checkAliasUse({ alias, subdomain })) {
+					type = 'warning'
+					message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
+				} else {
+					resourceRoute.alias = alias
+				}
 			}
 
-			if (currentRoute) {
+			const resourceUrl = await route.set(resourceRoute)
+			if (currentRoute && currentRoute.deploymentId) {
 				await removeDeployment(currentRoute.deploymentId)
 			}
 			
-			let message
-			let type
-			if (config && config.api && config.api['branch-domains']) {
-				const alias = config.api['branch-domains'][branch]
-				if (alias) {
-					if (await checkAliasUse({ alias, subdomain })) {
-						type = 'warning'
-						message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
-					} else {
-						endpointRoute.alias = alias
-					}
-				}
+			await markActionComplete(routeActionId, { type, message, data: { resourceUrl, url } })
+			
+			return {
+				resourceUrl,
+				resourceName,
 			}
-
-			endpointRouteUrl = await route.set(endpointRoute)
-			await markActionComplete(routeActionId, { type, description: message, data: { endpointUrl, endpointRouteUrl } })
-		}
-
-		let staticRouteUrl
-		if (staticUrl) {
-			const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating static route' })
-			// add static route
-			const subdomain = `static-${branch}-${repo}-${user}`
-			const [currentRoute] = await route.get(subdomain)
-			const staticRoute = {
-				subdomain,
-				destination: staticUrl,
-				extensions: ['index.html'],
-				deploymentId: `${repository.full_name.split('/').join('-')}-${after}`,
-			}
-			if (currentRoute) {
-				await removeDeployment(currentRoute.deploymentId)
-			}
-
-			let message
-			let type
-			if (config && config.web && config.web['branch-domains']) {
-				const alias = config.web['branch-domains'][branch]
-				if (alias) {
-					if (await checkAliasUse({ alias, subdomain })) {
-						type = 'warning'
-						message = 'warning: unable to use custom domain as it\'s currently in use by another project.'
-					} else {
-						staticRoute.alias = alias
-					}
-				}
-			}
-
-			staticRouteUrl = await route.set(staticRoute)
-			await markActionComplete(routeActionId, { type, description: message, data: { staticUrl, staticRouteUrl } })
-		}
+		}))
 
 		await markActionComplete(parentActionId, {
 			data: {
 				...actionData,
-				endpointUrl,
-				endpointRouteUrl,
-
-				staticUrl,
-				staticRouteUrl,
+				liveResourceRoutes,
 			},
 		})
 
 		console.log(invocationId, `complete`)
 
 		return {
-			endpointUrl,
-			endpointRouteUrl,
-
-			staticUrl,
-			staticRouteUrl,
+			liveResourceRoutes,
 
 			repoName: repository.full_name,
 			branch,

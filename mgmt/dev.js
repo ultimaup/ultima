@@ -55,20 +55,19 @@ router.use('/dev-session', async (req, res, next) => {
     }
 })
 
-const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }) => {
+const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner, resourceName = 'api' } }) => {
     const invocationId = uuid()
-    const lang = 'nodejs'
 
     const envCfg = ultimaCfg ? YAML.parse(ultimaCfg) : {}
 
-    const devEndpointId = `${user.username}-dev-${uuid()}`.toLowerCase()
-    console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
-
     let runtime = 'node'
 
-    if (envCfg.api && envCfg.api.runtime) {
-        runtime = envCfg.api.runtime
+    if (envCfg[resourceName] && envCfg[resourceName].runtime) {
+        runtime = envCfg[resourceName].runtime
     }
+
+    const devEndpointId = `${user.username}-dev-${uuid()}`.toLowerCase()
+    console.log(invocationId, `ensuring dev endpoint for runtime ${runtime} exists with id ${devEndpointId}`)
 
     const schemaInfo = {
         username: devEndpointId,
@@ -80,8 +79,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
 
     const schemaEnv = getSchemaEnv(schemaInfo)
 
-    const bundleLocation = await ensureDevelopmentBundle(lang)
-    // const command = bundleLocation.split('/')[bundleLocation.split('/').length - 1].split('.tar.gz')[0]
+    const bundleLocation = await ensureDevelopmentBundle()
 
 	// ensure dev endpoint exists
 	await Deployment.ensure({
@@ -93,6 +91,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
         command: `./dev-agent-bin`,
         env: {
             ...schemaEnv,
+            ULTIMA_RESOURCE_NAME: resourceName,
             npm_config_registry: REGISTRY_CACHE_ENDPOINT,
             yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
         },
@@ -106,7 +105,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
     console.log(invocationId, 'got internal url', endpointUrl)
     const internalUrl = endpointUrl.split('http://').join('h2c://')
 
-    const sid = `${invocationId.split('-')[0]}-${user.username}`
+    const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
 
     const endpointRoute = {
         subdomain: `dev-${sid}.dev`,
@@ -123,7 +122,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
     })
 
     const appUrl = await route.set({
-        subdomain: `app-${sid}.dev`,
+        subdomain: `${sid}.dev`,
         destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
         deploymentId: devEndpointId,
     })
