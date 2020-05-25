@@ -92,7 +92,7 @@ const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
 		const timeout = setTimeout(() => {
 			clearInterval(int)
 			reject(new Error('timeout'))
-		}, 10 * 1000) // timeout after 10 secs
+		}, 5 * 1000) // timeout after 5 secs
 
 		const int = setInterval(async () => {
 			const passed = await doHealthcheck(healthcheckUrl)
@@ -102,7 +102,7 @@ const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
 				clearTimeout(timeout)
 				resolve(true)
 			}
-		}, 100)
+		}, 50)
 	})
 }
 
