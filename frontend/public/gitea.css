@@ -74,6 +74,10 @@
     margin-top: 46px;
 }
 
+.ReactModalPortal {
+    z-index: 999;
+}
+
 /*
 body {
     background: #363636;
