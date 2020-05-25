@@ -163,7 +163,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	// pipe tarStream to builder endpoint, response is stream of result
 	let resultingBundleLocation
 	let builtBundleKey
-	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building app', data: { logTag: builderEndpointId, resourceName } })
+	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building', data: { logTag: builderEndpointId, resourceName } })
 	try {
 		builtBundleKey = `${repository.full_name.split('/').join('-')}/${resourceName}/${after}.tar.gz`
 		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
@@ -202,7 +202,7 @@ const deployWebResource = async ({ ref, resourceName, parentActionId, after, bui
 	const bucketName = after.substring(0,8)
 	const actualBucketName = await s3.ensureWebBucket(bucketName)
 	console.log('uploading', staticContentLocation, 'to', actualBucketName)
-	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying static website', data: { resourceName } })
+	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying web resource', data: { resourceName } })
 
 	// TODO: use stream from earlier instead of fetching from s3 again
 	const builtBundleStream = s3.getStream({ Key: builtBundleKey })
@@ -305,7 +305,7 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 }
 
 const deployRoute = async ({ config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
-	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'updating endpoint route', data: { resourceName } })
+	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'Putting resource live', data: { resourceName } })
 	const subdomain = `${resourceName}-${branch}-${repo}-${user}`
 	// get current route
 	const [currentRoute] = await route.get(subdomain)
@@ -335,7 +335,7 @@ const deployRoute = async ({ config, parentActionId, resourceName, deploymentId,
 		await removeDeployment(currentRoute.deploymentId)
 	}
 	
-	await markActionComplete(routeActionId, { type, message, data: { resourceUrl, url } })
+	await markActionComplete(routeActionId, { type, message, data: { resourceName, resourceUrl, url } })
 	
 	return {
 		resourceUrl,
@@ -437,7 +437,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		if (!config) {
 			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
-			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} resources`, completedAt: true })
+			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} resources to deploy`, completedAt: true })
 		}
 
 		if (hasAPI) {
