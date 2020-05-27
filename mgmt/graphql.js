@@ -187,7 +187,7 @@ const resolvers = {
                 const hash = a[a.length - 1]
                 return {
                     id: r.deploymentId,
-                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.alias || r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
                     hash,
                     createdAt: r.createdAt,
                 }
