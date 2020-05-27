@@ -8,15 +8,14 @@ const gunzip = require('gunzip-maybe')
 
 const pipeline = promisify(stream.pipeline)
 
-const runner = require('./runner')
 const apiClient = require('./client')
 
 let inflight = 0
 let total = 0
 let completed = 0
 
-const pushToRemote = (event, path, sessionId, progressCallback, got) => {
-    runner.whenConnected(async () => {
+const pushToRemote = (event, path, sessionId, progressCallback, got, runner) => {
+    const whenConnectedCallback = async () => {
         total++
         inflight++
 
@@ -49,33 +48,34 @@ const pushToRemote = (event, path, sessionId, progressCallback, got) => {
         completed++
     
         progressCallback(completed, total)
-    })
+    }
+    runner ? runner.whenConnected(whenConnectedCallback) : whenConnectedCallback()
 }
 
-const init = async ({ sessionId, client }, progressCallback, initCallback) => {
+const init = async ({ sessionId, client, runner }, progressCallback, initCallback) => {
     const watcher = chokidar.watch('.', {
         ignored: ['node_modules', '.git'],
         persistent: true,
     })
 
     watcher.on('add', path => {
-        pushToRemote('add', path, sessionId, progressCallback, client)
+        pushToRemote('add', path, sessionId, progressCallback, client, runner)
     })
 
     watcher.on('change', path => {
-        pushToRemote('change', path, sessionId, progressCallback, client)
+        pushToRemote('change', path, sessionId, progressCallback, client, runner)
     })
 
     watcher.on('addDir', path => {
-        pushToRemote('addDir', path, sessionId, progressCallback, client)
+        pushToRemote('addDir', path, sessionId, progressCallback, client, runner)
     })
 
     watcher.on('unlink', path => {
-        pushToRemote('unlink', path, sessionId, progressCallback, client)
+        pushToRemote('unlink', path, sessionId, progressCallback, client, runner)
     })
 
     watcher.on('unlinkDir', path => {
-        pushToRemote('unlinkDir', path, sessionId, progressCallback, client)
+        pushToRemote('unlinkDir', path, sessionId, progressCallback, client, runner)
     })
 
     watcher.on('ready', () => {

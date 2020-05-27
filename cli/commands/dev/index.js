@@ -6,7 +6,7 @@ const fse = require('fs-extra')
 
 const apiClient = require('./client')
 const fileSync = require('./fileSync')
-const runner = require('./runner')
+const Runner = require('./runner')
 const API = require('./api')
 
 const UI = require('./ui')
@@ -16,22 +16,24 @@ const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 const getRepoName = require('./getRepoName')
 
-const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
+const liveSpinner = (appUrl, writeFrame, dbPort, database, staticContentUrl) => {
     const spinner = cliSpinners.dots
 
     let ctr = 0
 
     let url = appUrl.endsWith(':443') ? appUrl.split(':443')[0] : appUrl
+    let staticUrl = staticContentUrl && staticContentUrl.endsWith(':443') ? staticContentUrl.split(':443')[0] : staticContentUrl
 
     return setInterval(() => {
         const idx = (ctr % (spinner.frames.length - 1))
         const frame = spinner.frames[idx]
 
         writeFrame([
-            `DB host: localhost:${dbPort} database: ${database}`,
-            `Live url: ${url}`, 
+            dbPort && `DB host: localhost:${dbPort} database: ${database}`,
+            `Live url: ${url}`,
+            staticUrl && `Static website: ${staticUrl}`,
             `Watching for changes ${frame}`
-        ].join('\n'))
+        ].filter(a => !!a).join('\n'))
 
         ctr++
     }, spinner.interval * 2)
@@ -66,7 +68,7 @@ const dev = async () => {
     const [un] = server.id.split('-')[0]
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
-    const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
+    const dbPort = server.schemaId ? await makeTunnel(server.id, cfg.token, dbPortKey) : null
 
     const numResources = server.servers.length
 
@@ -80,74 +82,80 @@ const dev = async () => {
             rootEndpoint: server.url,
             ultimaCfg,
         })
-    
+
+        let runner
         let runnerStarted = false
         let isInitialized
-    
-        runner.on('stdout', (line) => {
-            logWrite(line.toString())
-        })
-        runner.on('stderr', (line) => {
-            logWrite(line.toString())
-        })
+
+        if (server.appUrl) {
+            runner = Runner()
         
-        let spinInterval
-    
-        runner.on('start', () => {
-            logWrite('start')
-        })
-        
-        let firstTime = true
-        runner.on('install-deps-start', async () => {
-            if (spinInterval) {
-                clearInterval(spinInterval)
-            }
-            ui.updateBottomBar(`installing dependancies...`)
-        })
-        runner.on('install-deps-complete', async () => {
-            logWrite('installed dependancies')
-    
-            if (cfg.dev && cfg.dev.dependencyDir) {
-                // ui.log.write('downloading dependancies locally')
-                fileSync.download(cfg.dev.dependencyDir,{
-                    client,
-                    sessionId,
-                }).then(() => {
-                    // ui.log.write('downloaded dependancies locally')
-                }).catch(e => {
-                    // ui.log.write('error downloading dependancies locally: '+e)
-                })
-            }
+            runner.on('stdout', (line) => {
+                logWrite(line.toString())
+            })
+            runner.on('stderr', (line) => {
+                logWrite(line.toString())
+            })
             
-            firstTime = false
-    
-            liveSpinner(server.appUrl, (str) => {
-                ui.updateBottomBar(str)
-            }, dbPort, server.id)
-        })
-    
-        runner.on('quit', () => {
-            logWrite('quit')
-        })
-        runner.on('restart', () => {
-            // cli.log('restart due to changed files')
-        })
-        runner.on('crash', () => {
-            // ui.log.write('crash')
-        })
-        runner.on('connect', () => {
-            logWrite('connected to development instance')
-        })
-        runner.on('disconnect', () => {
-            logWrite('connection to development instance lost, will reconnect...')
-        })
-    
-        await runner.connect(server.url)
+            let spinInterval
+        
+            runner.on('start', () => {
+                logWrite('start')
+            })
+            
+            let firstTime = true
+            runner.on('install-deps-start', async () => {
+                if (spinInterval) {
+                    clearInterval(spinInterval)
+                }
+                ui.updateBottomBar(`installing dependancies...`)
+            })
+            runner.on('install-deps-complete', async () => {
+                logWrite('installed dependancies')
+        
+                if (cfg.dev && cfg.dev.dependencyDir) {
+                    // ui.log.write('downloading dependancies locally')
+                    fileSync.download(cfg.dev.dependencyDir,{
+                        client,
+                        sessionId,
+                    }).then(() => {
+                        // ui.log.write('downloaded dependancies locally')
+                    }).catch(e => {
+                        // ui.log.write('error downloading dependancies locally: '+e)
+                    })
+                }
+                
+                firstTime = false
+        
+                liveSpinner(server.appUrl, (str) => {
+                    ui.updateBottomBar(str)
+                }, dbPort, server.id, server.staticContentUrl)
+            })
+        
+            runner.on('quit', () => {
+                logWrite('quit')
+            })
+            runner.on('restart', () => {
+                // cli.log('restart due to changed files')
+            })
+            runner.on('crash', () => {
+                // ui.log.write('crash')
+            })
+            runner.on('connect', () => {
+                logWrite('connected to development instance')
+            })
+            runner.on('disconnect', () => {
+                logWrite('connection to development instance lost, will reconnect...')
+            })
+        
+            await runner.connect(server.url)
+        }
     
         try {
             await fileSync.init({
                 sessionId,
                 client,
+                runner,
             }, (completed, total) => {
                 if (spinInterval) {
                     clearInterval(spinInterval)
@@ -164,7 +172,7 @@ const dev = async () => {
                 if (total === completed && isInitialized) {
                     liveSpinner(server.appUrl, (str) => {
                         ui.updateBottomBar(str)
-                    }, dbPort, server.id)
+                    }, dbPort, server.id, server.staticContentUrl)
                 }
             }, () => {
                 isInitialized = true

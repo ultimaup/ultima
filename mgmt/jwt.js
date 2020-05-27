@@ -35,6 +35,7 @@ const headersToUser = async (req) => {
             throw new Error('unauthorized')
         } else {
             try {
+                req.token = token
                 return await verify(token) 
             } catch (e) {
                 throw new Error('unauthorized')

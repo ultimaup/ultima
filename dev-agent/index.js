@@ -8,6 +8,7 @@ const bodyParser = require('body-parser')
 const fileHandler = require('./fileHandler')
 const runner = require('./runner')
 const { installDeps, shouldRunInstallDeps, downloadDir } = require('./installDeps')
+const fileWatcher = require('./fileWatcher')
 
 const {
     PORT = 4489,
@@ -91,6 +92,10 @@ const server = spdy.createServer(options, app)
 
 io = socketIO(server)
 
+const repoRelative = (loc) => {
+	return path.resolve('/', loc).substring(1)
+}
+
 const createSession = async sessionId => {
     const cfg = sessionConfigs[sessionId]
     const wkdir = path.resolve('/tmp', sessionId, cfg.directory || '')
@@ -132,6 +137,13 @@ const createSession = async sessionId => {
             data: msg.toString('utf8'),
         })
     })
+
+    if (cfg.buildLocation) {
+        const buildLocationPath = path.resolve('.', repoRelative(cfg.buildLocation))
+        fileWatcher(buildLocation)
+        // watch cfg.buildLocation
+        // upload files to 
+    }
 
     return session
 }
