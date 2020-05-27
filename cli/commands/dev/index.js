@@ -48,7 +48,7 @@ const dev = async () => {
     if (!inUltimaFolder) {
         return
     }
-    const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
+    const { repoName, owner } = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
     await cli.action.start('starting session...')
 
@@ -57,9 +57,8 @@ const dev = async () => {
         ultimaCfg = await fse.readFile('./.ultima.yml', 'utf-8')
     }
 
-    const api = API.init(program.server, cfg.token, ultimaCfg, {owner, repoName})
+    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaCfg, {owner, repoName})
 
-    const server = await api.getDeploymentUrl()
     if (server.status === 'error') {
         return cli.error(`Failed to start dev session: ${server.message}`)
     }
@@ -68,126 +67,112 @@ const dev = async () => {
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
     const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
-    const { data: { sessionId }, client } = await apiClient.initSession({
-        rootEndpoint: server.url,
-        ultimaCfg,
-    })
 
-    await cli.action.stop()
+    const numResources = server.servers.length
 
-    cli.log(`You can find your app on: ${server.appUrl}`)
-    cli.log(`and connect to node debug: ${server.debugUrl}`)
-    cli.log('')
-    cli.log(`Connected to development database`)
-    cli.log('Connect using your favourite postgres tool:')
-    cli.log('Host: localhost')
-    cli.log(`Port: ${dbPort}`)
-    cli.log(`Database: ${server.id}`)
-    cli.log('User: <any>')
-    cli.log('Password: <any>')
-    cli.log('')
+    server.servers.map(async server => {
+        const { resourceName } = server
+        const namePrefix = numResources > 1
 
-    let runnerStarted = false
-    let isInitialized
+        const logWrite = str => namePrefix ? ui.log.write(`${resourceName}: ${str}`) : ui.log.write(str)
 
-    runner.on('stdout', (line) => {
-        ui.log.write(line.toString())
-    })
-    runner.on('stderr', (line) => {
-        ui.log.write(line.toString())
-    })
+        const { data: { sessionId }, client } = await apiClient.initSession({
+            rootEndpoint: server.url,
+            ultimaCfg,
+        })
     
-    let spinInterval
-
-    runner.on('start', () => {
-        ui.log.write('start')
-    })
+        let runnerStarted = false
+        let isInitialized
     
-    let firstTime = true
-    runner.on('install-deps-start', async () => {
-        if (firstTime) {
-            await cli.action.start('installing dependancies...')
-        } else {
+        runner.on('stdout', (line) => {
+            logWrite(line.toString())
+        })
+        runner.on('stderr', (line) => {
+            logWrite(line.toString())
+        })
+        
+        let spinInterval
+    
+        runner.on('start', () => {
+            logWrite('start')
+        })
+        
+        let firstTime = true
+        runner.on('install-deps-start', async () => {
             if (spinInterval) {
                 clearInterval(spinInterval)
             }
             ui.updateBottomBar(`installing dependancies...`)
-        }
-    })
-    runner.on('install-deps-complete', async () => {
-        if (firstTime) {
-            await cli.action.stop()
-        } else {
-            ui.log.write('installed dependancies')
-        }
-
-        if (cfg.dev && cfg.dev.dependencyDir) {
-            // ui.log.write('downloading dependancies locally')
-            fileSync.download(cfg.dev.dependencyDir,{
-                client,
-                sessionId,
-            }).then(() => {
-                // ui.log.write('downloaded dependancies locally')
-            }).catch(e => {
-                // ui.log.write('error downloading dependancies locally: '+e)
-            })
-        }
-        
-        firstTime = false
-
-        liveSpinner(server.appUrl, (str) => {
-            ui.updateBottomBar(str)
-        }, dbPort, server.id)
-    })
-
-    runner.on('quit', () => {
-        ui.log.write('quit')
-    })
-    runner.on('restart', () => {
-        // cli.log('restart due to changed files')
-    })
-    runner.on('crash', () => {
-        // ui.log.write('crash')
-    })
-    runner.on('connect', () => {
-        ui.log.write('connected to development instance')
-    })
-    runner.on('disconnect', () => {
-        ui.log.write('connection to development instance lost, will reconnect...')
-    })
-
-    await runner.connect(server.url)
-
-    try {
-        await fileSync.init({
-            sessionId,
-            client,
-        }, (completed, total) => {
-            if (spinInterval) {
-                clearInterval(spinInterval)
-            }
-            ui.updateBottomBar(`uploading files ${completed}/${total}`)
-            
-            if (total === completed && !runnerStarted) {
-                setTimeout(() => {
-                    // start runner
-                    runnerStarted = true
-                    runner.start({ sessionId })
-                }, 500)
-                
-                ui.updateBottomBar(`starting app...`)
-            }
-            if (total === completed && isInitialized) {
-                liveSpinner(server.appUrl, (str) => {
-                    ui.updateBottomBar(str)
-                }, dbPort, server.id)
-            }
-        }, () => {
-            isInitialized = true
         })
-    } catch (e) {
-        console.error('failed to init', e)
-    }
+        runner.on('install-deps-complete', async () => {
+            logWrite('installed dependancies')
+    
+            if (cfg.dev && cfg.dev.dependencyDir) {
+                // ui.log.write('downloading dependancies locally')
+                fileSync.download(cfg.dev.dependencyDir,{
+                    client,
+                    sessionId,
+                }).then(() => {
+                    // ui.log.write('downloaded dependancies locally')
+                }).catch(e => {
+                    // ui.log.write('error downloading dependancies locally: '+e)
+                })
+            }
+            
+            firstTime = false
+    
+            liveSpinner(server.appUrl, (str) => {
+                ui.updateBottomBar(str)
+            }, dbPort, server.id)
+        })
+    
+        runner.on('quit', () => {
+            logWrite('quit')
+        })
+        runner.on('restart', () => {
+            // cli.log('restart due to changed files')
+        })
+        runner.on('crash', () => {
+            // ui.log.write('crash')
+        })
+        runner.on('connect', () => {
+            logWrite('connected to development instance')
+        })
+        runner.on('disconnect', () => {
+            logWrite('connection to development instance lost, will reconnect...')
+        })
+    
+        await runner.connect(server.url)
+    
+        try {
+            await fileSync.init({
+                sessionId,
+                client,
+            }, (completed, total) => {
+                if (spinInterval) {
+                    clearInterval(spinInterval)
+                }
+                ui.updateBottomBar(`uploading files ${completed}/${total}`)
+                
+                if (total === completed && !runnerStarted) {
+                    setTimeout(() => {
+                        // start runner
+                        runnerStarted = true
+                        runner.start({ sessionId })
+                    }, 500)
+                }
+                if (total === completed && isInitialized) {
+                    liveSpinner(server.appUrl, (str) => {
+                        ui.updateBottomBar(str)
+                    }, dbPort, server.id)
+                }
+            }, () => {
+                isInitialized = true
+            })
+        } catch (e) {
+            console.error('failed to init', e)
+        }
+    })
 }
 
 module.exports = dev

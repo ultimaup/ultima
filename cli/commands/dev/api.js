@@ -1,28 +1,19 @@
-const fetch = require('node-fetch')
+const got = require('got')
 
-const init = (rootEndpoint, token, ultimaCfg, { repoName, owner }) => {
-    const apiFetch = (endpoint, ...args) => {
-        return fetch(`${rootEndpoint}${endpoint}`, ...args)
-    }
-
-    const getDeploymentUrl = () => apiFetch('/dev-session', {
-        method: 'post',
-        headers: token ? {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        } : {},
-        body: JSON.stringify({
-            repoName,
-            owner,
-            ultimaCfg,
-        }),
-    }).then(r => r.json())
-
-    return {
-        getDeploymentUrl,
-    }
-}
+const getDeploymentUrl = (rootEndpoint, token, ultimaCfg, resourceName, { repoName, owner }) => got.post('dev-session', {
+    headers: token ? {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    } : {},
+    prefixUrl: rootEndpoint,
+    json: {
+        repoName,
+        resourceName,
+        owner,
+        ultimaCfg,
+    },
+}).json()
 
 module.exports = {
-    init,
+    getDeploymentUrl,
 }
