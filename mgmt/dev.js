@@ -135,7 +135,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
         let staticContentUrl
         let bucketProxyUrl
-        
+
         if (type === 'web' && buildLocation) {
             const bucketName = `${user.username}-dev-${seed.split('-')[0]}`
             const actualBucketName = await s3.ensureWebBucket(bucketName)
