@@ -124,7 +124,7 @@ const removeDeployment = async deploymentId => {
 	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
 }
 
-const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after }) => {
+const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo, user  }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
 	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder', data: { resourceName } })
@@ -149,6 +149,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 				npm_config_registry: REGISTRY_CACHE_ENDPOINT,
 				yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
 				...schemaEnv,
+				...routesEnv(config, { branch, repo, user })
 			},
 		})
 		container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${builderEndpointId}/`).then(r => r.body))
@@ -264,7 +265,28 @@ const deployWebResource = async ({ ref, resourceName, parentActionId, after, bui
 	}
 }
 
-const deployApiResource = async ({ ref, invocationId, repository, config, resourceName, after, parentActionId, resultingBundleLocation, schemaEnv }) => {
+const getSubdomain = ({ 
+	resourceName,
+	branch,
+	repo,
+	user,
+}) => `${resourceName}-${branch}-${repo}-${user}`
+
+const routesEnv = (config, { branch, repo, user }) => {
+	const obj = {}
+	Object.keys(config).map(resourceName => {
+		const subdomain = getSubdomain({ resourceName, branch, repo, user })
+		return {
+			resourceName,
+			url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${subdomain}.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}`,
+		}
+	}).forEach(({ resourceName, url }) => {
+		obj[`${repo.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
+	})
+	return obj
+}
+
+const deployApiResource = async ({ ref, invocationId, repository, config, resourceName, after, parentActionId, resultingBundleLocation, schemaEnv, branch, repo, user }) => {
 	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
 	let endpointUrl
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
@@ -277,7 +299,10 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 		stage: ref,
 		command: config[resourceName].start,
 		bundleLocation: resultingBundleLocation,
-		env: schemaEnv,
+		env: {
+			...schemaEnv,
+			...routesEnv(config, { branch, repo, user }),
+		},
 		runtime,
 	})
 	
@@ -306,7 +331,11 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 
 const deployRoute = async ({ config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
 	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'Putting resource live', data: { resourceName } })
-	const subdomain = `${resourceName}-${branch}-${repo}-${user}`
+	const subdomain = getSubdomain({ resourceName,
+		branch,
+		repo,
+		user,
+	})
 	// get current route
 	const [currentRoute] = await route.get(subdomain)
 
@@ -464,10 +493,10 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
 			return buildResource({
-				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after,
+				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo, user
 			}).then(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
 				if (config[resourceName].type === 'api') {
-					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv })
+					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
 				} else {
 					const staticContentLocation = repoRelative(config[resourceName].buildLocation)
 					return deployWebResource({ ref, invocationId, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })

@@ -20,6 +20,9 @@ const {
     BUILDER_BUCKET_ID,
     ENDPOINTS_ENDPOINT,
     REGISTRY_CACHE_ENDPOINT,
+    PUBLIC_ROUTE_ROOT_PROTOCOL,
+    PUBLIC_ROUTE_ROOT,
+    PUBLIC_ROUTE_ROOT_PORT,
 } = process.env
 
 const router = new Router()
@@ -131,6 +134,22 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
 
     const bundleLocation = await ensureDevelopmentBundle()
 
+    const renv = Object.keys(envCfg).entries(([resourceName, { type, dev, buildLocation }]) => {
+        const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
+        let subdomain
+        if (type === 'web' && buildLocation && (!dev || !dev.command)) {
+            subdomain = `static-${sid}.dev`
+        } else {
+            subdomain = `${sid}.dev`
+        }
+		return {
+			resourceName,
+			url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${subdomain}.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}`,
+		}
+	}).forEach(({ resourceName, url }) => {
+		obj[`${repo.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
+	})
+
     const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, buildLocation }]) => {
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
         let staticContentUrl
@@ -176,6 +195,7 @@ const startDevSession = async ({ user, details: { ultimaCfg, repoName, owner } }
             command: `./dev-agent-bin`,
             env: {
                 ...schemaEnv,
+                ...renv,
                 ULTIMA_RESOURCE_NAME: resourceName,
                 ULTIMA_RESOURCE_TYPE: type,
                 ULTIMA_TOKEN: req.token,
