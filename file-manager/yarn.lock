@@ -118,10 +118,10 @@ are-we-there-yet@~1.1.2:
     delegates "^1.0.0"
     readable-stream "^2.0.6"
 
-argon2@^0.26.1:
-  version "0.26.1"
-  resolved "https://registry.yarnpkg.com/argon2/-/argon2-0.26.1.tgz#f8c86cc36ee1d01f44e5ce293432ccb0d42ad325"
-  integrity sha512-+FjoQcUrIjlSSZzdFgcejb9q3/bN8kegWfmu4KrnZ0GVPRpP/crnXTdoqV2TBORMyFqzYb3S6zqrZHy7m5VtVA==
+argon2@^0.26.2:
+  version "0.26.2"
+  resolved "https://registry.yarnpkg.com/argon2/-/argon2-0.26.2.tgz#16c62637f79f8511d666c9a824dd991aa3a7731c"
+  integrity sha512-Tk9I/r3KIHCIHU5x2UawKsPi+g7MByAYnUZghXztQDXRp/997P31wa4qvdvokTaFBpsu6jOZACd+2qkBGGssRA==
   dependencies:
     "@phc/format" "^0.5.0"
     node-addon-api "^2.0.0"
@@ -1251,10 +1251,10 @@ minimist@^1.2.0:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.0.tgz#a35008b20f41383eec1fb914f4cd5df79a264284"
   integrity sha1-o1AIsg9BOD7sH7kU9M1d95omQoQ=
 
-minio@^7.0.14:
-  version "7.0.14"
-  resolved "https://registry.yarnpkg.com/minio/-/minio-7.0.14.tgz#e9d87346fb32286c55a5fbd00a8ef132c442dade"
-  integrity sha512-rXY8EdUNbmImwhiIdid0HePuaxBL6WtMG+tZZKuBaiY0vx7c/DmljldH8xZUSjh9jl4hIDh35Ifu4W35yGOL/g==
+minio@^7.0.16:
+  version "7.0.16"
+  resolved "https://registry.yarnpkg.com/minio/-/minio-7.0.16.tgz#1bbf334bdfe35214a9c199768f94f11b86b04063"
+  integrity sha512-OgCJ3XVMzukSqoMFBiBDeyz30BxYTBM9yRLVRBCExTb+QKVxJh4DnUOS2/zw7OPeDyXXEvYSzDvg4FkCf1Cxyw==
   dependencies:
     async "^3.1.0"
     block-stream2 "^2.0.0"
