@@ -113,9 +113,9 @@ const dev = async () => {
             runner.on('install-deps-complete', async () => {
                 logWrite('installed dependancies')
         
-                if (cfg.dev && cfg.dev.dependencyDir) {
+                if (cfg.dev && cfg.dev['back-sync']) {
                     // ui.log.write('downloading dependancies locally')
-                    fileSync.download(cfg.dev.dependencyDir,{
+                    fileSync.download(cfg.dev['back-sync'],{
                         client,
                         sessionId,
                     }).then(() => {
