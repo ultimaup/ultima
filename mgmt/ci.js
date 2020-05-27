@@ -29,6 +29,10 @@ const {
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
 	REGISTRY_CACHE_ENDPOINT,
+
+	PUBLIC_ROUTE_ROOT_PROTOCOL,
+	PUBLIC_ROUTE_ROOT,
+	PUBLIC_ROUTE_ROOT_PORT,
 } = process.env
 
 const streamToBuf = stream => {
@@ -287,7 +291,7 @@ const routesEnv = (config, { branch, repo, user }) => {
 }
 
 const deployApiResource = async ({ ref, invocationId, repository, config, resourceName, after, parentActionId, resultingBundleLocation, schemaEnv, branch, repo, user }) => {
-	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${after}`
+	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${resourceName}-${after}`
 	let endpointUrl
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
