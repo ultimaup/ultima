@@ -140,20 +140,23 @@ const ConfigEditor = ({ ioEle }) => {
     const [newResourceType, setNewResourceType] = useState('api')
 
     useEffect(() => {
-        let codeMirror
+        let model
+
         const onChange = () => {
-            const data = YAML.parse(codeMirror.getValue())
+            const content = model.getLinesContent().join('\n')
+            const data = YAML.parse(content)
             setV(data || {})
         }
+
         if (ioEle) {
-            codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
-            if (codeMirror) {
-                codeMirror.on('change', onChange)
+            model = window.monaco && window.monaco.editor.getModels()[0]
+            if (model) {
+                model.onDidChangeContent(onChange)
             } else {
                 let a = setInterval(() => {
-                    codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
-                    if (codeMirror) {
-                        codeMirror.on('change', onChange)
+                    model = window.monaco && window.monaco.editor.getModels()[0]
+                    if (model) {
+                        model.onDidChangeContent(onChange)
                         clearInterval(a)
                     }
                 },50)
@@ -164,19 +167,14 @@ const ConfigEditor = ({ ioEle }) => {
                 setV(data)
             }
         }
-
-        return () => {
-            codeMirror && codeMirror.off('change', onChange)
-        }
     }, [ioEle])
 
     const setValue = newValue => {
         if (!Object.keys(newValue).length) {
-            ioEle.nextSibling.CodeMirror.setValue('')
+            window.monaco.editor.getModels()[0].setValue('')
         } else {
-            ioEle.nextSibling.CodeMirror.setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n'))
+            window.monaco.editor.getModels()[0].setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n'))
         }
-        // window.CodeMirror.signal(ioEle.nextSibling.CodeMirror, 'keydown', { which: 32, keyCode: 32 })
         document.getElementById('commit-button').disabled = false
     }
 
