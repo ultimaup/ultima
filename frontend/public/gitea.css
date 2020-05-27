@@ -63,6 +63,7 @@
 #config-editor-container {
     display: flex;
     position: relative;
+    min-height: 520px;
 }
 
 #config-editor-container #ultima-config-editor {

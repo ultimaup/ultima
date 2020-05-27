@@ -133,11 +133,148 @@ const BranchDomainMap = ({ value, onChange }) => {
     )
 }
 
+const ConfigModule = ({ moduleKey, module, setValue, value }) => {
+    const [expanded, setExpanded] = useState(false)
 
+    return (
+        <Module>
+            <h3 className="ui attached header top" onClick={() => setExpanded(!expanded)} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+            }}>
+                {expanded ? <i className="fa fa-caret-up" /> : <i className="fa fa-caret-down" />}&nbsp;
+                {moduleKey || 'New Module'}
+                <button className="ui button small red" onClick={() => {
+                    const newV = {
+                        ...value,
+                    }
+                    delete newV[moduleKey]
+                    setValue(newV)
+                }}>x</button>
+            </h3>
+            {expanded && <ModuleBody>
+                {(module.type === 'web' || moduleKey === 'web') && (
+                    <div className="inline required field">
+                        <strong>Website built output location</strong>
+                        <input autoFocus required value={value[moduleKey].buildLocation} onChange={e => {
+                            setValue({
+                                ...value,
+                                [moduleKey]: {
+                                    ...value[moduleKey],
+                                    buildLocation: e.target.value,
+                                }
+                            })
+                        }} />
+                    </div>
+                )}
+                {(module.type === 'api' || moduleKey === 'api') && (
+                    <div className="inline required field">
+                        <strong>Runtime</strong>
+                        <select onChange={(e) => {
+                            setValue({
+                                ...value,
+                                [moduleKey]: {
+                                    ...value[moduleKey],
+                                    'runtime': e.target.value,
+                                }
+                            })
+                        }} value={value[moduleKey].runtime} className="ui search normal selection dropdown">
+                            <option value="node">Node JS</option>
+                            <option value="golang">Go</option>
+                            <option value="microsoft-dotnet-core">.NET Core</option>
+                            <option value="elixir">Elixir</option>
+                            <option value="python">Python</option>
+                            <option value="rust">Rust</option>
+                        </select>
+                    </div>
+                )}
+                <div className="ui divider"></div>
+                <BranchDomainMap value={value[moduleKey]['branch-domains']} onChange={v => {
+                    setValue({
+                        ...value,
+                        [moduleKey]: {
+                            ...value[moduleKey],
+                            'branch-domains': v,
+                        }
+                    })
+                }} />
+            </ModuleBody>}
+        </Module>
+    )
+}
+
+const AddModule = ({ value, setValue }) => {
+    const [newResourceType, setNewResourceType] = useState('api')
+    const [expanded, setExpanded] = useState(false)
+    const [resourceName, setResourceName] = useState('')
+
+    if (!expanded) {
+        return (
+            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => setExpanded(true)}>
+                Add Module
+            </button>
+        )
+    }
+
+    return (
+        <form className="inline field" onSubmit={(e) => {
+            e.preventDefault()
+            if (newResourceType === 'api') {
+                setValue({
+                    ...value,
+                    [resourceName]: {
+                        type: 'api',
+                        runtime: 'node',
+                    },
+                })
+            } else {
+                setValue({
+                    ...value,
+                    [resourceName]: {
+                        type: 'web',
+                        buildLocation: '/build'
+                    },
+                })
+            }
+
+            setExpanded(false)
+            setResourceName('')
+            setNewResourceType('api')
+        }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label style={{ width: 150 }}>Add Module</label>
+                    <select onChange={(e) => {
+                        setNewResourceType(e.target.value)
+                    }} value={newResourceType} className="ui search normal selection dropdown">
+                        <option value="api">API</option>
+                        <option value="web">Website</option>
+                    </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label style={{ width: 150 }}>Name</label>
+                    <input className="ui search normal selection" onChange={e => setResourceName(e.target.value)} value={resourceName} />
+                </div>
+
+                <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green">
+                    Add
+                </button>
+                <span style={{
+                    cursor: 'pointer',
+                }} onClick={() => {
+                    setExpanded(false)
+                    setResourceName('')
+                    setNewResourceType('api')
+                }}>Cancel</span>
+            </div>
+        </form>
+    )
+}
 
 const ConfigEditor = ({ ioEle }) => {
     const [value, setV] = useState({})
-    const [newResourceType, setNewResourceType] = useState('api')
 
     useEffect(() => {
         let model
@@ -192,104 +329,10 @@ const ConfigEditor = ({ ioEle }) => {
 
                 <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
                     {Object.entries(value || {}).map(([key, module]) => (
-                        <Module>
-                            <h3 className="ui attached header top" style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}>
-                                {key}
-                                <button className="ui button small red" onClick={() => {
-                                    const newV = {
-                                        ...value,
-                                    }
-                                    delete newV[key]
-                                    setValue(newV)
-                                }}>x</button>
-                            </h3>
-                            <ModuleBody>
-                                {(module.type === 'web' || key === 'web') && (
-                                    <div className="inline required field">
-                                        <strong>Website built output location</strong>
-                                        <input autoFocus required value={value[key].buildLocation} onChange={e => {
-                                            setValue({
-                                                ...value,
-                                                [key]: {
-                                                    ...value[key],
-                                                    buildLocation: e.target.value,
-                                                }
-                                            })
-                                        }} />
-                                    </div>
-                                )}
-                                {(module.type === 'api' || key === 'api') && (
-                                    <div className="inline required field">
-                                        <strong>Runtime</strong>
-                                        <select disabled onChange={(e) => {
-                                            setValue({
-                                                ...value,
-                                                [key]: {
-                                                    ...value[key],
-                                                    'runtime': e.target.value,
-                                                }
-                                            })
-                                        }} value={value[key].runtime} className="ui search normal selection dropdown">
-                                            <option value="node">Node JS</option>
-                                            <option value="go">Go</option>
-                                            <option value="dotnet">.net core</option>
-                                        </select>
-                                        <span style={{ marginLeft: 8 }}>More Coming soon</span>
-                                    </div>
-                                )}
-                                <div className="ui divider"></div>
-                                <BranchDomainMap value={value[key]['branch-domains']} onChange={v => {
-                                    setValue({
-                                        ...value,
-                                        [key]: {
-                                            ...value[key],
-                                            'branch-domains': v,
-                                        }
-                                    })
-                                }} />
-                            </ModuleBody>
-                        </Module>
+                        <ConfigModule moduleKey={key} key={key} module={module} value={value} setValue={setValue} />
                     ))}
 
-                    <div className="inline field">
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <label style={{ width: 150 }}>Add Module</label>
-                                <select onChange={(e) => {
-                                    setNewResourceType(e.target.value)
-                                }} value={newResourceType} className="ui search normal selection dropdown">
-                                    <option value="api">API</option>
-                                    <option value="web">Website</option>
-                                </select>
-                            </div>
-                            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => {
-                                if (newResourceType === 'api') {
-                                    setValue({
-                                        ...value,
-                                        api: {
-                                            type: 'api',
-                                            runtime: 'node',
-                                        },
-                                    })
-                                } else {
-                                    setValue({
-                                        ...value,
-                                        web: {
-                                            type: 'web',
-                                            buildLocation: '/build'
-                                        },
-                                    })
-                                }
-                            }} disabled={!!value[newResourceType]}>
-                                Add
-                            </button>
-                            <span>(Currently max 1 API and 1 Website per project)</span>
-                        </div>
-                    </div>
+                    <AddModule value={value} setValue={setValue} />
                 </div>
                 
             </form>
