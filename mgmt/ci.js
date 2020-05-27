@@ -124,7 +124,7 @@ const removeDeployment = async deploymentId => {
 	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
 }
 
-const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo, user  }) => {
+const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo  }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
 	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder', data: { resourceName } })
@@ -493,7 +493,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
 			return buildResource({
-				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo, user
+				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo
 			}).then(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
 				if (config[resourceName].type === 'api') {
 					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
