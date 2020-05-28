@@ -1,6 +1,6 @@
 const got = require('got')
 
-const getDeploymentUrl = (rootEndpoint, token, ultimaCfg, resourceName, { repoName, owner }) => got.post('dev-session', {
+const getDeploymentUrl = (rootEndpoint, token, ultimaCfg, { repoName, owner }) => got.post('dev-session', {
     headers: token ? {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -8,7 +8,6 @@ const getDeploymentUrl = (rootEndpoint, token, ultimaCfg, resourceName, { repoNa
     prefixUrl: rootEndpoint,
     json: {
         repoName,
-        resourceName,
         owner,
         ultimaCfg,
     },

@@ -353,7 +353,7 @@ const deployRoute = async ({ config, parentActionId, resourceName, deploymentId,
 
 	let type
 	let message
-	const alias = config && config[resourceName] && config[resourceName]['branch-domains']
+	const alias = config && config[resourceName] && config[resourceName]['branch-domains'] && config[resourceName]['branch-domains'][branch]
 	if (alias) {
 		if (await checkAliasUse({ alias, subdomain })) {
 			type = 'warning'
@@ -368,7 +368,7 @@ const deployRoute = async ({ config, parentActionId, resourceName, deploymentId,
 		await removeDeployment(currentRoute.deploymentId)
 	}
 	
-	await markActionComplete(routeActionId, { type, message, data: { resourceName, resourceUrl, url } })
+	await markActionComplete(routeActionId, { type, description: message, data: { resourceName, resourceUrl, url } })
 	
 	return {
 		resourceUrl,

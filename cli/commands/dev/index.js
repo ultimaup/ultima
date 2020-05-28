@@ -21,7 +21,7 @@ const liveSpinner = (appUrl, writeFrame, dbPort, database, staticContentUrl) => 
 
     let ctr = 0
 
-    let url = appUrl.endsWith(':443') ? appUrl.split(':443')[0] : appUrl
+    let url = (appUrl && appUrl.endsWith(':443')) ? appUrl.split(':443')[0] : appUrl
     let staticUrl = staticContentUrl && staticContentUrl.endsWith(':443') ? staticContentUrl.split(':443')[0] : staticContentUrl
 
     return setInterval(() => {
@@ -45,7 +45,9 @@ const dev = async () => {
 
     let inUltimaFolder
 
-    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    const { token } = cfg
+
+    inUltimaFolder = await checkInUltimaFolder({ token })
 
     if (!inUltimaFolder) {
         return
@@ -68,7 +70,7 @@ const dev = async () => {
     const [un] = server.id.split('-')[0]
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
     
-    const dbPort = server.schemaId ? await makeTunnel(server.id, cfg.token, dbPortKey) : null
+    const dbPort = server.schemaId ? await makeTunnel(server.id, token, dbPortKey) : null
 
     const numResources = server.servers.length
 
@@ -77,15 +79,17 @@ const dev = async () => {
         const namePrefix = numResources > 1
 
         const logWrite = str => namePrefix ? ui.log.write(`${resourceName}: ${str}`) : ui.log.write(str)
-
         const { data: { sessionId }, client } = await apiClient.initSession({
             rootEndpoint: server.url,
             ultimaCfg,
+            token,
         })
 
         let runner
         let runnerStarted = false
         let isInitialized
+        let spinInterval
+    
 
         if (server.appUrl) {
             runner = Runner()
@@ -97,8 +101,6 @@ const dev = async () => {
                 logWrite(line.toString())
             })
             
-            let spinInterval
-        
             runner.on('start', () => {
                 logWrite('start')
             })
@@ -150,7 +152,7 @@ const dev = async () => {
         
             await runner.connect(server.url)
         }
-    
+
         try {
             await fileSync.init({
                 sessionId,
@@ -166,7 +168,7 @@ const dev = async () => {
                     setTimeout(() => {
                         // start runner
                         runnerStarted = true
-                        runner.start({ sessionId })
+                        runner && runner.start({ sessionId })
                     }, 500)
                 }
                 if (total === completed && isInitialized) {

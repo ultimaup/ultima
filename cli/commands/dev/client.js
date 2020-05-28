@@ -3,11 +3,14 @@ const got = require('got')
 
 const agent = new http2.Agent()
 
-const initSession = async ({ rootEndpoint, ultimaCfg }) => {
+const initSession = async ({ rootEndpoint, token, ultimaCfg }) => {
     const client = got.extend({
         prefixUrl: rootEndpoint,
         agent: {
             http2: agent,
+        },
+        headers: {
+            authorization: `Bearer ${token}`,
         },
         http2: true,
     })
