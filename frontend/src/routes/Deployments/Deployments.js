@@ -204,7 +204,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                     <Octicon icon={GitBranch}/>
                     {branch}
                     <img src={imageUrl} alt="" />
-                    <a className="ui sha label " href={window.location.pathname.split('/activity/deployments').join(`/commit/${hash}`)}>
+                    <a className="ui sha label ">
                         <span className="shortsha">{hash.substring(0,9)}</span>
                     </a>
                     {commit && commit.message}
