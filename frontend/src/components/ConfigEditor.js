@@ -6,6 +6,7 @@ import UltimaModal from './UltimaModal'
 import CNameDebugger from './CNameDebugger'
 
 import useDNSInfo from '../hooks/useDNSInfo'
+import langs from '../utils/langs'
 
 const BranchDomains = styled.div`
     .heading {
@@ -181,12 +182,9 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                                 }
                             })
                         }} value={value[moduleKey].runtime} className="ui search normal selection dropdown">
-                            <option value="node">Node JS</option>
-                            <option value="golang">Go</option>
-                            <option value="microsoft-dotnet-core">.NET Core</option>
-                            <option value="elixir">Elixir</option>
-                            <option value="python">Python</option>
-                            <option value="rust">Rust</option>
+                            {langs.map(({ name, runtime }) => (
+                                <option key={runtime} value={runtime}>{name}</option>
+                            ))}
                         </select>
                     </div>
                 )}
