@@ -9,19 +9,28 @@ import Octicon, { GitBranch, Terminal, LinkExternal } from '@primer/octicons-rea
 import useEnvironments from '../../hooks/useEnvironments'
 
 import StatusDot from '../../components/StatusDot'
+import langs from '../../utils/langs'
 
 import { ActionList, ActionContainer } from '../Deployments/Deployments'
 
 const LangLogo = styled.div`
     width: 75px;
     height: 75px;
-    background-image: url('${require('programming-languages-logos/src/javascript/javascript.png')}');
+    /* background-image: url('${require('programming-languages-logos/src/javascript/javascript.png')}'); */
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
     background-color: white;
+    color: white;
+    background: rgba(0,0,0,0.4);
+    font-size: 58px;
 
-    ${({ isStatic }) => isStatic && `background-size: 75%; background-image: url('${require('programming-languages-logos/src/html/html.png')}')`}
+    i {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* ${({ isStatic }) => isStatic && `background-size: 75%; background-image: url('${require('programming-languages-logos/src/html/html.png')}')`} */
 `
 
 const stageToName = stage => {
@@ -101,18 +110,29 @@ const Env = styled.a`
     }
 `
 
-const Environment = ({ id, stage, createdAt, startedAt, stoppedAt, routes = [], className }) => {
+let nf
+const ensureNF = () => {
+    if (!nf) {
+        nf = import('../../nf.css')
+    }
+}
+
+const Environment = ({ id, stage, createdAt, startedAt, runtime, stoppedAt, routes = [], className }) => {
+    ensureNF()
+    const lang = langs.find(lang => lang.runtime === runtime)
     return routes.map(({ id, url }) => {
-        const isStatic = url.includes('//static')
+        const isStatic = !runtime
         return (
             <Env href={url} target="_blank">
                 <Octicon icon={LinkExternal} className="ext" />
                 <div>
-                    <LangLogo isStatic={isStatic} />
+                    <LangLogo isStatic={isStatic}>
+                        <i className={`nf ${lang ? lang.nerdfontClassName : 'nf-dev-docker'}`} />
+                    </LangLogo>
                     <div>
                         <h4>
                             <StatusDot complete status={stoppedAt ? 'error' : 'success'} />
-                            {isStatic ? 'Static Frontend' : 'NodeJS API'}
+                            {isStatic ? 'Static Frontend' : `${runtime} API`}
                         </h4>
                         <span>Created on {moment(startedAt || createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
                         {stoppedAt && <span>stopped on {moment(stoppedAt).format('YYYY-MM-DD [at] HH:mm A')}</span>}
@@ -202,6 +222,8 @@ const Environments = ({ owner, repoName, hasConfig }) => {
 
     let r = [...environments].reverse()
 
+    console.log(r)
+
     return (
         <Router>
             <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Project Config</a>
@@ -217,7 +239,9 @@ const Environments = ({ owner, repoName, hasConfig }) => {
                 // const history = environments.filter(e => !!e.stoppedAt)
                 const name = stageToName(stage)
 
-                const hasAPI = live && live[0] && live[0].routes.find(r => !r.url.includes('//static'))
+                const hasAPI = live && live.some(l => !!l.runtime)
+
+                console.log(live)
 
                 return (
                     <EnvironmentsContainer key={stage}>
@@ -237,7 +261,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
                             }}>
                                 <Octicon icon={LinkExternal} className="ext" />
                                 <div>
-                                    <LangLogo style={{ backgroundImage: `url('${require('./postgres.svg')}')`, backgroundSize: '75%' }} />
+                                    <LangLogo><i className={`nf nf-dev-postgresql`} /></LangLogo>
                                     <div>
                                         <h4>
                                             <StatusDot complete/>

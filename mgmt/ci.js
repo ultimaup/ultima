@@ -16,6 +16,7 @@ const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
 const Action = require('./db/Action')
 const RouteModel = require('./db/Route')
+const Resource = require('./db/Resource')
 const route = require('./route')
 
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
@@ -203,7 +204,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	}
 }
 
-const deployWebResource = async ({ ref, resourceName, parentActionId, after, builtBundleKey, staticContentLocation }) => {
+const deployWebResource = async ({ ref, repository, resourceName, parentActionId, after, builtBundleKey, staticContentLocation }) => {
 	const bucketName = after.substring(0,8)
 	const actualBucketName = await s3.ensureWebBucket(bucketName)
 	console.log('uploading', staticContentLocation, 'to', actualBucketName)
@@ -261,15 +262,26 @@ const deployWebResource = async ({ ref, resourceName, parentActionId, after, bui
 	
 	const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 
+	const resourceId = uuid()
+	await Resource.query().insert({
+		id: resourceId,
+		name: resourceName,
+		type: 'web',
+		repoName: repository.full_name,
+		deploymentId: actualBucketName,
+		stage: ref,
+	})
+
 	await markActionComplete(deployActionId, { data: { url: staticUrl, resourceName } })
 
 	return {
 		resourceName,
 		url: staticUrl,
+		resourceId,
 	}
 }
 
-const getSubdomain = ({ 
+const getSubdomain = ({
 	resourceName,
 	branch,
 	repo,
@@ -296,7 +308,8 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
 	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
-	await Deployment.ensure({
+	
+	const deployment = await Deployment.ensure({
 		id: resultingEndpointId,
 		repoName: repository.full_name,
 		hash: after,
@@ -318,7 +331,17 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 		throw e
 	}
 
+	let resourceId
 	if (endpointUrl) {
+		resourceId = uuid()
+		await Resource.query().insert({
+			id: resourceId,
+			type: 'api',
+			repoName: repository.full_name,
+			deploymentId: deployment.id,
+			name: resourceName,
+			stage: ref,
+		})
 		console.log(invocationId, `deployed ${resultingEndpointId} to`, endpointUrl)
 		await markActionComplete(deployActionId, { title: 'deployment succeeded', data: { url: endpointUrl, resourceName } })
 	} else {
@@ -329,11 +352,12 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 	return {
 		resourceName,
 		url: endpointUrl,
+		resourceId,
 		deploymentId: resultingEndpointId,
 	}
 }
 
-const deployRoute = async ({ config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
+const deployRoute = async ({ resourceId, config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
 	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'Putting resource live', data: { resourceName } })
 	const subdomain = getSubdomain({ resourceName,
 		branch,
@@ -363,10 +387,20 @@ const deployRoute = async ({ config, parentActionId, resourceName, deploymentId,
 		}
 	}
 
+	// TODO: this is dumb
 	const resourceUrl = await route.set(resourceRoute)
+	const newRoute = await Route.query().where({ destination: url }).first()
+	await Resource.query().update({
+		routeId: newRoute.id,
+	}).where('id', resourceId)
+
 	if (currentRoute && currentRoute.deploymentId) {
 		await removeDeployment(currentRoute.deploymentId)
 	}
+
+	await Resource.query().update({
+		routeId: null,
+	}).where('id', currentRoute.routeId)
 	
 	await markActionComplete(routeActionId, { type, description: message, data: { resourceName, resourceUrl, url } })
 	
@@ -477,15 +511,25 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
 
 			try {
+				const schema = `${repository.full_name.split('/').join('-')}-${branch}`
 				const schemaInfo = {
 					username: `${repository.full_name.split('/').join('-')}-${branch}`,
 					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
-					schema: `${repository.full_name.split('/').join('-')}-${branch}`,
+					schema,
 				}
 
 				await ensureSchema(schemaInfo)
 
 				schemaEnv = getSchemaEnv(schemaInfo)
+				const resourceId = uuid()
+				await Resource.query().insert({
+					id: resourceId,
+					type: 'postgres',
+					repoName: repository.full_name,
+					deploymentId: schema,
+					name: 'database',
+					stage: ref,
+				})
 				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
 			} catch (e) {
 				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
@@ -503,7 +547,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
 				} else {
 					const staticContentLocation = repoRelative(config[resourceName].buildLocation)
-					return deployWebResource({ ref, invocationId, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
+					return deployWebResource({ ref, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
 				}
 			})
 		}))

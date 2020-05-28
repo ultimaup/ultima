@@ -81,6 +81,7 @@ const typeDefs = gql`
         repoName: String
         stage: String
         owner: String
+        runtime: String
         createdAt: DateTime
         startedAt: DateTime
         stoppedAt: DateTime
@@ -154,7 +155,7 @@ const resolvers = {
                         Route.query().select('deploymentId').where('deploymentId', 'like', `${o}-%`)
                     )
             } else {
-                q = q.where('repoName', `${owner}/${repoName}`)
+                q = q.where('repoName', `${owner}/${repoName}`).where('stage', 'like', 'refs/%')
             }
 
             const deployments = await q
