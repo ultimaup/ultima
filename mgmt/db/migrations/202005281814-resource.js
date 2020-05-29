@@ -6,8 +6,8 @@ exports.up = (knex) => {
                   table.string('type')
                   table.string('stage')
                   table.string('repoName')
-                  table.uuid('deploymentId')
-                  table.uuid('routeId')
+                  table.string('deploymentId')
+                  table.string('routeId')
                   table.timestamp('createdAt').defaultTo(knex.fn.now())
             })
 }

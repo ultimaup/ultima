@@ -28,6 +28,11 @@ const langs = [
         name: 'Rust',
         runtime: 'rust',
         nerdfontClassName: 'nf-dev-rust',
+    },
+    {
+        name: 'HTML',
+        runtime: 'html',
+        nerdfontClassName: 'nf-dev-html5',
     }
 ]
 

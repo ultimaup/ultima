@@ -389,18 +389,20 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 
 	// TODO: this is dumb
 	const resourceUrl = await route.set(resourceRoute)
-	const newRoute = await Route.query().where({ destination: url }).first()
+	const newRoute = await RouteModel.query().where({ destination: url }).first()
 	await Resource.query().update({
-		routeId: newRoute.id,
+		routeId: newRoute.source,
 	}).where('id', resourceId)
 
 	if (currentRoute && currentRoute.deploymentId) {
 		await removeDeployment(currentRoute.deploymentId)
 	}
 
-	await Resource.query().update({
-		routeId: null,
-	}).where('id', currentRoute.routeId)
+	if (currentRoute.routeId) {
+		await Resource.query().update({
+			routeId: null,
+		}).where('routeId', currentRoute.source)
+	}
 	
 	await markActionComplete(routeActionId, { type, description: message, data: { resourceName, resourceUrl, url } })
 	
@@ -521,15 +523,17 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				await ensureSchema(schemaInfo)
 
 				schemaEnv = getSchemaEnv(schemaInfo)
-				const resourceId = uuid()
-				await Resource.query().insert({
-					id: resourceId,
-					type: 'postgres',
-					repoName: repository.full_name,
-					deploymentId: schema,
-					name: 'database',
-					stage: ref,
-				})
+				if (!(await Resource.query().where('deploymentId', schema).where('repoName', repository.full_name).first())) {
+					const resourceId = uuid()
+					await Resource.query().insert({
+						id: resourceId,
+						type: 'postgres',
+						repoName: repository.full_name,
+						deploymentId: schema,
+						name: 'database',
+						stage: ref,
+					})
+				}
 				await markActionComplete(dbActionId, { data: { schemaName: schemaInfo.schema } })
 			} catch (e) {
 				await markActionComplete(dbActionId, { type: 'error', data: { error: e } })
