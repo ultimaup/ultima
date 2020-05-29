@@ -34,12 +34,14 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 
 	p.child.stdout.on('data', msgCb)
 	p.child.stderr.on('data', msgCb)
+
+	await p
 }
 
 const shouldRunInstallDeps = (filePath, cfg) => {
 	if (cfg.install && cfg.install.watch) {
 		const positive = cfg.install.watch.filter(glob => !glob.startsWith('!'))
-		const negators = [...cfg.install.watch.filter(glob => glob.startsWith('!')), ...cfg.ignore]
+		const negators = [...cfg.install.watch.filter(glob => glob.startsWith('!')), ...(cfg.ignore || [])]
 
 		return (
 			positive.some(glob => minimatch(filePath, glob)) && 

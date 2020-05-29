@@ -357,7 +357,7 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                     <br />
                     <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
                     <br />
-                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
+                    <MultiList value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -372,8 +372,11 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                 </div>
 
                 <div className="inline required field">
-                    <strong>Run Install when this file changes</strong>
-                    <input required value={value[moduleKey].install && value[moduleKey].install.watch || ''} onChange={e => {
+                    <strong>Run Install when these files change</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList value={value[moduleKey].install && value[moduleKey].install.watch || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {

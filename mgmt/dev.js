@@ -83,7 +83,7 @@ router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
     if (!req.user) {
         return res.status(403).json(false)
     }
-    if (!bucketName.startsWith(req.user.username)) {
+    if (!bucketName.startsWith(`${BUILDER_BUCKET_ID}-${req.user.username}`)) {
         return res.status(403).json(false)
     }
     const config = bucketProxies[bucketName]
@@ -179,16 +179,17 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 extensions: ['index.html']
             })
 
-            bucketProxies[bucketName] = {
+            bucketProxies[actualBucketName] = {
                 buildLocation: repoRelative(buildLocation),
             }
-            bucketProxyUrl = `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/dev-session/bucket-proxy/${bucketName}`
+            bucketProxyUrl = `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/dev-session/bucket-proxy/${actualBucketName}`
 
             if (!dev || !dev.command) {
                 // return to cli
                 return {
                     url: bucketProxyUrl,
                     staticContentUrl,
+                    resourceName,
                     type,
                 }
             } else {
@@ -251,6 +252,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
             appUrl,
             staticContentUrl,
             type,
+            resourceName,
         }
     }))
 
