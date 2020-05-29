@@ -300,7 +300,7 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
 
                 <div className="inline required field">
                     <strong>Dev Command</strong>
-                    <input required value={value[moduleKey].dev && value[moduleKey].dev.command || ''} onChange={e => {
+                    <input placeholder="# skip" required={module.type !== 'web'} value={value[moduleKey].dev && value[moduleKey].dev.command || ''} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -316,7 +316,9 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
 
                 <div className="inline required field">
                     <strong>Re-run when these files change</strong>
+                    <br />
                     <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
                     <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.watch || []} onChange={e => {
                         setValue({
                             ...value,
@@ -325,6 +327,44 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                                 dev: {
                                     ...(value[moduleKey].dev || {}),
                                     watch: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Don't re-run when these files change</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.ignore || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    ignore: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Don't sync these files to the dev environment</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    'sync-ignore': e.target.value || undefined,
                                 },
                             }
                         })

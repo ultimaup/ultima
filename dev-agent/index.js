@@ -140,7 +140,7 @@ const createSession = async sessionId => {
 
     if (cfg.buildLocation) {
         const buildLocationPath = path.resolve('.', repoRelative(cfg.buildLocation))
-        fileWatcher(buildLocation)
+        fileWatcher(buildLocationPath)
         // watch cfg.buildLocation
         // upload files to 
     }

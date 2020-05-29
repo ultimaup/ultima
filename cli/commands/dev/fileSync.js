@@ -52,9 +52,11 @@ const pushToRemote = (event, path, sessionId, progressCallback, got, runner) => 
     runner ? runner.whenConnected(whenConnectedCallback) : whenConnectedCallback()
 }
 
-const init = async ({ sessionId, client, runner }, progressCallback, initCallback) => {
+const init = async ({ sessionId, client, runner, ultimaCfg, resourceName }, progressCallback, initCallback) => {
+    const dontSync = (ultimaCfg[resourceName].dev && ultimaCfg[resourceName].dev['sync-ignore']) || []
+    
     const watcher = chokidar.watch('.', {
-        ignored: ['node_modules', '.git'],
+        ignored: [...dontSync, 'node_modules', '.git'],
         persistent: true,
     })
 

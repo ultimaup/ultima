@@ -158,6 +158,8 @@ const dev = async () => {
                 sessionId,
                 client,
                 runner,
+                ultimaCfg,
+                resourceName,
             }, (completed, total) => {
                 if (spinInterval) {
                     clearInterval(spinInterval)
