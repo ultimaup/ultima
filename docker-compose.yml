@@ -111,10 +111,11 @@ services:
   dind:
     image: docker:dind
     privileged: true
-    volumes:
-      - './endpoints/certs:/certs-output'
     environment:
+      DOCKER_TLS_VERIFY: ""
       DOCKER_TLS_CERTDIR: /certs-output
+    volumes:
+      - './tmp/docker-certs:/certs-output'
     expose:
       - 2375
       - 2376
@@ -129,6 +130,7 @@ services:
       - "dind"
     volumes:
       - './endpoints:/app'
+      - './tmp/docker-certs:/docker-certs'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:

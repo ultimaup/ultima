@@ -21,9 +21,9 @@ const getBundle = async url => {
 let docker = undefined
 if(!IN_PROD) {
     docker = new Docker({
-	    ca: fs.readFileSync('./certs/client/ca.pem'),
-  	    cert: fs.readFileSync('./certs/client/cert.pem'),
-  	    key: fs.readFileSync('./certs/client/key.pem'),
+	    ca: fs.readFileSync('/docker-certs/client/ca.pem'),
+  	    cert: fs.readFileSync('/docker-certs/client/cert.pem'),
+  	    key: fs.readFileSync('/docker-certs/client/key.pem'),
     })
 }else{
     docker = new Docker()
@@ -222,6 +222,8 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		console.log(requestId, 'creating container', config)
 
 		const image = await docker.pull(config.Image)
+
+		console.log('pulled image', config.Image)
 
 		const container = await docker.createContainer(config)
 
