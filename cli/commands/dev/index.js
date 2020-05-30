@@ -4,6 +4,7 @@ const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
 const fse = require('fs-extra')
 const YAML = require('yaml')
+const chalk = require('chalk')
 
 const apiClient = require('./client')
 const FileSync = require('./fileSync')
@@ -30,6 +31,28 @@ const liveSpinner = (writeFrame) => {
 
         ctr++
     }, spinner.interval)
+}
+
+const stringToColour = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let colour = '#';
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xFF;
+      colour += ('00' + value.toString(16)).substr(-2);
+    }
+    return colour;
+}
+
+const formatResourceName = (resourceName, resourceNames) => {
+    const len = Math.max(...(resourceNames.map(el => el.length))) + 2
+    const color = stringToColour(resourceName)
+
+    const str = `${resourceName}${' '.repeat(len - resourceName.length)}|`
+
+    return chalk.hex(color)(str)
 }
 
 const dev = async () => {
@@ -69,6 +92,7 @@ const dev = async () => {
     const dbPort = server.schemaId ? await makeTunnel(server.id, token, dbPortKey) : null
 
     const numResources = server.servers.length
+    const resourceNames = server.servers.map(s => s.resourceName)
 
     const parsedYML = YAML.parse(ultimaCfg)
 
@@ -79,7 +103,7 @@ const dev = async () => {
             const { resourceName } = server
             const namePrefix = numResources > 1
 
-            const logWrite = str => namePrefix ? ui.log.write(`${resourceName}: ${str}`) : ui.log.write(str)
+            const logWrite = str => namePrefix ? ui.log.write(`${formatResourceName(resourceName, resourceNames)} ${str}`) : ui.log.write(str)
             const { data: { sessionId }, client } = await apiClient.initSession({
                 rootEndpoint: server.url,
                 ultimaCfg,
@@ -174,7 +198,7 @@ const dev = async () => {
                         const { appUrl, staticContentUrl } = server
                         let url = (appUrl && appUrl.endsWith(':443')) ? appUrl.split(':443')[0] : appUrl
                         let staticUrl = (staticContentUrl && staticContentUrl.endsWith(':443')) ? staticContentUrl.split(':443')[0] : staticContentUrl
-                        ui.updateBottomBar(resourceName, `url: ${url || staticUrl}${staticUrl && url ? `buildLocation content: ${staticUrl}` : ''}`)
+                        ui.updateBottomBar(resourceName, `url: ${url || staticUrl}${staticUrl && url ? ` buildLocation content: ${staticUrl}` : ''}`)
                     }
                 }, () => {
                     isInitialized = true

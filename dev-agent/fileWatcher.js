@@ -57,7 +57,7 @@ const watchDir = (dir, endpoint = ULTIMA_BUCKET_PROXY_URL, token = ULTIMA_TOKEN)
     })
 
     watcher.on('ready', () => {
-        console.log('watching', dir)
+        console.log('syncing', dir, 'to', endpoint)
     })
 }
 

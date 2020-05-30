@@ -17,7 +17,7 @@ const btmBarObjToStr = obj => {
         return ''
     }
 
-    return Object.entries(obj).sort(([a], [b]) => {
+    return '\n'+Object.entries(obj).sort(([a], [b]) => {
         if (!b) {
             return -1
         }
