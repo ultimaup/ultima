@@ -56,30 +56,37 @@ const FileSync = () => {
 
     const init = async ({ sessionId, client, runner, ultimaCfg, resourceName }, progressCallback, initCallback) => {
         const dontSync = (ultimaCfg[resourceName] && ultimaCfg[resourceName].dev && ultimaCfg[resourceName].dev['sync-ignore']) || []
-        
-        const watcher = chokidar.watch('.', {
-            ignored: [...dontSync, 'node_modules', '.git'],
+
+        const directory = (ultimaCfg[resourceName] && ultimaCfg[resourceName].directory)
+
+        const watcher = chokidar.watch(directory || '.', {
+            ignored: [...dontSync.map(ds => directory ? `${directory}/${ds}` : ds), '**/node_modules', '.git'],
             persistent: true,
         })
 
         watcher.on('add', path => {
-            pushToRemote('add', path, sessionId, progressCallback, client, runner)
+            const p = directory ? path.split(directory)[1] : path
+            pushToRemote('add', p, sessionId, progressCallback, client, runner)
         })
 
         watcher.on('change', path => {
-            pushToRemote('change', path, sessionId, progressCallback, client, runner)
+            const p = directory ? path.split(directory)[1] : path
+            pushToRemote('change', p, sessionId, progressCallback, client, runner)
         })
 
         watcher.on('addDir', path => {
-            pushToRemote('addDir', path, sessionId, progressCallback, client, runner)
+            const p = directory ? path.split(directory)[1] : path
+            pushToRemote('addDir', p, sessionId, progressCallback, client, runner)
         })
 
         watcher.on('unlink', path => {
-            pushToRemote('unlink', path, sessionId, progressCallback, client, runner)
+            const p = directory ? path.split(directory)[1] : path
+            pushToRemote('unlink', p, sessionId, progressCallback, client, runner)
         })
 
         watcher.on('unlinkDir', path => {
-            pushToRemote('unlinkDir', path, sessionId, progressCallback, client, runner)
+            const p = directory ? path.split(directory)[1] : path
+            pushToRemote('unlinkDir', p, sessionId, progressCallback, client, runner)
         })
 
         watcher.on('ready', () => {

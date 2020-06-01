@@ -28,8 +28,11 @@ const getOpts = ({ wkdir, cfg }) => {
     return opts
 }
 
+const cache = {}
+
 const start = ({ wkdir, cfg }) => {
     const opts = getOpts({ wkdir, cfg })
+    const key = JSON.stringify(opts)
 
     const stdout = new PassThrough()
     const stderr = new PassThrough()
@@ -63,6 +66,18 @@ const start = ({ wkdir, cfg }) => {
     const stdoutHandler = d => stdout.write(d)
     const stderrHandler = d => stderr.write(d)
 
+    const spawnChild = () => {
+        if (cache[key]) {
+            process.kill(-cache[key].pid)
+        }
+        child = spawn(...forkArgs)
+        child.on('close', exitHandler)
+        child.stdout.on('data', stdoutHandler)
+        child.stderr.on('data', stderrHandler)
+        child.on('error', console.error)
+        cache[key] = child
+    }
+
     const exitHandler = (code, signal) => {
         console.log('child.on exit', code, signal)
         if (signal !== 'SIGTERM') {
@@ -74,21 +89,11 @@ const start = ({ wkdir, cfg }) => {
 
             runnerOut.emit('message', ({ type: 'restart' }))
 
-            child = spawn(...forkArgs)
-            child.on('close', exitHandler)
-            child.stdout.on('data', stdoutHandler)
-            child.stderr.on('data', stderrHandler)
-            child.on('error', console.error)
+            spawnChild()
         }
     }
 
-    child = spawn(...forkArgs)
-    child.on('close', exitHandler)
-
-    child.stdout.on('data', stdoutHandler)
-    child.stderr.on('data', stderrHandler)
-
-    child.on('error', console.error)
+    spawnChild()
 
     runnerOut.emit('message', ({ type: 'start' }))
 
@@ -97,13 +102,7 @@ const start = ({ wkdir, cfg }) => {
         if (child) {
             process.kill(-child.pid)
         } else {
-            child = spawn(...forkArgs)
-            child.on('close', exitHandler)
-
-            child.stdout.on('data', stdoutHandler)
-            child.stderr.on('data', stderrHandler)
-
-            child.on('error', console.error)
+            spawnChild()
         }
     })
 
@@ -116,15 +115,21 @@ const start = ({ wkdir, cfg }) => {
 }
 
 const shouldRestart = (filePath, cfg) => {
+    if (cfg.directory && !filePath.startsWith(cfg.directory)) {
+        return false
+    }
+    const fpath = cfg.directory ? filePath.substring(cfg.directory.length + 1) : filePath // +1 for the slash
 	if (cfg.dev && cfg.dev.watch) {
         const { watch, ignore } = getOpts({ wkdir: null, cfg })
 
-		return (
-			watch.some(glob => minimatch(filePath, glob)) && 
-			!ignore.some(glob => minimatch(filePath, glob))
-		)
-	}
+        const result = (
+			watch.some(glob => minimatch(fpath, glob)) && 
+			!ignore.some(glob => minimatch(fpath, glob))
+        )
 
+        return result
+    }
+    
 	return false
 }
 

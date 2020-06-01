@@ -30,7 +30,7 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 
-	const p = spawn('bash', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
+	const p = spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
 
 	p.child.stdout.on('data', msgCb)
 	p.child.stderr.on('data', msgCb)
@@ -40,12 +40,18 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 
 const shouldRunInstallDeps = (filePath, cfg) => {
 	if (cfg.install && cfg.install.watch) {
+		if (cfg.directory && !filePath.startsWith(cfg.directory)) {
+			return false
+		}
+
+		const fpath = cfg.directory ? filePath.substring(cfg.directory.length + 1) : filePath // +1 for the slash
+
 		const positive = cfg.install.watch.filter(glob => !glob.startsWith('!'))
 		const negators = [...cfg.install.watch.filter(glob => glob.startsWith('!')), ...(cfg.ignore || [])]
 
 		return (
-			positive.some(glob => minimatch(filePath, glob)) && 
-			!negators.some(glob => minimatch(filePath, glob))
+			positive.some(glob => minimatch(fpath, glob)) && 
+			!negators.some(glob => minimatch(fpath, glob))
 		)
 	}
 

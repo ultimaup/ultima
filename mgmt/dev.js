@@ -163,7 +163,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
 		renv[`${repoName.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
 	})
 
-    const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, buildLocation }]) => {
+    const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, directory, buildLocation }]) => {
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
         let staticContentUrl
         let bucketProxyUrl
@@ -197,6 +197,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 // pass to deployment
             }
         }
+        
         const devEndpointId = `${user.username}-${resourceName}-dev-${seed}`.toLowerCase()
         console.log(invocationId, `ensuring dev endpoint for runtime ${runtime} exists with id ${devEndpointId}`)
         // ensure dev endpoint exists
