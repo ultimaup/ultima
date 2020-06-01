@@ -35,7 +35,6 @@
     "string-width": "^4.2.0",
     "tar-fs": "^2.0.1",
     "update-notifier": "^4.1.0",
-    "uuid": "^7.0.3",
-    "yaml": "^1.10.0"
+    "uuid": "^7.0.3"
   }
 }
