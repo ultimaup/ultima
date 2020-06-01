@@ -216,7 +216,7 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 
 		const config = {
 			Image: deployment.runtime || 'node',
-			Cmd: ['bash', '-c', deployment.command || 'npm start'],
+			Cmd: ['sh', '-c', deployment.command || 'npm start'],
 			WorkingDir: '/app',
 			name: deploymentId,
 			ExposedPorts,

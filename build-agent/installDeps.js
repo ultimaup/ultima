@@ -22,7 +22,7 @@ const installDeps = async (wkdir, cfg) => {
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 
-	await spawn('bash', ['-c', cfg.install.command], { cwd: wkdir, stdio: 'inherit' })
+	await spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, stdio: 'inherit' })
 }
 
 module.exports = installDeps

@@ -33,7 +33,7 @@ const extractStreamToDir = async (stream, dir) => {
 const doBuild = async (wkdir, cfg) => {
 	if (cfg.build) {
 		console.log('running `'+cfg.build+'`')
-		return await spawn('bash', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
+		return await spawn('sh', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
 	} else {
 		console.log('no build step found in .ultima.yml, skipping...')
 	}
@@ -42,7 +42,7 @@ const doBuild = async (wkdir, cfg) => {
 const doTest = async (wkdir, cfg) => {
 	if (cfg.test) {
 		console.log('running `'+cfg.test+'`')
-		return await spawn('bash', ['-c', cfg.test], { cwd: wkdir, stdio: 'inherit' })
+		return await spawn('sh', ['-c', cfg.test], { cwd: wkdir, stdio: 'inherit' })
 	} else {
 		console.log('no test step found in .ultima.yml, skipping...')
 	}
