@@ -1,6 +1,16 @@
 version: '3.1'
 
 services:
+  dns:
+    image: resystit/bind9
+    ports:
+      - '53:53'
+      - '53:53/udp'
+    volumes:
+      - ./dns/named.conf:/etc/bind/named.conf
+      - ./dns/onultima.local.zone:/etc/bind/onultima.local.zone
+      - ./dns/local.zone:/etc/bind/local.zone
+
   db:
     image: postgres
     restart: always
@@ -96,7 +106,7 @@ services:
       PUBLIC_IPV4: '78.46.16.197'
       PUBLIC_IPV6: 2a01:4f8:201:206f::2
 
-      REGISTRY_CACHE_ENDPOINT: http://192.168.190.128:4493/
+      REGISTRY_CACHE_ENDPOINT: http://172.23.69.216:4493/
 
   dind:
     image: docker:dind
