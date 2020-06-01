@@ -126,6 +126,25 @@ const putArchive = async (container, file, options) => {
 	})
 }
 
+const pullImage = image => {
+	return new Promise((resolve, reject) => {
+		docker.pull(image, (err, stream) => {
+			if (err) {
+				reject(err)
+			} else {
+				const onFinished = (err, output) => {
+				  if (err) {
+					  reject(err)
+				  } else {
+					  resolve(output)
+				  }
+				}
+				docker.modem.followProgress(stream, onFinished, () => {})
+			}
+		})
+	})
+}
+
 const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 	const deployment = await Deployment.get(deploymentId)
 	if (!deployment) {
@@ -221,7 +240,7 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 
 		console.log(requestId, 'creating container', config)
 
-		const image = await docker.pull(config.Image)
+		const image = await pullImage(config.Image)
 
 		console.log('pulled image', config.Image)
 
