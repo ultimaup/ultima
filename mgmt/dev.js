@@ -23,6 +23,7 @@ const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT,
     PUBLIC_ROUTE_ROOT_PORT,
+    INTERNAL_MGMT_ENDPOINT,
 } = process.env
 
 const router = new Router()
@@ -88,7 +89,6 @@ router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
     }
     const config = bucketProxies[bucketName]
     if (!config) {
-        console.log(bucketProxies, bucketName)
         return res.status(404).json(true)
     }
 
@@ -169,7 +169,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
         let bucketProxyUrl
 
         if (type === 'web' && buildLocation) {
-            const bucketName = `${user.username}-dev-${seed.split('-')[0]}`
+            const bucketName = `${user.username}-dev-${resourceName}-${seed.split('-')[0]}`
             const actualBucketName = await s3.ensureWebBucket(bucketName)
             const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 
@@ -182,12 +182,13 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
             bucketProxies[actualBucketName] = {
                 buildLocation: repoRelative(buildLocation),
             }
-            bucketProxyUrl = `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/dev-session/bucket-proxy/${actualBucketName}`
+            bucketProxyUrl = `/dev-session/bucket-proxy/${actualBucketName}`
+            console.log(invocationId, 'created bucket proxy for',bucketName, repoRelative(buildLocation))
 
             if (!dev || !dev.command) {
                 // return to cli
                 return {
-                    url: bucketProxyUrl,
+                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}${bucketProxyUrl}`,
                     staticContentUrl,
                     resourceName,
                     type,
@@ -212,7 +213,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 ULTIMA_RESOURCE_NAME: resourceName,
                 ULTIMA_RESOURCE_TYPE: type,
                 ULTIMA_TOKEN: token,
-                ULTIMA_BUCKET_PROXY_URL: bucketProxyUrl,
+                ULTIMA_BUCKET_PROXY_URL: `${INTERNAL_MGMT_ENDPOINT}${bucketProxyUrl}`,
                 npm_config_registry: REGISTRY_CACHE_ENDPOINT,
                 yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
             },
