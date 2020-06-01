@@ -70,6 +70,7 @@ const removeLeadingSlash = (str) => {
 const bucketProxies = {}
 
 router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
+    // console.log(req.path)
     const eventType = req.headers['x-event-type']
     if (!eventType) {
         return res.json({})
@@ -94,14 +95,16 @@ router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
 
     const loc = req.headers['x-event-path']
 
-    const { buildLocation } = config
+    const { buildLocation, directory } = config
 
-    if (!loc.startsWith(buildLocation)) {
+    const buildLoc = repoRelative(directory, buildLocation)
+
+    if (!loc.startsWith(buildLoc)) {
         return res.json(false)
     }
 
-    if (loc.startsWith(buildLocation)) {
-        const realPath = loc.substring(buildLocation.length)
+    if (loc.startsWith(buildLoc)) {
+        const realPath = loc.substring(buildLoc.length)
 
         const { writeStream, promise } = s3.uploadStream({
             Key: removeLeadingSlash(realPath),
@@ -121,8 +124,8 @@ router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
     }
 })
 
-const repoRelative = (loc) => {
-	return path.resolve('/', loc).substring(1)
+const repoRelative = (...loc) => {
+	return path.resolve('/', ...loc).substring(1)
 }
 
 const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, owner } }) => {
@@ -181,6 +184,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
 
             bucketProxies[actualBucketName] = {
                 buildLocation: repoRelative(buildLocation),
+                directory,
             }
             bucketProxyUrl = `/dev-session/bucket-proxy/${actualBucketName}`
             console.log(invocationId, 'created bucket proxy for',bucketName, repoRelative(buildLocation))
