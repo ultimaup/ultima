@@ -3,7 +3,6 @@ const { program } = require('commander')
 const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
 const fse = require('fs-extra')
-const YAML = require('yaml')
 const chalk = require('chalk')
 
 const apiClient = require('./client')
@@ -93,8 +92,6 @@ const dev = async () => {
 
     const numResources = server.servers.length
     const resourceNames = server.servers.map(s => s.resourceName)
-
-    const parsedYML = YAML.parse(ultimaCfg)
 
     const {schemaId} = server
 
