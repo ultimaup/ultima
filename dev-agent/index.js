@@ -139,10 +139,8 @@ const createSession = async sessionId => {
     })
 
     if (cfg.buildLocation) {
-        const buildLocationPath = path.resolve('.', repoRelative(cfg.buildLocation))
-        fileWatcher(buildLocationPath)
-        // watch cfg.buildLocation
-        // upload files to 
+        const buildLocationPath = path.resolve(wkdir, repoRelative(cfg.buildLocation))
+        fileWatcher({ dir: buildLocationPath, wkdir })
     }
 
     return session
