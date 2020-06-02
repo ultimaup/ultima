@@ -30,12 +30,16 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'yarn.lock')])
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 
-	const p = spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
+	try {
+		const p = spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
 
-	p.child.stdout.on('data', msgCb)
-	p.child.stderr.on('data', msgCb)
-
-	await p
+		p.child.stdout.on('data', msgCb)
+		p.child.stderr.on('data', msgCb)
+	
+		await p
+	} catch (e) {
+		console.error(e)
+	}
 }
 
 const shouldRunInstallDeps = (filePath, cfg) => {

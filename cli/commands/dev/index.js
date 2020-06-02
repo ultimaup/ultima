@@ -4,6 +4,7 @@ const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
 const fse = require('fs-extra')
 const chalk = require('chalk')
+const YAML = require('yaml')
 
 const apiClient = require('./client')
 const FileSync = require('./fileSync')
@@ -71,12 +72,16 @@ const dev = async () => {
 
     await cli.action.start('starting session...')
 
-    let ultimaCfg
+    let ultimaYml
     if (await fse.exists('./.ultima.yml')) {
-        ultimaCfg = await fse.readFile('./.ultima.yml', 'utf-8')
+        ultimaYml = await fse.readFile('./.ultima.yml', 'utf-8')
+    } else {
+        return cli.error(`No .ultima.yml file found, please create one and copy/paste it here: ${program.server}/${owner}/${repoName}/_new/master/.ultima.yml`)
     }
 
-    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaCfg, {owner, repoName})
+    const ultimaCfgs = YAML.parse(ultimaYml)
+
+    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaYml, {owner, repoName})
 
     if (server.status === 'error') {
         await cli.action.stop('failed')
@@ -87,7 +92,7 @@ const dev = async () => {
 
     const [un] = server.id.split('-')[0]
     const dbPortKey = `${owner}-${repoName}-${un}-dev`
-    
+
     const dbPort = server.schemaId ? await makeTunnel(server.id, token, dbPortKey) : null
 
     const numResources = server.servers.length
@@ -99,8 +104,17 @@ const dev = async () => {
         server.servers.map(async server => {
             const { resourceName } = server
             const namePrefix = numResources > 1
+            const ultimaCfg = ultimaCfgs[resourceName]
 
-            const logWrite = str => namePrefix ? ui.log.write(`${formatResourceName(resourceName, resourceNames)} ${str}`) : ui.log.write(str)
+            const logWrite = (str, isSystem) => {
+                const output = namePrefix ? ui.log.write(`${formatResourceName(resourceName, resourceNames)} ${str}`) : ui.log.write(str)
+                if (isSystem) {
+                    return chalk.dim(output)
+                } else {
+                    return output
+                }
+            }
+
             const { data: { sessionId }, client } = await apiClient.initSession({
                 rootEndpoint: server.url,
                 ultimaCfg,
@@ -132,18 +146,18 @@ const dev = async () => {
                     if (spinInterval) {
                         clearInterval(spinInterval)
                     }
-                    logWrite('installing dependencies')
+                    logWrite('installing dependencies', true)
                 })
                 runner.on('install-deps-complete', async () => {
-                    logWrite('installed dependencies')
+                    logWrite('installed dependencies', true)
             
-                    if (cfg.dev && cfg.dev['back-sync']) {
-                        // ui.log.write('downloading dependencies locally')
-                        fileSync.download(cfg.dev['back-sync'],{
+                    if (ultimaCfg.dev && ultimaCfg.dev['back-sync']) {
+                        logWrite(`downloading ${ultimaCfg.dev['back-sync']} locally`, true)
+                        fileSync.download(ultimaCfg.dev['back-sync'], ultimaCfg.directory,{
                             client,
                             sessionId,
                         }).then(() => {
-                            // ui.log.write('downloaded dependencies locally')
+                            logWrite(`downloaded ${ultimaCfg.dev['back-sync']} locally`, true)
                         }).catch(e => {
                             // ui.log.write('error downloading dependencies locally: '+e)
                         })
@@ -151,19 +165,19 @@ const dev = async () => {
                 })
             
                 runner.on('quit', () => {
-                    logWrite('quit')
+                    logWrite('quit', true)
                 })
                 runner.on('restart', () => {
-                    // cli.log('restart due to changed files')
+                    logWrite('restart due to changed files', true)
                 })
                 runner.on('crash', () => {
-                    // ui.log.write('crash')
+                    logWrite('crashed, waiting for file change to restart', true)
                 })
                 runner.on('connect', () => {
-                    logWrite('connected to development instance')
+                    logWrite('connected to instance', true)
                 })
                 runner.on('disconnect', () => {
-                    logWrite('connection to development instance lost, will reconnect...')
+                    logWrite('connection to instance lost, will reconnect...', true)
                 })
             
                 await runner.connect(server.url)
@@ -175,7 +189,6 @@ const dev = async () => {
                     client,
                     runner,
                     ultimaCfg,
-                    resourceName,
                 }, (completed, total) => {
                     if (spinInterval) {
                         clearInterval(spinInterval)

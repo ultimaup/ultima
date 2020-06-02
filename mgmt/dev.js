@@ -67,10 +67,8 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const bucketProxies = {}
-
 router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
-    // console.log(req.path)
+    console.log(req.path)
     const eventType = req.headers['x-event-type']
     if (!eventType) {
         return res.json({})
@@ -88,40 +86,23 @@ router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
     if (!bucketName.startsWith(`${BUILDER_BUCKET_ID}-${req.user.username}`)) {
         return res.status(403).json(false)
     }
-    const config = bucketProxies[bucketName]
-    if (!config) {
-        return res.status(404).json(true)
-    }
+    const realPath = req.headers['x-event-path']
 
-    const loc = req.headers['x-event-path']
+    const { writeStream, promise } = s3.uploadStream({
+        Key: removeLeadingSlash(realPath),
+        Bucket: bucketName,
+        ContentType: mime.lookup(realPath) || 'application/octet-stream',
+    })
 
-    const { buildLocation, directory } = config
+    req.pipe(writeStream)
 
-    const buildLoc = repoRelative(directory, buildLocation)
-
-    if (!loc.startsWith(buildLoc)) {
-        return res.json(false)
-    }
-
-    if (loc.startsWith(buildLoc)) {
-        const realPath = loc.substring(buildLoc.length)
-
-        const { writeStream, promise } = s3.uploadStream({
-            Key: removeLeadingSlash(realPath),
-            Bucket: bucketName,
-            ContentType: mime.lookup(realPath) || 'application/octet-stream',
-        })
-
-        req.pipe(writeStream)
-
-        promise.then(() => {
-            console.log('uploaded', realPath, 'to', bucketName)
-            res.json(true)
-        }).catch(e => {
-            console.error('failed to upload', realPath, 'to', bucketName, e)
-            res.status(500).json(e)
-        })
-    }
+    promise.then(() => {
+        console.log('uploaded', realPath, 'to', bucketName)
+        res.json(true)
+    }).catch(e => {
+        console.error('failed to upload', realPath, 'to', bucketName, e)
+        res.status(500).json(e)
+    })
 })
 
 const repoRelative = (...loc) => {
@@ -132,6 +113,10 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
     const invocationId = uuid()
 
     const envCfg = ultimaCfg ? YAML.parse(ultimaCfg) : {}
+
+    if (envCfg.noAPI) {
+        delete envCfg.noAPI
+    }
 
     const seed = uuid()
 
@@ -174,6 +159,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
         if (type === 'web' && buildLocation) {
             const bucketName = `${user.username}-dev-${resourceName}-${seed.split('-')[0]}`
             const actualBucketName = await s3.ensureWebBucket(bucketName)
+
             const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 
             staticContentUrl = await route.set({
@@ -182,12 +168,8 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 extensions: ['index.html']
             })
 
-            bucketProxies[actualBucketName] = {
-                buildLocation: repoRelative(buildLocation),
-                directory,
-            }
             bucketProxyUrl = `/dev-session/bucket-proxy/${actualBucketName}`
-            console.log(invocationId, 'created bucket proxy for',bucketName, repoRelative(buildLocation))
+            console.log(invocationId, 'created bucket proxy for',actualBucketName, repoRelative(buildLocation))
 
             if (!dev || !dev.command) {
                 // return to cli
@@ -217,8 +199,9 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 ...renv,
                 ULTIMA_RESOURCE_NAME: resourceName,
                 ULTIMA_RESOURCE_TYPE: type,
+                ULTIMA_RESOURCE_CONFIG: JSON.stringify(envCfg[resourceName]),
                 ULTIMA_TOKEN: token,
-                ULTIMA_BUCKET_PROXY_URL: `${INTERNAL_MGMT_ENDPOINT}${bucketProxyUrl}`,
+                ULTIMA_BUCKET_PROXY_URL: bucketProxyUrl ? `${INTERNAL_MGMT_ENDPOINT}${bucketProxyUrl}` : undefined,
                 npm_config_registry: REGISTRY_CACHE_ENDPOINT,
                 yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
             },

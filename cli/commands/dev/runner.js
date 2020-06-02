@@ -54,7 +54,7 @@ const runner = () => {
                 if (socket.connected) {
                     cb()
                 } else {
-                    socket.once('connect', db)
+                    socket.once('connect', cb)
                 }
             } else {
                 throw new Error('tried to use socket before initialization')

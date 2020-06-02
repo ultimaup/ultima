@@ -10,13 +10,24 @@ const pipeline = promisify(stream.pipeline)
 
 const apiClient = require('./client')
 
+const repoRelative = (...loc) => {
+	return p.resolve('/', ...loc).substring(1)
+}
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
+}
+
 const FileSync = () => {
 
     let inflight = 0
     let total = 0
     let completed = 0
 
-    const pushToRemote = (event, path, sessionId, progressCallback, got, runner) => {
+    const pushToRemote = (event, path, sessionId, progressCallback, got, runner, directory,fullPath) => {
+        const p = (directory && !fullPath) ? (path.split(directory)[1] || '.') : path
         const whenConnectedCallback = async () => {
             total++
             inflight++
@@ -27,7 +38,7 @@ const FileSync = () => {
                 const stream = ['add', 'change'].includes(event) ? fs.createReadStream(path) : undefined
                 const headers = {
                     'x-event-type': event,
-                    'x-event-path': path,
+                    'x-event-path': p,
                     'x-session-id': sessionId,
                 }
                 if (stream) {
@@ -54,39 +65,40 @@ const FileSync = () => {
         runner ? runner.whenConnected(whenConnectedCallback) : whenConnectedCallback().catch(console.error)
     }
 
-    const init = async ({ sessionId, client, runner, ultimaCfg, resourceName }, progressCallback, initCallback) => {
-        const dontSync = (ultimaCfg[resourceName] && ultimaCfg[resourceName].dev && ultimaCfg[resourceName].dev['sync-ignore']) || []
+    const init = async ({ sessionId, client, runner, ultimaCfg }, progressCallback, initCallback) => {
+        const dontSync = (ultimaCfg && ultimaCfg.dev && ultimaCfg.dev['sync-ignore']) || []
 
-        const directory = (ultimaCfg[resourceName] && ultimaCfg[resourceName].directory)
+        const watchDir = ultimaCfg && ultimaCfg.directory
+        const fullPath = !!runner
 
-        const watcher = chokidar.watch(directory || '.', {
-            ignored: [...dontSync.map(ds => directory ? `${directory}/${ds}` : ds), '**/node_modules', '.git'],
+        const watcher = chokidar.watch(watchDir || '.', {
+            ignored: [...dontSync.map(ds => watchDir ? `${watchDir}/${ds}` : ds), '**/node_modules', '.git'],
             persistent: true,
         })
 
+        let directory = watchDir
+        if (!fullPath && ultimaCfg.buildLocation) {
+            directory = repoRelative(directory || '', removeLeadingSlash(ultimaCfg.buildLocation))
+        }
+
         watcher.on('add', path => {
-            const p = directory ? path.split(directory)[1] : path
-            pushToRemote('add', p, sessionId, progressCallback, client, runner)
+            pushToRemote('add', path, sessionId, progressCallback, client, runner, directory,fullPath)
         })
 
         watcher.on('change', path => {
-            const p = directory ? path.split(directory)[1] : path
-            pushToRemote('change', p, sessionId, progressCallback, client, runner)
+            pushToRemote('change', path, sessionId, progressCallback, client, runner, directory,fullPath)
         })
 
         watcher.on('addDir', path => {
-            const p = directory ? path.split(directory)[1] : path
-            pushToRemote('addDir', p, sessionId, progressCallback, client, runner)
+            pushToRemote('addDir', path, sessionId, progressCallback, client, runner, directory,fullPath)
         })
 
         watcher.on('unlink', path => {
-            const p = directory ? path.split(directory)[1] : path
-            pushToRemote('unlink', p, sessionId, progressCallback, client, runner)
+            pushToRemote('unlink', path, sessionId, progressCallback, client, runner, directory,fullPath)
         })
 
         watcher.on('unlinkDir', path => {
-            const p = directory ? path.split(directory)[1] : path
-            pushToRemote('unlinkDir', p, sessionId, progressCallback, client, runner)
+            pushToRemote('unlinkDir', path, sessionId, progressCallback, client, runner, directory,fullPath)
         })
 
         watcher.on('ready', () => {
@@ -98,13 +110,13 @@ const FileSync = () => {
                 watcher.close(),
                 apiClient.disconnectAll(),
             ]).then(() => {
-                console.log('done')
+                console.log('\nThanks for using Ultima')
                 process.exit()
             })
         })
     }
 
-    const download = (path, { client, sessionId }) => {
+    const download = (path, dir, { client, sessionId }) => {
         return pipeline(
             client.stream.get(`download/${path}`, {
                 headers: {
@@ -112,7 +124,7 @@ const FileSync = () => {
                 },
             }),
             gunzip(),
-            tar.extract(p.resolve('.', path))
+            tar.extract(p.resolve('.', dir || '', path))
         )
     }
 

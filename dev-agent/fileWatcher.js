@@ -1,6 +1,7 @@
 const chokidar = require('chokidar')
 const got = require('got')
 const fs = require('fs')
+const path = require('path')
 const { promisify } = require('util')
 const stream = require('stream')
 
@@ -18,11 +19,12 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const pushToRemote = async (event, absPath, path, endpoint, token) => {
+const pushToRemote = async (event, absPath, path, endpoint, token, dir) => {
     const stream = ['add', 'change'].includes(event) ? fs.createReadStream(absPath) : undefined
+    console.log('pushToRemote', event, absPath, path, endpoint, 'token', dir)
     const headers = {
         'x-event-type': event,
-        'x-event-path': removeLeadingSlash(path),
+        'x-event-path': removeLeadingSlash(path.split(dir).join('')),
         authorization: `Bearer ${token}`,
     }
 
@@ -38,29 +40,29 @@ const pushToRemote = async (event, absPath, path, endpoint, token) => {
 }
 
 const watchDir = ({dir, wkdir}, endpoint = ULTIMA_BUCKET_PROXY_URL, token = ULTIMA_TOKEN) => {
-    const watcher = chokidar.watch(dir, {
+    const watcher = chokidar.watch(path.resolve(wkdir, dir), {
         ignored: ['node_modules', '.git'],
         persistent: true,
     })
 
     watcher.on('add', path => {
-        pushToRemote('add', path, path.split(wkdir)[1], endpoint, token)
+        pushToRemote('add', path, path.split(wkdir)[1], endpoint, token, dir)
     })
 
     watcher.on('change', path => {
-        pushToRemote('change', path, path.split(wkdir)[1], endpoint, token)
+        pushToRemote('change', path, path.split(wkdir)[1], endpoint, token, dir)
     })
 
     watcher.on('addDir', path => {
-        pushToRemote('addDir', path, path.split(wkdir)[1], endpoint, token)
+        pushToRemote('addDir', path, path.split(wkdir)[1], endpoint, token, dir)
     })
 
     watcher.on('unlink', path => {
-        pushToRemote('unlink', path, path.split(wkdir)[1], endpoint, token)
+        pushToRemote('unlink', path, path.split(wkdir)[1], endpoint, token, dir)
     })
 
     watcher.on('unlinkDir', path => {
-        pushToRemote('unlinkDir', path, path.split(wkdir)[1], endpoint, token)
+        pushToRemote('unlinkDir', path, path.split(wkdir)[1], endpoint, token, dir)
     })
 
     watcher.on('ready', () => {

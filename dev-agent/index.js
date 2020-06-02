@@ -12,6 +12,7 @@ const fileWatcher = require('./fileWatcher')
 
 const {
     PORT = 4489,
+    ULTIMA_RESOURCE_CONFIG,
 } = process.env
 
 const sessions = {}
@@ -70,8 +71,7 @@ app.get('/health', (req, res) => {
 
 app.post('/new-session', bodyParser.json(), (req, res) => {
     const sessionId = 'static-session-id'
-    const { ultimaCfg } = req.body
-    sessionConfigs[sessionId] = ultimaCfg ? YAML.parse(ultimaCfg)[process.env.ULTIMA_RESOURCE_NAME] : {}
+    sessionConfigs[sessionId] = JSON.parse(ULTIMA_RESOURCE_CONFIG)
     console.log('using config', sessionConfigs[sessionId])
 
     res.json({
@@ -94,6 +94,13 @@ io = socketIO(server)
 
 const repoRelative = (loc) => {
 	return path.resolve('/', loc).substring(1)
+}
+
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
 }
 
 const createSession = async sessionId => {
@@ -139,8 +146,7 @@ const createSession = async sessionId => {
     })
 
     if (cfg.buildLocation) {
-        const buildLocationPath = path.resolve(wkdir, repoRelative(cfg.buildLocation))
-        fileWatcher({ dir: buildLocationPath, wkdir })
+        fileWatcher({ dir: repoRelative(cfg.buildLocation), wkdir })
     }
 
     return session

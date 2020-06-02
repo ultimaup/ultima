@@ -62,6 +62,8 @@ app.post('/', async (req, res) => {
 	const { 'x-parent-invocation-id': invocationId, 'x-resource-name': resourceName } = req.headers
 	console.log('invoked from deployment', invocationId)
 
+	const ultimaCfg = process.env.ULTIMA_RESOURCE_CONFIG
+
 	try {
 		let wkdir = `/tmp/${invocationId}`
 
@@ -88,30 +90,26 @@ app.post('/', async (req, res) => {
 		const filesBefore = await fse.readdir(wkdir)
 		console.log('bundle contains files: ', filesBefore)
 
-		let config
-		if (await fse.pathExists(path.resolve(wkdir, '.ultima.yml'))) {
-			const configYml = await fse.readFile(path.resolve(wkdir, '.ultima.yml'), 'utf-8')
-			config = await YAML.parse(configYml)
-		}
+		const config = JSON.parse(ultimaCfg)
 
 		if (!config) {
 			console.log('no .ultima.yml found, assuming nodejs api app')
 		}
 
-		if (config && config[resourceName]) {
-			wkdir = path.resolve(wkdir, config[resourceName].directory || '')
+		if (config && config) {
+			wkdir = path.resolve(wkdir, config.directory || '')
 		}
 
 		try {
-			await installDeps(wkdir, config[resourceName])
-			await doBuild(wkdir, config[resourceName])
-			await doTest(wkdir, config[resourceName])
+			await installDeps(wkdir, config)
+			await doBuild(wkdir, config)
+			await doTest(wkdir, config)
 		} catch (e) {
 			console.error(e)
 		}
 
-		if (config[resourceName].removePaths) {
-			await Promise.all(config[resourceName].removePaths.map(async (p) => {
+		if (config.removePaths) {
+			await Promise.all(config.removePaths.map(async (p) => {
 				console.log('removing', p)
 				await exec(`rm -rf ${path.resolve(wkdir, p)}`)
 				console.log('removed', p)

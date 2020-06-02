@@ -4,7 +4,7 @@ import moment from 'moment'
 import Modal from 'react-modal'
 import { HashRouter as Router } from 'react-router-dom'
 
-import Octicon, { GitBranch, Terminal, LinkExternal } from '@primer/octicons-react'
+import Octicon, { GitBranch, LinkExternal } from '@primer/octicons-react'
 
 import useResources from '../../hooks/useResources'
 

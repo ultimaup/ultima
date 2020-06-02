@@ -68,7 +68,11 @@ const start = ({ wkdir, cfg }) => {
 
     const spawnChild = () => {
         if (cache[key]) {
-            process.kill(-cache[key].pid)
+            try {
+                process.kill(-cache[key].pid)
+            } catch (e) {
+                // fail silently
+            }
         }
         child = spawn(...forkArgs)
         child.on('close', exitHandler)

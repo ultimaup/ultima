@@ -177,6 +177,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 				CI: true,
 				npm_config_registry: REGISTRY_CACHE_ENDPOINT,
 				yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
+				ULTIMA_RESOURCE_CONFIG: JSON.stringify(config[resourceName]),
 				...schemaEnv,
 				...routesEnv(config, { branch, repo, user })
 			},
@@ -474,8 +475,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
 
-	let config
+	let config = {}
 	let shouldDie = false
+
+	let legacyInstaller = null
+	let legacyPackage = null
+	let hasConfig = false
 
 	try {
 		await new Promise((resolve, reject) => {
@@ -492,20 +497,42 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 					if (realPath === '.ultima.yml') {
 						promises.push(
 							streamToBuf(entry)
-							.then(buf => {
-								return buf.toString('utf8')
-							})
-							.then(text => yaml.safeLoad(text))
-							.then(configFromYml => {
-								config = configFromYml
-								console.log(configFromYml)
-							})
-							.catch(e => {
-								logAction(parentActionId, { type: 'error', title: 'failed to parse .ultima.yml', data: { error: e } })
-								shouldDie = 'failed to parse .ultima.yml'
-								console.error('failed to parse .ultima.yml', e)
-							})
+								.then(buf => {
+									return buf.toString('utf8')
+								})
+								.then(text => yaml.safeLoad(text))
+								.then(configFromYml => {
+									config = configFromYml
+									hasConfig = true
+								})
+								.catch(e => {
+									logAction(parentActionId, { type: 'error', title: 'failed to parse .ultima.yml', data: { error: e } })
+									shouldDie = 'failed to parse .ultima.yml'
+									console.error('failed to parse .ultima.yml', e)
+								})
 						)
+					}
+
+					if (realPath === 'package.json') {
+						legacyInstaller = 'npm install'
+						promises.push(
+							streamToBuf(entry)
+								.then(buf => {
+									return buf.toString('utf8')
+								})
+								.then(text => JSON.parse(text))
+								.then(pkgJson => {
+									legacyPackage = pkgJson
+								})
+								.catch(e => {
+									logAction(parentActionId, { type: 'error', title: 'failed to parse package.json', data: { error: e } })
+									shouldDie = 'failed to parse package.json'
+									console.error('failed to parse package.json', e)
+								})
+						)
+					}
+					if (realPath === 'yarn.lock') {
+						legacyInstaller = 'yarn'
 					}
 
 					if (path === '.env.example') {
@@ -521,6 +548,36 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 					Promise.all(promises).then(resolve)
 				})
 		})
+
+		if (config.hasAPI) {
+			delete config.hasAPI
+		}
+
+		if (!hasConfig || (!config.api && legacyPackage)) {
+			config.api = {
+				runtime: 'node',
+				type: 'api',
+				start: 'npm run start',
+				install: {
+					command: legacyInstaller == 'yarn' ? 'yarn --mutex file --frozen-lockfile' : 'npm install',
+					watch: [
+						legacyInstaller === 'yarn' ? 'yarn.lock' : 'package-lock.json',
+					]
+				},
+				dev: {
+					command: (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.dev && 'npm run dev') || 'npm run start',
+					watch: [
+						'*.js',
+					],
+				},
+			}
+			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.build) {
+				config.api.build = 'npm run build'
+			}
+			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.test) {
+				config.api.test = 'npm run test'
+			}
+		}
 
 		if (shouldDie) {
 			throw new Error(shouldDie)
