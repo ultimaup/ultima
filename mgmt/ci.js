@@ -66,14 +66,6 @@ const ensureBuilderBundle = async () => {
     return await promise
 }
 
-
-const removeLeadingSlash = (str) => {
-	if (str[0] === '/') {
-		return str.substring(1)
-	}
-	return str
-}
-
 const repoRelative = (...loc) => {
 	return path.resolve('/', ...loc).substring(1)
 }
@@ -156,6 +148,13 @@ const removeOrphans = async ({
 const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo  }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
+	if (!config[resourceName].build && !config[resourceName].install && !config[resourceName].test && config[resourceName].type === 'web') {
+		return {
+			codeTarUrl,
+			resourceName,
+		}
+	}
+
 	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder', data: { resourceName } })
 
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
@@ -229,28 +228,27 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	}
 }
 
-const deployWebResource = async ({ ref, repository, resourceName, parentActionId, after, builtBundleKey, staticContentLocation }) => {
+const deployWebResource = async ({ ref, repository, resourceName, parentActionId, after, builtBundleKey, codeTarUrl, staticContentLocation }) => {
 	const bucketName = `${after.substring(0,8)}-${resourceName}`
 	const actualBucketName = await s3.ensureWebBucket(bucketName)
 	console.log('uploading', staticContentLocation, 'to', actualBucketName)
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying web resource', data: { resourceName } })
 
 	// TODO: use stream from earlier instead of fetching from s3 again
-	const builtBundleStream = s3.getStream({ Key: builtBundleKey })
+	const builtBundleStream = builtBundleKey ? s3.getStream({ Key: builtBundleKey }) : giteaStream(codeTarUrl)
 
 	const ts = tarStream.extract()
 	ts.on('entry', (header, stream, next) => {
-		const loc = header.name
-		console.log('found', loc)
+		let loc = codeTarUrl ? header.name.substring(header.name.split('/')[0].length + 1) : header.name
+		if (!codeTarUrl) {
+			console.log(loc, staticContentLocation)
+		}
 		if (loc === staticContentLocation || header.type !== 'file') {
-			console.log('skipping', loc)
 			stream.resume()
 			stream.on('end', next)
 			return
 		}
-		if (!loc.startsWith(staticContentLocation)) {
-			console.log('skipping', loc)
-			
+		if (!loc.startsWith(staticContentLocation)) {			
 			stream.resume()
 			stream.on('end', next)
 			return
@@ -435,6 +433,13 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 		resourceUrl,
 		resourceName,
 	}
+}
+
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
 }
 
 const runTests = async ({ ref, after, repository, pusher, commits }) => {
@@ -627,12 +632,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
 			return buildResource({
 				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo
-			}).then(({ resultingBundleLocation, builtBundleKey, resourceName }) => {
+			}).then(({ resultingBundleLocation, builtBundleKey, codeTarUrl, resourceName }) => {
 				if (config[resourceName].type === 'api') {
-					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
+					return deployApiResource({ ref, codeTarUrl, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
 				} else {
-					const staticContentLocation = repoRelative(config[resourceName].directory || '', config[resourceName].buildLocation)
-					return deployWebResource({ ref, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
+					const staticContentLocation = codeTarUrl ? repoRelative(config[resourceName].directory || '', removeLeadingSlash(config[resourceName].buildLocation)) : removeLeadingSlash(config[resourceName].buildLocation)
+					return deployWebResource({ ref, codeTarUrl, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
 				}
 			})
 		}))
