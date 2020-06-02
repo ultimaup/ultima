@@ -70,18 +70,18 @@ const dev = async () => {
     }
     const { repoName, owner } = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
 
-    await cli.action.start('starting session...')
-
     let ultimaYml
     if (await fse.exists('./.ultima.yml')) {
         ultimaYml = await fse.readFile('./.ultima.yml', 'utf-8')
     } else {
-        return cli.error(`No .ultima.yml file found, please create one and copy/paste it here: ${program.server}/${owner}/${repoName}/_new/master/.ultima.yml`)
+        return cli.log(`No .ultima.yml file found, please create one here and copy/paste it over: ${program.server}/${owner}/${repoName}/_new/master/.ultima.yml`)
     }
 
     const ultimaCfgs = YAML.parse(ultimaYml)
 
-    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaYml, {owner, repoName})
+    await cli.action.start('starting session...')
+
+    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaYml, { owner, repoName },ultimaCfgs,  msg => cli.log(msg))
 
     if (server.status === 'error') {
         await cli.action.stop('failed')
@@ -107,12 +107,12 @@ const dev = async () => {
             const ultimaCfg = ultimaCfgs[resourceName]
 
             const logWrite = (str, isSystem) => {
-                const output = namePrefix ? ui.log.write(`${formatResourceName(resourceName, resourceNames)} ${str}`) : ui.log.write(str)
+                const output = namePrefix ? `${formatResourceName(resourceName, resourceNames)} ${str}` : str
+                let s = output
                 if (isSystem) {
-                    return chalk.dim(output)
-                } else {
-                    return output
+                    s = chalk.dim(output)
                 }
+                ui.log.write(s)
             }
 
             const { data: { sessionId }, client } = await apiClient.initSession({

@@ -110,7 +110,8 @@ const FileSync = () => {
                 watcher.close(),
                 apiClient.disconnectAll(),
             ]).then(() => {
-                console.log('\nThanks for using Ultima')
+                console.log('\nShutting down...')
+                console.log('\nThank you for using Ultima')
                 process.exit()
             })
         })
