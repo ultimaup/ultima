@@ -81,17 +81,13 @@ cd ..
 
 echo "building build-agent"
 cd build-agent
-yarn build
-mv build-agent-bin ../../build-agent
-tar -cpzf ../../build-agent-${DRONE_COMMIT_SHA}.tar.gz ../../build-agent
+yarn build:dev
 rm -rf node_modules
 cd ..
 
 echo "building dev-agent"
 cd dev-agent
-yarn build
-mv dev-agent-bin ../../dev-agent
-tar -cpzf ../../dev-agent-${DRONE_COMMIT_SHA}.tar.gz ../../dev-agent
+yarn build:dev
 rm -rf node_modules
 cd ..
 
@@ -112,32 +108,6 @@ _signature="PUT\n\n${content_type}\n${date}\n${resource}"
 signature=`echo -en ${_signature} | openssl sha1 -hmac ${s3_secret} -binary | base64`
 
 curl -4 -v -X PUT -T "../build-${DRONE_COMMIT_SHA}.tar.gz" \
-          -H "Host: $host" \
-          -H "Date: ${date}" \
-          -H "Content-Type: ${content_type}" \
-          -H "Authorization: AWS ${s3_key}:${signature}" \
-          http://${host}:9000${resource}
-
-echo "Uploading dev-agent"
-resource="/builder-bucket-id-7/development/build-${DRONE_COMMIT_SHA}.tar.gz"
-date=`date -R`
-_signature="PUT\n\n${content_type}\n${date}\n${resource}"
-signature=`echo -en ${_signature} | openssl sha1 -hmac ${s3_secret} -binary | base64`
-
-curl -4 -v -X PUT -T "../dev-agent-${DRONE_COMMIT_SHA}.tar.gz" \
-          -H "Host: $host" \
-          -H "Date: ${date}" \
-          -H "Content-Type: ${content_type}" \
-          -H "Authorization: AWS ${s3_key}:${signature}" \
-          http://${host}:9000${resource}
-
-echo "Uploading build-agent"
-resource="/builder-bucket-id-7/builder/build-${DRONE_COMMIT_SHA}.tar.gz"
-date=`date -R`
-_signature="PUT\n\n${content_type}\n${date}\n${resource}"
-signature=`echo -en ${_signature} | openssl sha1 -hmac ${s3_secret} -binary | base64`
-
-curl -4 -v -X PUT -T "../build-agent-${DRONE_COMMIT_SHA}.tar.gz" \
           -H "Host: $host" \
           -H "Date: ${date}" \
           -H "Content-Type: ${content_type}" \

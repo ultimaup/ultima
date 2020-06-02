@@ -30,12 +30,14 @@ const router = new Router()
 
 router.use(bodyParser.json())
 
-const ensureDevelopmentBundle = async () => {
+const ensureDevelopmentBundle = async (force) => {
     let githash = 'dev'
 
     if (await fse.exists('.githash')) {
         githash = await fse.readFile('.githash')
-        return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
+        if (!force) {
+            return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
+        }
     }
 
     const Key = `development/dev-agent-${githash}.tar.gz`
@@ -44,8 +46,19 @@ const ensureDevelopmentBundle = async () => {
     const tarStream = tar.pack(builderPath)
     tarStream.pipe(createGzip()).pipe(writeStream)
 
-    return await promise
+    await promise
+
+    return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
 }
+
+console.log('uploading development bundle')
+ensureDevelopmentBundle(true).then(() => {
+    console.log('uploaded development bundle')
+}).catch(e => {
+    console.error('error uploading development bundle')
+    console.error(e)  
+})
+
 
 router.use('/dev-session', async (req, res, next) => {
     try {

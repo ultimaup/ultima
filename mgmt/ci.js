@@ -49,12 +49,15 @@ const streamToBuf = stream => {
 
 const pipeline = promisify(stream.pipeline);
 
-const ensureBuilderBundle = async () => {
+
+const ensureBuilderBundle = async (force) => {
     let githash = 'dev'
 
     if (await fse.exists('.githash')) {
-        githash = await fse.readFile('.githash')
-        return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/builders/build-agent-${githash}.tar.gz`
+		githash = await fse.readFile('.githash')
+		if (!force) {
+			return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/builders/build-agent-${githash}.tar.gz`
+		}
     }
 
     const Key = `builders/build-agent-${githash}.tar.gz`
@@ -63,8 +66,18 @@ const ensureBuilderBundle = async () => {
     const tarStream = tar.pack(builderPath)
     tarStream.pipe(createGzip()).pipe(writeStream)
 
-    return await promise
+	await promise
+	
+	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/builders/build-agent-${githash}.tar.gz`
 }
+
+console.log('uploading builder bundle')
+ensureBuilderBundle(true).then(() => {
+    console.log('uploaded builder bundle')
+}).catch(e => {
+    console.error('error uploading builder bundle')
+    console.error(e)  
+})
 
 const repoRelative = (...loc) => {
 	return path.resolve('/', ...loc).substring(1)
