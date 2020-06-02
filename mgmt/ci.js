@@ -139,9 +139,7 @@ const removeOrphans = async ({
 		stage: ref,
 	}).whereNot({
 		type: 'postgres',
-	}).whereNotIn({
-		name: resourceNames
-	})
+	}).whereNotIn('name', resourceNames)
 
 	await Promise.all(orphans.map(async ({ deploymentId, routeId, id }) => {
 		if (deploymentId) {
