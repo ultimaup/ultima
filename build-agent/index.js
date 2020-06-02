@@ -32,7 +32,7 @@ const extractStreamToDir = async (stream, dir) => {
 
 const doBuild = async (wkdir, cfg) => {
 	if (cfg.build) {
-		console.log('running `'+cfg.build+'`')
+		console.log('running `'+cfg.build+'`', 'in', wkdir)
 		return await spawn('sh', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
 	} else {
 		console.log('no build step found in .ultima.yml, skipping...')
@@ -98,8 +98,8 @@ app.post('/', async (req, res) => {
 			console.log('no .ultima.yml found, assuming nodejs api app')
 		}
 
-		if (config) {
-			wkdir = path.resolve(wkdir, config.directory || '')
+		if (config && config[resourceName]) {
+			wkdir = path.resolve(wkdir, config[resourceName].directory || '')
 		}
 
 		try {

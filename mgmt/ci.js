@@ -74,8 +74,8 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const repoRelative = (loc) => {
-	return path.resolve('/', loc).substring(1)
+const repoRelative = (...loc) => {
+	return path.resolve('/', ...loc).substring(1)
 }
 
 const createParentAction = async ({ owner, repoName, branch, hash, triggeredBy, data }) => {
@@ -127,6 +127,32 @@ const logAction = async (parentId, { type, title, description, data, completedAt
 
 const removeDeployment = async deploymentId => {
 	return got.post(`${ENDPOINTS_ENDPOINT}/remove-deployment/${deploymentId}`).json()
+}
+
+const removeOrphans = async ({
+	repository,
+	ref,
+	resourceNames,
+}) => {
+	const orphans = await Resource.query().where({
+		repoName: repository.full_name,
+		stage: ref,
+	}).whereNot({
+		type: 'postgres',
+	}).whereNotIn({
+		name: resourceNames
+	})
+
+	await Promise.all(orphans.map(async ({ deploymentId, routeId, id }) => {
+		if (deploymentId) {
+			await removeDeployment(deploymentId)
+		}
+		if (routeId) {
+			await Resource.query().update({
+				routeId: null,
+			}).where({ id })
+		}
+	}))
 }
 
 const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo  }) => {
@@ -205,7 +231,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 }
 
 const deployWebResource = async ({ ref, repository, resourceName, parentActionId, after, builtBundleKey, staticContentLocation }) => {
-	const bucketName = after.substring(0,8)
+	const bucketName = `${after.substring(0,8)}-${resourceName}`
 	const actualBucketName = await s3.ensureWebBucket(bucketName)
 	console.log('uploading', staticContentLocation, 'to', actualBucketName)
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying web resource', data: { resourceName } })
@@ -388,6 +414,12 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 	}
 
 	// TODO: this is dumb
+	if (currentRoute && currentRoute.source) {
+		await Resource.query().update({
+			routeId: null,
+		}).where('routeId', currentRoute.source)
+	}
+	
 	const resourceUrl = await route.set(resourceRoute)
 	const newRoute = await RouteModel.query().where({ destination: url }).first()
 	await Resource.query().update({
@@ -398,12 +430,6 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 		await removeDeployment(currentRoute.deploymentId)
 	}
 
-	if (currentRoute.routeId) {
-		await Resource.query().update({
-			routeId: null,
-		}).where('routeId', currentRoute.source)
-	}
-	
 	await markActionComplete(routeActionId, { type, description: message, data: { resourceName, resourceUrl, url } })
 	
 	return {
@@ -550,7 +576,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				if (config[resourceName].type === 'api') {
 					return deployApiResource({ ref, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
 				} else {
-					const staticContentLocation = repoRelative(config[resourceName].buildLocation)
+					const staticContentLocation = repoRelative(config[resourceName].directory || '', config[resourceName].buildLocation)
 					return deployWebResource({ ref, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
 				}
 			})
@@ -566,6 +592,12 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		})
 
 		console.log(invocationId, `complete`)
+
+		await removeOrphans({
+			repository,
+			ref,
+			resourceNames: Object.keys(config),
+		})
 
 		return {
 			liveResourceRoutes,
