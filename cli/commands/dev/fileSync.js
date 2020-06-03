@@ -28,6 +28,7 @@ const FileSync = () => {
 
     const pushToRemote = (event, path, sessionId, progressCallback, got, runner, directory,fullPath) => {
         const p = (directory && !fullPath) ? (path.split(directory)[1] || '.') : path
+        
         const whenConnectedCallback = async () => {
             total++
             inflight++

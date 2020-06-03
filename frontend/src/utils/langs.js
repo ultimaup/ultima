@@ -11,8 +11,8 @@ const langs = [
     },
     {
         name: '.NET Core',
-        runtime: 'microsoft-dotnet-core',
-        nerdfontClassName: 'nf-dev-dotnet'
+        runtime: 'mcr.microsoft.com/dotnet/core/sdk',
+        nerdfontClassName: 'nf-mdi-microsoft'
     },
     {
         name: 'Elixir',

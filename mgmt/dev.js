@@ -200,6 +200,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
         const devEndpointId = `${user.username}-${resourceName}-dev-${seed}`.toLowerCase()
         console.log(invocationId, `ensuring dev endpoint for runtime ${runtime} exists with id ${devEndpointId}`)
         // ensure dev endpoint exists
+        const customEnv = (envCfg[resourceName] && envCfg[resourceName].environment) || {}
         await Deployment.ensure({
             id: devEndpointId,
             stage: 'development',
@@ -208,6 +209,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
             runtime,
             command: `./dev-agent-bin`,
             env: {
+                ...customEnv,
                 ...schemaEnv,
                 ...renv,
                 ULTIMA_RESOURCE_NAME: resourceName,

@@ -171,6 +171,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	const builderAlocation = await logAction(parentActionId, { type: 'debug', title: 'allocating builder', data: { resourceName } })
 
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
+	const customEnv = (config[resourceName] && config[resourceName].environment) || {}
 
 	console.log(invocationId, `ensuring ${runtime} builder endpoint exists with id ${builderEndpointId}`)
 
@@ -190,6 +191,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 				npm_config_registry: REGISTRY_CACHE_ENDPOINT,
 				yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
 				ULTIMA_RESOURCE_CONFIG: JSON.stringify(config[resourceName]),
+				...customEnv,
 				...schemaEnv,
 				...routesEnv(config, { branch, repo, user })
 			},
@@ -344,6 +346,7 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
 	console.log(invocationId, `creating deployment ${resultingEndpointId} for ${resultingBundleLocation}`)
+	const customEnv = (config[resourceName] && config[resourceName].environment) || {}
 	
 	const deployment = await Deployment.ensure({
 		id: resultingEndpointId,
@@ -353,6 +356,7 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 		command: config[resourceName].start,
 		bundleLocation: resultingBundleLocation,
 		env: {
+			...customEnv,
 			...schemaEnv,
 			...routesEnv(config, { branch, repo, user }),
 		},

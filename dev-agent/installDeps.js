@@ -31,12 +31,31 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 	await safespawn('sed', ['-i', `s https://registry.npmjs.org/ ${npm_config_registry} g`, path.resolve(wkdir, 'package-lock.lock')])
 
 	try {
-		const p = spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
 
-		p.child.stdout.on('data', msgCb)
-		p.child.stderr.on('data', msgCb)
-	
-		await p
+		if (typeof cfg.install.command === 'string') {
+			try {
+				const p = await spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
+				p.child.stdout.on('data', msgCb)
+				p.child.stderr.on('data', msgCb)
+			
+				await p
+			} catch (e) {
+				msgCb(`error executing \`${cfg.install.command}\`: ${e.message}`)
+			}
+		} else {
+			for (let i = 0; i<cfg.install.command.length; i++) {
+				try {
+					const p = await spawn('sh', ['-c', cfg.install.command[i]], { cwd: wkdir, ignoreStdio: true })
+					if (p.child) {
+						p.child.stdout.on('data', msgCb)
+						p.child.stderr.on('data', msgCb)
+					}
+					await p
+				} catch (e) {
+					msgCb(`error executing \`${cfg.install.command[i]}\`: ${e.message}`)
+				}
+			}
+		}
 	} catch (e) {
 		console.error(e)
 	}

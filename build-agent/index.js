@@ -32,8 +32,15 @@ const extractStreamToDir = async (stream, dir) => {
 
 const doBuild = async (wkdir, cfg) => {
 	if (cfg.build) {
-		console.log('running `'+cfg.build+'`', 'in', wkdir)
-		return await spawn('sh', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
+		if (typeof cfg.build === 'string') {
+			console.log('running `'+cfg.build+'`', 'in', wkdir)
+			await spawn('sh', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
+		} else {
+			for (let i = 0; i<cfg.build.length; i++) {
+				console.log('running `'+cfg.build[i]+'`', 'in', wkdir)
+				await spawn('sh', ['-c', cfg.build[i]], { cwd: wkdir, stdio: 'inherit' })
+			}
+		}
 	} else {
 		console.log('no build step found in .ultima.yml, skipping...')
 	}
@@ -41,8 +48,15 @@ const doBuild = async (wkdir, cfg) => {
 
 const doTest = async (wkdir, cfg) => {
 	if (cfg.test) {
-		console.log('running `'+cfg.test+'`')
-		return await spawn('sh', ['-c', cfg.test], { cwd: wkdir, stdio: 'inherit' })
+		if (typeof cfg.test === 'string') {
+			console.log('running `'+cfg.test+'`', 'in', wkdir)
+			await spawn('sh', ['-c', cfg.test], { cwd: wkdir, stdio: 'inherit' })
+		} else {
+			for (let i = 0; i<cfg.test.length; i++) {
+				console.log('running `'+cfg.test[i]+'`', 'in', wkdir)
+				await spawn('sh', ['-c', cfg.test[i]], { cwd: wkdir, stdio: 'inherit' })
+			}
+		}
 	} else {
 		console.log('no test step found in .ultima.yml, skipping...')
 	}
@@ -59,7 +73,7 @@ app.get('/health', (req, res) => {
 })
 
 app.post('/', async (req, res) => {
-	const { 'x-parent-invocation-id': invocationId, 'x-resource-name': resourceName } = req.headers
+	const { 'x-parent-invocation-id': invocationId } = req.headers
 	console.log('invoked from deployment', invocationId)
 
 	const ultimaCfg = process.env.ULTIMA_RESOURCE_CONFIG
