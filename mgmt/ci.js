@@ -364,7 +364,7 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 	})
 	
 	try {
-		const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).then(r => r.body))
+		const container = await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${resultingEndpointId}/`).json()
 		endpointUrl = container.hostname
 	} catch (e) {
 		await markActionComplete(deployActionId, { type: 'error', title: 'deployment failed', data: { error: e, resourceName } })

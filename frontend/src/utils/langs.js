@@ -26,7 +26,7 @@ const langs = [
     },
     {
         name: 'Rust',
-        runtime: 'rust',
+        runtime: 'rustlang/rust:nightly-slim',
         nerdfontClassName: 'nf-dev-rust',
     },
     {

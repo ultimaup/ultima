@@ -17,6 +17,11 @@ const initSession = async ({ rootEndpoint, token, ultimaCfg }) => {
 
     const data = await client.post(`new-session`, {
         json: {ultimaCfg},
+        retry: {
+            methods: ['POST'],
+            statusCodes: [404],
+            limit: 100,
+        }
     }).json()
 
     if (!data) {

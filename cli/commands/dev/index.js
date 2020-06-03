@@ -119,6 +119,9 @@ const dev = async () => {
                 rootEndpoint: server.url,
                 ultimaCfg,
                 token,
+            }).catch(e => {
+                console.error(`error calling ${server.url} ${e.message}`)
+                throw e
             })
 
             let runner
