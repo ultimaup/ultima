@@ -231,9 +231,9 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	} catch (e) {
 		await markActionComplete(buildActionId, { type: 'error' })
 		throw e
+	} finally {
+		await removeDeployment(builderEndpointId)
 	}
-
-	await removeDeployment(builderEndpointId)
 
 	await markActionComplete(buildActionId, { data: { logTag: builderEndpointId, resultingBundleLocation, resourceName } })
 	return {
