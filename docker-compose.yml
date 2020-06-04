@@ -216,6 +216,9 @@ services:
       KIBANA_ENDPOINT: http://kibana:5601
       PGBROKER_ENDPOINT: tcp://mgmt:4497
 
+      # CERT_RESOLVER:
+      # CERT_RESOLVER_HTTP:
+
   frontend:
     image: node
     ports: 
