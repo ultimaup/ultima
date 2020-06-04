@@ -38,7 +38,10 @@ const init = async () => {
     console.log(`Initialised swarm with tokens:\nWorker: ${Worker}\nManager: ${Manager}`)
 }
 
-const trimName = name => name.substring(name.startsWith('/') ? 1 : 0,62)
+const trimName = name => {
+    const s = name.substring(name.startsWith('/') ? 1 : 0,62)
+    return s.endsWith('-') ? s.substring(0, s.length - 1) : s
+}
 
 const getService = async name => {
     const services = await docker.listServices()
@@ -89,7 +92,9 @@ const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, 
         },
     }
 
-    const service = await docker.createService(serviceConfig)
+    const service = await docker.createService(serviceConfig).catch(e => {
+        console.error(`failed to create service with config ${JSON.stringify(serviceConfig)}`, e)
+    })
     console.log('created service', service.id, 'with config', serviceConfig)
     let containerId
     let ctr = 0
@@ -101,6 +106,7 @@ const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, 
         if (container) {
             containerId = container.Id
         }
+        await wait(100)
         ctr++
     }
 
