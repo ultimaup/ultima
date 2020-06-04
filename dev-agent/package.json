@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node .",
     "dev": "nodemon .",
-    "build": "pkg --target node13-linux-x64 .",
+    "build": "pkg --target node14-linux-x64 .",
     "build:dev": "yarn build && cp dev-agent-bin ../mgmt/dev-agent/dev-agent-bin"
   },
   "bin": {
