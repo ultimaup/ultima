@@ -40,7 +40,7 @@ sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/mgmt &
 echo DRONE_COMMIT_SHA > .githash
-cd ../
+cd ..
 
 echo "Getting build-agent deps"
 cd build-agent
@@ -48,7 +48,7 @@ sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/build-agent &
 echo DRONE_COMMIT_SHA > .githash
-cd ../
+cd ..
 
 echo "Getting dev-agent deps"
 cd dev-agent
@@ -56,7 +56,7 @@ sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/dev-agent &
 echo DRONE_COMMIT_SHA > .githash
-cd ../
+cd ..
 
 echo "Getting deployer deps"
 cd deployer
