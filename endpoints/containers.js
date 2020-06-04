@@ -4,6 +4,7 @@ const got = require('got')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
+const langs = require('./langs')
 
 const {
 	DOCKER_HOSTNAME,
@@ -29,6 +30,10 @@ if(!IN_PROD) {
     docker = new Docker()
 }
 
+const runtimes = langs
+	.map(({ runtime }) => runtime)
+	.filter(runtime => runtime !== 'html')
+
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
 // docker.pull('node:latest').then((stream) => {
@@ -38,6 +43,8 @@ const getContainerByName = (name) => docker.listContainers({ all: true, filters:
 // 		console.log('node:latest', 'progress:', e)
 // 	})
 // })
+
+
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
@@ -240,9 +247,11 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 
 		console.log(requestId, 'creating container', config)
 
-		const image = await pullImage(config.Image)
-
-		console.log('pulled image', config.Image)
+		if (!runtimes.includes(config.Image)) {
+			await pullImage(config.Image)
+	
+			console.log('pulled image', config.Image)
+		}
 
 		const container = await docker.createContainer(config)
 
@@ -344,6 +353,14 @@ const listContainers = async () => {
 	const containerInfo = await Promise.all(containers.map(c => docker.getContainer(c.Id).inspect()))
 	return containerInfo
 }
+
+Promise.all(
+	runtimes.map(runtime => pullImage(runtime).catch(e => {
+		console.error('error pulling image '+runtime, e)
+	}))
+).then((imgs) => {
+	console.log(`pulled ${imgs.length} images`)
+})
 
 module.exports = {
 	ensureContainerForDeployment,
