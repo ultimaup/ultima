@@ -709,7 +709,7 @@ docker-modem@^2.1.0:
     split-ca "^1.0.1"
     ssh2 "^0.8.7"
 
-dockerode@^3.1.0:
+dockerode@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/dockerode/-/dockerode-3.2.0.tgz#80e5bd9c2a988bdde4c995ae4aa2584fa0166c23"
   integrity sha512-C+y/W4Kks7YLBsfUOTMkk1IVilb4cdj+rE+UZ5hnE+rpcn2frSs7kX+6H8GteTqHcv8sln+GyxuP1qdno3IzIw==
