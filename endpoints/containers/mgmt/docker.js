@@ -71,11 +71,18 @@ const getContainerHostname = async (containerId) => {
 	}
 }
 
+const startContainer = async (containerId) => {
+	const container = docker.getContainer(containerId)
+
+	await container.start()
+}
+
 module.exports = {
     init,
     pullImage,
     getContainerByName,
     createContainer,
     removeContainer,
-    getContainerHostname,
+	getContainerHostname,
+	startContainer,
 }

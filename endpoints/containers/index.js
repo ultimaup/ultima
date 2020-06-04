@@ -9,7 +9,6 @@ const swarm = require('./mgmt/swarm')
 const dockerMgmt = require('./mgmt/docker')
 
 const {
-	DOCKER_HOSTNAME,
 	BUILDER_BUCKET_ID,
 	GELF_ADDRESS,
 	CONTAINER_MANAGEMENT,
@@ -49,19 +48,27 @@ const createContainer = config => {
 	}
 }
 
-const removeContainer = containerId => {
+const removeContainer = (containerId, deploymentId) => {
 	if (CONTAINER_MANAGEMENT === 'swarm') {
-		return swarm.removeContainer(containerId)
+		return swarm.removeContainer(containerId, deploymentId)
 	} else {
-		return dockerMgmt.removeContainer(containerId)
+		return dockerMgmt.removeContainer(containerId, deploymentId)
 	}
 }
 
-const getContainerHostname = containerId => {
+const getContainerHostname = (containerId, deploymentId) => {
 	if (CONTAINER_MANAGEMENT === 'swarm') {
-		return swarm.getContainerHostname(containerId)
+		return swarm.getContainerHostname(containerId, deploymentId)
 	} else {
-		return dockerMgmt.getContainerHostname(containerId)
+		return dockerMgmt.getContainerHostname(containerId, deploymentId)
+	}
+}
+
+const startContainer = containerId => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.startContainer(containerId)
+	} else {
+		return dockerMgmt.startContainer(containerId)
 	}
 }
 
@@ -74,16 +81,14 @@ const doHealthcheck = async (healthcheckUrl) => {
 	}
 }
 
-const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
+const startContainerAndHealthcheck = async ({ requestId, deploymentId }, containerId) => {
 	console.log(requestId, 'starting container', containerId)
 
-	const container = docker.getContainer(containerId)
-
-	await container.start()
+	await startContainer(containerId)
 	// const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
 	// container.modem.demuxStream(logStream, process.stdout, process.stderr)
 
-	const {hostname} = await getContainerHostname(containerId)
+	const {hostname} = await getContainerHostname(containerId, deploymentId)
 	const endpoint = '/health'
 
 	const healthcheckUrl = `${hostname}${endpoint}`
@@ -113,6 +118,8 @@ const randomPort = () => {
 	const num = 1023 + Math.round(Math.random() * (65535 - 1023))
 	return num
 }
+
+const wait = ms => new Promise((resolve) => setTimeout(resolve, ms))
 
 const putArchive = async (container, file, options) => {
 	const stream = await container.putArchive(file, options)
@@ -202,11 +209,11 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		// if it exists but isn't running start it
 		if (containerList[0].State !== 'running') {
 			console.log(requestId, 'found container', containerId)
-			await startContainerAndHealthcheck({ requestId }, containerList[0].Id)
+			await startContainerAndHealthcheck({ requestId, deploymentId }, containerList[0].Id)
 		} else {
 			console.log(requestId, 'found container', containerId, 'running healthcheck')
 			// if it exists and is running do a healthcheck
-			const {hostname} = await getContainerHostname(containerId)
+			const {hostname} = await getContainerHostname(containerId, deploymentId)
 			const passesHealthcheck = await doHealthcheck(`${hostname}/health`)
 
 			if (!passesHealthcheck) {
@@ -251,18 +258,16 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		console.log(requestId, 'uploaded bundle to /app: ', par)
 
 		try {
-			await startContainerAndHealthcheck({ requestId }, containerId)
+			await startContainerAndHealthcheck({ deploymentId, requestId }, containerId)
 		} catch (e) {
 			// clearly a bad egg
 			console.log(requestId, 'removing container due to error', containerId, e)
-			await container.remove({
-				force: true,
-			})
+			await removeContainer(containerId, deploymentId)
 			throw e
 		}
 	}
 
-	const { hostname, ports } = await getContainerHostname(containerId)
+	const { hostname, ports } = await getContainerHostname(containerId, deploymentId)
 
 	return {
 		hostname,
