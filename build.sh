@@ -97,7 +97,7 @@ tar -cpzf ../build-${DRONE_COMMIT_SHA}.tar.gz --exclude .git .
 
 echo "Uploading to S3"
 # upload backup to somewhere
-host=drone.ultima.re
+host=drone.onultima.com
 s3_key="${S3_ACCESS_KEY}"
 s3_secret="${S3_ACCESS_SECRET}"
 
