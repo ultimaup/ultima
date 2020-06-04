@@ -68,6 +68,10 @@ const {
 	PORT,
 } = process.env
 
+const repoRelative = (...loc) => {
+	return path.resolve('/', ...loc).substring(1)
+}
+
 app.get('/health', (req, res) => {
 	res.json(true)
 })
@@ -111,7 +115,7 @@ app.post('/', async (req, res) => {
 		}
 
 		if (config && config) {
-			wkdir = path.resolve(wkdir, config.directory || '')
+			wkdir = path.resolve(wkdir, repoRelative(config.directory || ''))
 		}
 
 		try {
@@ -122,10 +126,10 @@ app.post('/', async (req, res) => {
 			console.error(e)
 		}
 
-		if (config.removePaths) {
-			await Promise.all(config.removePaths.map(async (p) => {
+		if (config['remove-paths']) {
+			await Promise.all(config['remove-paths'].map(async (p) => {
 				console.log('removing', p)
-				await exec(`rm -rf ${path.resolve(wkdir, p)}`)
+				await exec(`rm -rf ${path.resolve(wkdir, repoRelative(config.directory || '', p))}`)
 				console.log('removed', p)
 			}))
 		}

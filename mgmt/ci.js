@@ -653,7 +653,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				if (config[resourceName].type === 'api') {
 					return deployApiResource({ ref, codeTarUrl, invocationId, repository, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
 				} else {
-					const staticContentLocation = codeTarUrl ? repoRelative(config[resourceName].directory || '', removeLeadingSlash(config[resourceName].buildLocation)) : removeLeadingSlash(config[resourceName].buildLocation)
+					const staticContentLocation = codeTarUrl ? repoRelative(config[resourceName].directory || '', repoRelative(config[resourceName].buildLocation)) : repoRelative(config[resourceName].buildLocation)
 					return deployWebResource({ ref, codeTarUrl, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
 				}
 			})

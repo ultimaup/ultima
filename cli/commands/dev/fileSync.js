@@ -79,7 +79,7 @@ const FileSync = () => {
 
         let directory = watchDir
         if (!fullPath && ultimaCfg.buildLocation) {
-            directory = repoRelative(directory || '', removeLeadingSlash(ultimaCfg.buildLocation))
+            directory = repoRelative(directory || '', repoRelative(ultimaCfg.buildLocation))
         }
 
         watcher.on('add', path => {

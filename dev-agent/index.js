@@ -96,13 +96,6 @@ const repoRelative = (loc) => {
 	return path.resolve('/', loc).substring(1)
 }
 
-const removeLeadingSlash = (str) => {
-	if (str[0] === '/') {
-		return str.substring(1)
-	}
-	return str
-}
-
 const createSession = async sessionId => {
     const cfg = sessionConfigs[sessionId]
     const wkdir = path.resolve('/tmp', sessionId, cfg.directory || '')
