@@ -14,7 +14,7 @@ echo "Getting file-manager deps"
 cd file-manager
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
-yarn install --frozen-lockfile --cache-folder /tmp/ultima/filemgmt &
+yarn install --frozen-lockfile --cache-folder /tmp/ultima/file-manager &
 echo DRONE_COMMIT_SHA > .githash
 cd ..
 
@@ -22,7 +22,7 @@ echo "Getting router-mgmt deps"
 cd router
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
-yarn install --frozen-lockfile --cache-folder /tmp/ultima/routermgmt &
+yarn install --frozen-lockfile --cache-folder /tmp/ultima/router-mgmt &
 echo DRONE_COMMIT_SHA > .githash
 cd ..
 
