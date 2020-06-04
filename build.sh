@@ -7,6 +7,7 @@ cd endpoints
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/endpoints &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Getting file-manager deps"
@@ -14,6 +15,7 @@ cd file-manager
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/file-manager &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Getting router-mgmt deps"
@@ -21,6 +23,7 @@ cd router
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/router-mgmt &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Getting frontend deps"
@@ -28,6 +31,7 @@ cd frontend
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/frontend &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Getting mgmt deps"
@@ -35,20 +39,23 @@ cd mgmt
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/mgmt &
+echo $DRONE_COMMIT_SHA > .githash
+cd ..
 
-echo "Getting builder/nodejs deps"
-cd builders/nodejs
-sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' package-lock.json
-npm ci &
-cd ../..
-
-echo "Getting development/nodejs deps"
-cd development/nodejs
+echo "Getting build-agent deps"
+cd build-agent
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
-yarn install --frozen-lockfile --cache-folder /tmp/ultima/nodejs &
-cd ../..
+yarn install --frozen-lockfile --cache-folder /tmp/ultima/build-agent &
+echo $DRONE_COMMIT_SHA > .githash
+cd ..
 
+echo "Getting dev-agent deps"
+cd dev-agent
+sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
+sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
+yarn install --frozen-lockfile --cache-folder /tmp/ultima/dev-agent &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Getting deployer deps"
@@ -56,6 +63,7 @@ cd deployer
 sed -i 's https://registry.npmjs.org/ http://78.46.16.197:8888/ g' yarn.lock
 sed -i 's https://registry.yarnpkg.com/ http://78.46.16.197:8888/ g' yarn.lock
 yarn install --frozen-lockfile --cache-folder /tmp/ultima/deployer &
+echo $DRONE_COMMIT_SHA > .githash
 cd ..
 
 echo "Waiting for completion..."
@@ -69,6 +77,18 @@ yarn build
 set -e
 rm -rf node_modules
 npm install express compression
+cd ..
+
+echo "building build-agent"
+cd build-agent
+yarn build:dev
+rm -rf node_modules
+cd ..
+
+echo "building dev-agent"
+cd dev-agent
+yarn build:dev
+rm -rf node_modules
 cd ..
 
 echo "Creating tarball"

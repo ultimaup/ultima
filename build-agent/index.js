@@ -5,10 +5,11 @@ const tar = require('tar-fs')
 const gunzip = require('gunzip-maybe')
 const { createGzip } = require('zlib')
 const stream = require('stream')
-const yaml = require('js-yaml')
+const YAML = require('yaml')
 
 const util = require('util')
-const exec = util.promisify(require('child_process').exec)
+const spawn = require('@expo/spawn-async')
+
 const installDeps = require('./installDeps')
 
 const pipeline = util.promisify(stream.pipeline)
@@ -29,25 +30,35 @@ const extractStreamToDir = async (stream, dir) => {
 	return promise
 }
 
-const doBuild = async (wkdir) => {
-	const packageInfo = await fse.readJSON(path.resolve(wkdir, 'package.json'))
-
-	if (packageInfo.scripts.build) {
-		console.log('running `npm run build`')
-		return await exec('npm run build', { cwd: wkdir, stdio: 'inherit' })
+const doBuild = async (wkdir, cfg) => {
+	if (cfg.build) {
+		if (typeof cfg.build === 'string') {
+			console.log('running `'+cfg.build+'`', 'in', wkdir)
+			await spawn('sh', ['-c', cfg.build], { cwd: wkdir, stdio: 'inherit' })
+		} else {
+			for (let i = 0; i<cfg.build.length; i++) {
+				console.log('running `'+cfg.build[i]+'`', 'in', wkdir)
+				await spawn('sh', ['-c', cfg.build[i]], { cwd: wkdir, stdio: 'inherit' })
+			}
+		}
 	} else {
-		console.log('no build step found in package.json, skipping...')
+		console.log('no build step found in .ultima.yml, skipping...')
 	}
 }
 
-const doTest = async (wkdir) => {
-	const packageInfo = await fse.readJSON(path.resolve(wkdir, 'package.json'))
-
-	if (packageInfo.scripts.test) {
-		console.log('running `npm run test`')
-		return await exec('npm run test', { cwd: wkdir, stdio: 'inherit' })
+const doTest = async (wkdir, cfg) => {
+	if (cfg.test) {
+		if (typeof cfg.test === 'string') {
+			console.log('running `'+cfg.test+'`', 'in', wkdir)
+			await spawn('sh', ['-c', cfg.test], { cwd: wkdir, stdio: 'inherit' })
+		} else {
+			for (let i = 0; i<cfg.test.length; i++) {
+				console.log('running `'+cfg.test[i]+'`', 'in', wkdir)
+				await spawn('sh', ['-c', cfg.test[i]], { cwd: wkdir, stdio: 'inherit' })
+			}
+		}
 	} else {
-		console.log('no test step found in package.json, skipping...')
+		console.log('no test step found in .ultima.yml, skipping...')
 	}
 }
 
@@ -57,6 +68,10 @@ const {
 	PORT,
 } = process.env
 
+const repoRelative = (...loc) => {
+	return path.resolve('/', ...loc).substring(1)
+}
+
 app.get('/health', (req, res) => {
 	res.json(true)
 })
@@ -64,6 +79,8 @@ app.get('/health', (req, res) => {
 app.post('/', async (req, res) => {
 	const { 'x-parent-invocation-id': invocationId } = req.headers
 	console.log('invoked from deployment', invocationId)
+
+	const ultimaCfg = process.env.ULTIMA_RESOURCE_CONFIG
 
 	try {
 		let wkdir = `/tmp/${invocationId}`
@@ -91,38 +108,30 @@ app.post('/', async (req, res) => {
 		const filesBefore = await fse.readdir(wkdir)
 		console.log('bundle contains files: ', filesBefore)
 
-		let config
-		if (await fse.pathExists(path.resolve(wkdir, '.ultima.yml'))) {
-			const configYml = await fse.readFile(path.resolve(wkdir, '.ultima.yml'), 'utf-8')
-			config = await yaml.safeLoad(configYml)
-		}
+		const config = JSON.parse(ultimaCfg)
 
-		let removeNodeModules = false
 		if (!config) {
 			console.log('no .ultima.yml found, assuming nodejs api app')
-		} else {
-			if (config.web) {
-				console.log('static website found')
-			}
-			if (config.hasAPI === false) {
-				console.log('not an api, will remove node_modules folder from resulting output')
-				removeNodeModules = true
-			}
+		}
+
+		if (config && config.directory) {
+			wkdir = path.resolve(wkdir, repoRelative(config.directory || ''))
 		}
 
 		try {
-			if (await fse.pathExists(path.resolve(wkdir, 'package.json'))) {
-				await installDeps(wkdir)
-				await doBuild(wkdir)
-				await doTest(wkdir)
-			}
+			await installDeps(wkdir, config)
+			await doBuild(wkdir, config)
+			await doTest(wkdir, config)
 		} catch (e) {
 			console.error(e)
 		}
 
-		if (removeNodeModules) {
-			console.log('removing node_modules folder')
-			await exec(`rm -rf ${path.resolve(wkdir, 'node_modules')}`)
+		if (config['remove-paths']) {
+			await Promise.all(config['remove-paths'].map(async (p) => {
+				console.log('removing', p)
+				await exec(`rm -rf ${path.resolve(wkdir, repoRelative(config.directory || '', p))}`)
+				console.log('removed', p)
+			}))
 		}
 
 		const filesAfter = await fse.readdir(wkdir)

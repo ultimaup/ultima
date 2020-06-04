@@ -5,6 +5,7 @@ const Route = require('./db/Route')
 const Action = require('./db/Action')
 const Deployment = require('./db/Deployment')
 const User = require('./db/User')
+const Resource = require('./db/Resource')
 
 const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
@@ -81,6 +82,7 @@ const typeDefs = gql`
         repoName: String
         stage: String
         owner: String
+        runtime: String
         createdAt: DateTime
         startedAt: DateTime
         stoppedAt: DateTime
@@ -106,6 +108,31 @@ const typeDefs = gql`
         ipv6: String
     }
 
+    type APIDeployment {
+        id: ID
+        name: String
+        runtime: String
+    }
+    type ResourceRoute {
+        id: ID
+        url: String
+    }
+    type Resource {
+        id: ID,
+        name: String
+        type: String
+        apiDeployment: APIDeployment
+        deploymentId: String
+        route: ResourceRoute
+        createdAt: DateTime
+    }
+
+    type ResourceEnvironment {
+        id: ID,
+        name: String
+        resources: [Resource]
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -115,6 +142,7 @@ const typeDefs = gql`
         getMyRepos: [Repo]
         getPGEndpoint: String
         getEnvironments(owner: String, repoName: String): [Environment]
+        getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
     }
 
@@ -131,6 +159,8 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
     return user.username === owner
 }
 
+const unique = myArray => [...new Set(myArray)]
+
 const resolvers = {
     Query: {
         getDNSRecords: async () => {
@@ -139,6 +169,69 @@ const resolvers = {
                 ipv6: PUBLIC_IPV6,
                 cname: PUBLIC_ROUTE_ROOT,
             }
+        },
+        getResources: async (parent, { repoName, owner }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            const eqq = Resource.query().where('repoName', `${owner}/${repoName}`).where('stage', 'like', 'refs/%')
+
+            const [eq, deployments,routes] = await Promise.all([
+                eqq,
+                Deployment.query().whereIn('id', eqq.clone().where('type', 'api').whereNotNull('deploymentId').select('deploymentId')),
+                Route.query().whereIn('source', eqq.clone().whereNotNull('routeId').select('routeId')),
+            ])
+            
+            const environments = unique(eq.map(e => e.stage)).map((stage) => {
+                return {
+                    id: stage,
+                    name: stage.split('refs/heads/')[1],
+                    stage,
+                }
+            }).map(environment => {
+                const resources = eq
+                    .filter(e => e.stage === environment.stage)
+                    .filter(({ type, routeId }) => {
+                        if (type === 'web' || type === 'api') {
+                            return !!routeId
+                        } else {
+                            return true
+                        }
+                    })
+                    .map(e => {
+                        let deployment
+                        let route
+                        
+                        if (e.deploymentId && e.type === 'api') {
+                            deployment = deployments.find(d => d.id === e.deploymentId)
+                        }
+                        
+                        if (e.routeId) {
+                            route = routes.find(r => r.source === e.routeId)
+                            if (route) {
+                                route = {
+                                    ...route,
+                                    id: route.source,
+                                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${route.alias || route.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                                }
+                            }
+                        }
+                        
+                        return {
+                            ...e,
+                            apiDeployment: deployment,
+                            route,
+                        }
+                    })
+
+                return {
+                    ...environment,
+                    resources,
+                }
+            }).filter(e => !!e.resources.length)
+
+            return environments
         },
         getEnvironments: async (parent, { repoName, owner }, context) => {
             if (!context.user) {
@@ -154,7 +247,7 @@ const resolvers = {
                         Route.query().select('deploymentId').where('deploymentId', 'like', `${o}-%`)
                     )
             } else {
-                q = q.where('repoName', `${owner}/${repoName}`)
+                q = q.where('repoName', `${owner}/${repoName}`).where('stage', 'like', 'refs/%')
             }
 
             const deployments = await q
@@ -169,7 +262,7 @@ const resolvers = {
                         return {
                             ...r,
                             id: r.source+r.createdAt,
-                            url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                            url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.alias || r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
                         }
                     }),
                 }
@@ -187,7 +280,7 @@ const resolvers = {
                 const hash = a[a.length - 1]
                 return {
                     id: r.deploymentId,
-                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
+                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${r.alias || r.source}:${PUBLIC_ROUTE_ROOT_PORT}`,
                     hash,
                     createdAt: r.createdAt,
                 }

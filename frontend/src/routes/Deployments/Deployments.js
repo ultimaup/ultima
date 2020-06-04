@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components'
 import { HashRouter, Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
 import Octicon, {GitBranch} from '@primer/octicons-react'
+import { readableColor } from 'polished'
 
 import { useActions, useAction } from '../../hooks/useActions'
 import { Badge } from '../../components/Badge'
@@ -157,6 +158,30 @@ const Chevron = styled.div`
     margin-left: 16px;
 `
 
+const stringToColour = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let colour = '#';
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xFF;
+      colour += ('00' + value.toString(16)).substr(-2);
+    }
+    return colour;
+}
+
+const ResourceName = styled.div`
+    background: ${props => stringToColour(props.resourceName)};
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-right: 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: ${props => readableColor(stringToColour(props.resourceName))};
+`
+
 const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
     const data = JSON.parse(metadata)
 
@@ -179,7 +204,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                     <Octicon icon={GitBranch}/>
                     {branch}
                     <img src={imageUrl} alt="" />
-                    <a className="ui sha label " href={window.location.pathname.split('/activity/deployments').join(`/commit/${hash}`)}>
+                    <a className="ui sha label ">
                         <span className="shortsha">{hash.substring(0,9)}</span>
                     </a>
                     {commit && commit.message}
@@ -198,6 +223,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
             <ActionContainer onClick={onClick}>
                 <StatusDot status={type} complete={!!completedAt} />
                 <Body>
+                    {data && data.resourceName && <ResourceName resourceName={data.resourceName}>{data.resourceName}</ResourceName>}
                     <strong>
                     {type === 'error' ? 'Failed ' : ''}{title.replace(/^\w/, c => c.toUpperCase())}
                     </strong>&nbsp;
@@ -214,11 +240,8 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                     <Logs owner={owner} tag={data.logTag} />
                 </AddonContainer>
             )}
-            {data && data.endpointRouteUrl && (
-                <DeployedUrl>API Deployed to&nbsp;<a href={data.endpointRouteUrl}>{data.endpointRouteUrl}</a></DeployedUrl>
-            )}
-            {data && data.staticRouteUrl && (
-                <DeployedUrl>Deployed static content to <a href={data.staticRouteUrl}>{data.staticRouteUrl}</a></DeployedUrl>
+            {data && data.resourceUrl && (
+                <DeployedUrl>Deployed to&nbsp;<a href={data.resourceUrl}>{data.resourceUrl}</a></DeployedUrl>
             )}
         </>
     )

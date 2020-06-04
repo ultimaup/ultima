@@ -6,6 +6,8 @@ const uuid = require('uuid').v4
 const path = require('path')
 const got = require('got')
 const fse = require('fs-extra')
+const YAML = require('yaml')
+const mime = require('mime')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
@@ -18,29 +20,44 @@ const {
     BUILDER_BUCKET_ID,
     ENDPOINTS_ENDPOINT,
     REGISTRY_CACHE_ENDPOINT,
+    PUBLIC_ROUTE_ROOT_PROTOCOL,
+    PUBLIC_ROUTE_ROOT,
+    PUBLIC_ROUTE_ROOT_PORT,
+    INTERNAL_MGMT_ENDPOINT,
 } = process.env
 
 const router = new Router()
 
 router.use(bodyParser.json())
 
-const ensureDevelopmentBundle = async lang => {
-	const builderPath = path.resolve(__dirname, 'development', lang)
-	const builderPkg = await fse.readJSON(path.resolve(builderPath, 'package.json'))
-	const key = `development/${lang}-${builderPkg.version}.tar.gz`
+const ensureDevelopmentBundle = async (force) => {
+    let githash = 'dev'
 
-	const existing = await s3.headObject({ Key: key })
+    if (await fse.exists('.githash')) {
+        githash = await fse.readFile('.githash')
+        if (!force) {
+            return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
+        }
+    }
 
-	if (!existing) {
-		const { writeStream, promise } = s3.uploadStream({ Key: key })
-		const tarStream = tar.pack(builderPath)
-		tarStream.pipe(createGzip()).pipe(writeStream)
+    const Key = `development/dev-agent-${githash}.tar.gz`
+    const builderPath = path.resolve(__dirname, 'dev-agent')
+    const { writeStream, promise } = s3.uploadStream({ Key })
+    const tarStream = tar.pack(builderPath)
+    tarStream.pipe(createGzip()).pipe(writeStream)
 
-		await promise
-	}
+    await promise
 
-	return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/${key}`
+    return `${S3_ENDPOINT}/${BUILDER_BUCKET_ID}/development/dev-agent-${githash}.tar.gz`
 }
+
+console.log('uploading development bundle')
+ensureDevelopmentBundle(true).then(() => {
+    console.log('uploaded development bundle')
+}).catch(e => {
+    console.error('error uploading development bundle')
+    console.error(e)  
+})
 
 
 router.use('/dev-session', async (req, res, next) => {
@@ -55,76 +72,203 @@ router.use('/dev-session', async (req, res, next) => {
     }
 })
 
-const startDevSession = async ({ user, details: { repoName, owner } }) => {
-    const invocationId = uuid()
-    const lang = 'nodejs'
 
-    const devEndpointId = `${user.username}-dev-${uuid()}`.toLowerCase()
-    console.log(invocationId, `ensuring dev endpoint for lang ${lang} exists with id ${devEndpointId}`)
+const removeLeadingSlash = (str) => {
+	if (str[0] === '/') {
+		return str.substring(1)
+	}
+	return str
+}
+
+router.post('/dev-session/bucket-proxy/:bucketName/:op', async (req, res) => {
+    console.log(req.path)
+    const eventType = req.headers['x-event-type']
+    if (!eventType) {
+        return res.json({})
+    }
+    if (!(eventType === 'add' || eventType === 'change')) {
+        return res.json(true)
+    }
+    const { bucketName, op } = req.params
+    if (op !== 'file') {
+        return res.json(true)
+    }
+    if (!req.user) {
+        return res.status(403).json(false)
+    }
+    if (!bucketName.startsWith(`${BUILDER_BUCKET_ID}-${req.user.username}`)) {
+        return res.status(403).json(false)
+    }
+    const realPath = req.headers['x-event-path']
+
+    const { writeStream, promise } = s3.uploadStream({
+        Key: removeLeadingSlash(realPath),
+        Bucket: bucketName,
+        ContentType: mime.lookup(realPath) || 'application/octet-stream',
+    })
+
+    req.pipe(writeStream)
+
+    promise.then(() => {
+        console.log('uploaded', realPath, 'to', bucketName)
+        res.json(true)
+    }).catch(e => {
+        console.error('failed to upload', realPath, 'to', bucketName, e)
+        res.status(500).json(e)
+    })
+})
+
+const repoRelative = (...loc) => {
+	return path.resolve('/', ...loc).substring(1)
+}
+
+const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, owner } }) => {
+    const invocationId = uuid()
+
+    const envCfg = ultimaCfg ? YAML.parse(ultimaCfg) : {}
+
+    if (envCfg.noAPI) {
+        delete envCfg.noAPI
+    }
+
+    const seed = uuid()
+
+    const schemaId = `${user.username}-dev-${seed}`.toLowerCase()
 
     const schemaInfo = {
-        username: devEndpointId,
-        password: genPass(devEndpointId),
-        schema: devEndpointId,
+        username: schemaId,
+        password: genPass(schemaId),
+        schema: schemaId,
     }
 
     await ensureSchema(schemaInfo)
 
     const schemaEnv = getSchemaEnv(schemaInfo)
 
-	// ensure dev endpoint exists
-	await Deployment.ensure({
-		id: devEndpointId,
-		stage: 'development',
-        bundleLocation: await ensureDevelopmentBundle(lang),
-        ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
-        env: {
-            ...schemaEnv,
-            npm_config_registry: REGISTRY_CACHE_ENDPOINT,
-            yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
-        },
-        repoName: `${owner}/${repoName}`,
-    })
+    const bundleLocation = await ensureDevelopmentBundle()
+    
+    const renv = {}
+    Object.entries(envCfg).map(([resourceName, { type, dev, buildLocation }]) => {
+        const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
+        let subdomain
+        if (type === 'web' && buildLocation && (!dev || !dev.command)) {
+            subdomain = `static-${sid}.dev`
+        } else {
+            subdomain = `${sid}.dev`
+        }
+		return {
+			resourceName,
+			url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://${subdomain}.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}`,
+		}
+	}).forEach(({ resourceName, url }) => {
+		renv[`${repoName.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
+	})
 
-    console.log(invocationId, `dev endpoint with id ${devEndpointId} exists`)
+    const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, directory, buildLocation }]) => {
+        const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
+        let staticContentUrl
+        let bucketProxyUrl
 
-    const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${devEndpointId}/`).then(r => r.body))
-    const endpointUrl = container.hostname
-    console.log(invocationId, 'got internal url', endpointUrl)
-    const internalUrl = endpointUrl.split('http://').join('h2c://')
+        if (type === 'web' && buildLocation) {
+            const bucketName = `${user.username}-dev-${resourceName}-${seed.split('-')[0]}`
+            const actualBucketName = await s3.ensureWebBucket(bucketName)
 
-    const sid = `${invocationId.split('-')[0]}-${user.username}`
+            const staticUrl = `${S3_ENDPOINT}/${actualBucketName}`
 
-    const endpointRoute = {
-        subdomain: `dev-${sid}.dev`,
-        destination: internalUrl,
-        deploymentId: devEndpointId,
-    }
+            staticContentUrl = await route.set({
+                subdomain: `static-${sid}.dev`,
+                destination: staticUrl,
+                extensions: ['index.html']
+            })
 
-    const url = await route.set(endpointRoute)
+            bucketProxyUrl = `/dev-session/bucket-proxy/${actualBucketName}`
+            console.log(invocationId, 'created bucket proxy for',actualBucketName, repoRelative(buildLocation))
 
-    const debugUrl = await route.set({
-        subdomain: `debug-${sid}.dev`,
-        destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
-        deploymentId: devEndpointId,
-    })
+            if (!dev || !dev.command) {
+                // return to cli
+                return {
+                    url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}${bucketProxyUrl}`,
+                    staticContentUrl,
+                    resourceName,
+                    type,
+                }
+            } else {
+                // pass to deployment
+            }
+        }
+        
+        const devEndpointId = `${user.username}-${resourceName}-dev-${seed}`.toLowerCase()
+        console.log(invocationId, `ensuring dev endpoint for runtime ${runtime} exists with id ${devEndpointId}`)
+        // ensure dev endpoint exists
+        const customEnv = (envCfg[resourceName] && envCfg[resourceName].environment) || {}
+        await Deployment.ensure({
+            id: devEndpointId,
+            stage: 'development',
+            bundleLocation,
+            ports: ['CHILD_DEBUG_PORT', 'CHILD_PORT'],
+            runtime,
+            command: `./dev-agent-bin`,
+            env: {
+                ...customEnv,
+                ...schemaEnv,
+                ...renv,
+                ULTIMA_RESOURCE_NAME: resourceName,
+                ULTIMA_RESOURCE_TYPE: type,
+                ULTIMA_RESOURCE_CONFIG: JSON.stringify(envCfg[resourceName]),
+                ULTIMA_TOKEN: token,
+                ULTIMA_BUCKET_PROXY_URL: bucketProxyUrl ? `${INTERNAL_MGMT_ENDPOINT}${bucketProxyUrl}` : undefined,
+                npm_config_registry: REGISTRY_CACHE_ENDPOINT,
+                yarn_config_registry: REGISTRY_CACHE_ENDPOINT,
+            },
+            repoName: `${owner}/${repoName}`,
+        })
 
-    const appUrl = await route.set({
-        subdomain: `app-${sid}.dev`,
-        destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
-        deploymentId: devEndpointId,
-    })
+        console.log(invocationId, `dev endpoint with id ${devEndpointId} exists`)
+
+        const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${devEndpointId}/`).then(r => r.body))
+        const endpointUrl = container.hostname
+        console.log(invocationId, 'got internal url', endpointUrl)
+        const internalUrl = endpointUrl.split('http://').join('h2c://')
+
+        const endpointRoute = {
+            subdomain: `dev-${sid}.dev`,
+            destination: internalUrl,
+            deploymentId: devEndpointId,
+        }
+
+        const url = await route.set(endpointRoute)
+
+        const debugUrl = await route.set({
+            subdomain: `debug-${sid}.dev`,
+            destination: container.ports.find(({ name }) => name === 'CHILD_DEBUG_PORT').url,
+            deploymentId: devEndpointId,
+        })
+
+        const appUrl = await route.set({
+            subdomain: `${sid}.dev`,
+            destination: container.ports.find(({ name }) => name === 'CHILD_PORT').url,
+            deploymentId: devEndpointId,
+        })
+
+        return {
+            url,
+            debugUrl,
+            appUrl,
+            staticContentUrl,
+            type,
+            resourceName,
+        }
+    }))
 
     return {
-        id: devEndpointId,
-        url,
-        debugUrl,
-        appUrl,
+        id: schemaId,
+        schemaId,
+        servers,
     }
 }
 
 router.post('/dev-session', async (req, res) => {
-    const session = await startDevSession({ user: req.user, details: req.body })
+    const session = await startDevSession({ token: req.token, user: req.user, details: req.body })
     res.json(session)
 })
 

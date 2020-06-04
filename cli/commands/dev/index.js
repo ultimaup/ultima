@@ -2,10 +2,13 @@ const { cli } = require('cli-ux')
 const { program } = require('commander')
 const cliSpinners = require('cli-spinners')
 const jwtdecode = require('jwt-decode')
+const fse = require('fs-extra')
+const chalk = require('chalk')
+const YAML = require('yaml')
 
 const apiClient = require('./client')
-const fileSync = require('./fileSync')
-const runner = require('./runner')
+const FileSync = require('./fileSync')
+const Runner = require('./runner')
 const API = require('./api')
 
 const UI = require('./ui')
@@ -15,25 +18,49 @@ const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 const getRepoName = require('./getRepoName')
 
-const liveSpinner = (appUrl, writeFrame, dbPort, database) => {
+const liveSpinner = (writeFrame) => {
     const spinner = cliSpinners.dots
 
     let ctr = 0
-
-    let url = appUrl.endsWith(':443') ? appUrl.split(':443')[0] : appUrl
 
     return setInterval(() => {
         const idx = (ctr % (spinner.frames.length - 1))
         const frame = spinner.frames[idx]
 
-        writeFrame([
-            `DB host: localhost:${dbPort} database: ${database}`,
-            `Live url: ${url}`, 
-            `Watching for changes ${frame}`
-        ].join('\n'))
+        writeFrame(frame)
 
         ctr++
-    }, spinner.interval * 2)
+    }, spinner.interval)
+}
+
+const formatUrl = str => {
+    try {
+        return new URL(str).toString()
+    } catch (e) {
+        return str
+    }
+}
+
+const stringToColour = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let colour = '#';
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xFF;
+      colour += ('00' + value.toString(16)).substr(-2);
+    }
+    return colour;
+}
+
+const formatResourceName = (resourceName, resourceNames) => {
+    const len = Math.max(...(resourceNames.map(el => el.length))) + 2
+    const color = stringToColour(resourceName)
+
+    const str = `${resourceName}${' '.repeat(len - resourceName.length)}|`
+
+    return chalk.hex(color)(str)
 }
 
 const dev = async () => {
@@ -42,142 +69,171 @@ const dev = async () => {
 
     let inUltimaFolder
 
-    inUltimaFolder = await checkInUltimaFolder({ token: cfg.token })
+    const { token } = cfg
+
+    inUltimaFolder = await checkInUltimaFolder({ token })
 
     if (!inUltimaFolder) {
         return
     }
-    const {repoName, owner} = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
+    const { repoName, owner } = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
+
+    let ultimaYml
+    if (await fse.exists('./.ultima.yml')) {
+        ultimaYml = await fse.readFile('./.ultima.yml', 'utf-8')
+    } else {
+        return cli.log(`No .ultima.yml file found, please create one here and copy/paste it over: ${program.server}/${owner}/${repoName}/_new/master/.ultima.yml`)
+    }
+
+    const ultimaCfgs = YAML.parse(ultimaYml)
 
     await cli.action.start('starting session...')
-    const api = API.init(program.server, cfg.token, {owner, repoName})
 
-    const server = await api.getDeploymentUrl()
+    const server = await API.getDeploymentUrl(program.server, cfg.token, ultimaYml, { owner, repoName },ultimaCfgs,  msg => cli.log(msg))
+
     if (server.status === 'error') {
+        await cli.action.stop('failed')
         return cli.error(`Failed to start dev session: ${server.message}`)
     }
 
-    const [un] = server.id.split('-')[0]
-    const dbPortKey = `${owner}-${repoName}-${un}-dev`
-    
-    const dbPort = await makeTunnel(server.id, cfg.token, dbPortKey)
-    const { data: { sessionId }, client } = await apiClient.initSession({
-        rootEndpoint: server.url
-    })
-
     await cli.action.stop()
 
-    cli.log(`You can find your app on: ${server.appUrl}`)
-    cli.log(`and connect to node debug: ${server.debugUrl}`)
-    cli.log('')
-    cli.log(`Connected to development database`)
-    cli.log('Connect using your favourite postgres tool:')
-    cli.log('Host: localhost')
-    cli.log(`Port: ${dbPort}`)
-    cli.log(`Database: ${server.id}`)
-    cli.log('User: <any>')
-    cli.log('Password: <any>')
-    cli.log('')
+    const [un] = server.id.split('-')[0]
+    const dbPortKey = `${owner}-${repoName}-${un}-dev`
 
-    let runnerStarted = false
-    let isInitialized
+    const dbPort = server.schemaId ? await makeTunnel(server.id, token, dbPortKey) : null
 
-    runner.on('stdout', (line) => {
-        ui.log.write(line.toString())
-    })
-    runner.on('stderr', (line) => {
-        ui.log.write(line.toString())
-    })
-    
-    let spinInterval
+    const numResources = server.servers.length
+    const resourceNames = server.servers.map(s => s.resourceName)
 
-    runner.on('start', () => {
-        ui.log.write('start')
-    })
-    
-    let firstTime = true
-    runner.on('install-deps-start', async () => {
-        if (firstTime) {
-            await cli.action.start('installing dependancies...')
-        } else {
-            if (spinInterval) {
-                clearInterval(spinInterval)
+    const {schemaId} = server
+
+    await Promise.all(
+        server.servers.map(async server => {
+            const { resourceName } = server
+            const namePrefix = numResources > 1
+            const ultimaCfg = ultimaCfgs[resourceName]
+
+            const logWrite = (str, isSystem) => {
+                const output = namePrefix ? `${formatResourceName(resourceName, resourceNames)} ${str}` : str
+                let s = output
+                if (isSystem) {
+                    s = chalk.dim(output)
+                }
+                ui.log.write(s)
             }
-            ui.updateBottomBar(`installing dependancies...`)
-        }
-    })
-    runner.on('install-deps-complete', async () => {
-        if (firstTime) {
-            await cli.action.stop()
-        } else {
-            ui.log.write('installed dependancies')
-        }
 
-        // ui.log.write('downloading dependancies locally')
-        fileSync.download('node_modules',{
-            client,
-            sessionId,
-        }).then(() => {
-            // ui.log.write('downloaded dependancies locally')
-        }).catch(e => {
-            // ui.log.write('error downloading dependancies locally: '+e)
-        })
-        
-        firstTime = false
+            const { data: { sessionId }, client } = await apiClient.initSession({
+                rootEndpoint: server.url,
+                ultimaCfg,
+                token,
+            }).catch(e => {
+                console.error(`error calling ${server.url} ${e.message}`)
+                throw e
+            })
 
-        liveSpinner(server.appUrl, (str) => {
-            ui.updateBottomBar(str)
-        }, dbPort, server.id)
-    })
+            let runner
+            let runnerStarted = false
+            let isInitialized
+            let spinInterval
 
-    runner.on('quit', () => {
-        ui.log.write('quit')
-    })
-    runner.on('restart', () => {
-        // cli.log('restart due to changed files')
-    })
-    runner.on('crash', () => {
-        // ui.log.write('crash')
-    })
-    runner.on('connect', () => {
-        ui.log.write('connected to development instance')
-    })
-    runner.on('disconnect', () => {
-        ui.log.write('connection to development instance lost, will reconnect...')
-    })
+            const fileSync = FileSync()
 
-    await runner.connect(server.url)
-
-    try {
-        await fileSync.init({
-            sessionId,
-            client,
-        }, (completed, total) => {
-            if (spinInterval) {
-                clearInterval(spinInterval)
-            }
-            ui.updateBottomBar(`uploading files ${completed}/${total}`)
+            if (server.appUrl) {
+                runner = Runner()
             
-            if (total === completed && !runnerStarted) {
-                setTimeout(() => {
-                    // start runner
-                    runnerStarted = true
-                    runner.start({ sessionId })
-                }, 500)
+                runner.on('stdout', (line) => {
+                    logWrite(line.toString())
+                })
+                runner.on('stderr', (line) => {
+                    logWrite(line.toString())
+                })
                 
-                ui.updateBottomBar(`starting app...`)
+                runner.on('start', () => {
+                    logWrite('start')
+                })
+
+                runner.on('install-deps-start', async () => {
+                    if (spinInterval) {
+                        clearInterval(spinInterval)
+                    }
+                    logWrite('installing dependencies', true)
+                })
+                runner.on('install-deps-complete', async () => {
+                    logWrite('installed dependencies', true)
+            
+                    if (ultimaCfg.dev && ultimaCfg.dev['back-sync']) {
+                        logWrite(`downloading ${ultimaCfg.dev['back-sync']} locally`, true)
+                        fileSync.download(ultimaCfg.dev['back-sync'], ultimaCfg.directory,{
+                            client,
+                            sessionId,
+                        }).then(() => {
+                            logWrite(`downloaded ${ultimaCfg.dev['back-sync']} locally`, true)
+                        }).catch(e => {
+                            // ui.log.write('error downloading dependencies locally: '+e)
+                        })
+                    }
+                })
+            
+                runner.on('quit', () => {
+                    logWrite('quit', true)
+                })
+                runner.on('restart', () => {
+                    logWrite('restart due to changed files', true)
+                })
+                runner.on('crash', () => {
+                    logWrite('crashed, waiting for file change to restart', true)
+                })
+                runner.on('connect', () => {
+                    logWrite('connected to instance', true)
+                })
+                runner.on('disconnect', () => {
+                    logWrite('connection to instance lost, will reconnect...', true)
+                })
+            
+                await runner.connect(server.url)
             }
-            if (total === completed && isInitialized) {
-                liveSpinner(server.appUrl, (str) => {
-                    ui.updateBottomBar(str)
-                }, dbPort, server.id)
+
+            try {
+                await fileSync.init({
+                    sessionId,
+                    client,
+                    runner,
+                    ultimaCfg,
+                }, (completed, total) => {
+                    if (spinInterval) {
+                        clearInterval(spinInterval)
+                    }
+                    ui.updateBottomBar(resourceName, `uploading files ${completed}/${total}`)
+
+                    if (total === completed && !runnerStarted) {
+                        setTimeout(() => {
+                            if (runner && !runnerStarted) {
+                                // start runner
+                                runnerStarted = true
+                                runner.start({ sessionId })
+                            }
+                        }, 500)
+                    }
+                    if (total === completed && isInitialized) {
+                        const { appUrl, staticContentUrl } = server
+                        let url = formatUrl(appUrl)
+                        let staticUrl = formatUrl(staticContentUrl)
+                        ui.updateBottomBar(resourceName, `url: ${url || staticUrl}${staticUrl && url ? ` buildLocation content: ${staticUrl}` : ''}`)
+                    }
+                }, () => {
+                    isInitialized = true
+                })
+            } catch (e) {
+                console.error('failed to init', e)
             }
-        }, () => {
-            isInitialized = true
         })
-    } catch (e) {
-        console.error('failed to init', e)
-    }
+    )
+
+    ui.updateBottomBar('Postgres DB', `host: localhost:${dbPort} database: ${schemaId}`)
+    liveSpinner((str) => {
+        ui.updateBottomBar('', `Watching for changes ${str}`)
+    })
 }
 
 module.exports = dev

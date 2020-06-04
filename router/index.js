@@ -23,6 +23,7 @@ const {
 
     GITEA_COOKIE_NAME,
     CERT_RESOLVER,
+    CERT_RESOLVER_HTTP,
     PGBROKER_ENDPOINT,
     ENDPOINTS_ENDPOINT,
 } = process.env
@@ -53,7 +54,7 @@ const aliasConfig = ({ alias, middlewares, key }) => (alias ? `
     ${middlewares}
     service = "${key}"${CERT_RESOLVER ? `
     [http.routers.${key}-alias.tls]
-        certResolver = "${CERT_RESOLVER}-http"
+        certResolver = "${CERT_RESOLVER_HTTP}"
         [[http.routers.${key}.tls.domains]]
             main = "${alias}"
             sans = ["${alias}"]` : ''}` : ''

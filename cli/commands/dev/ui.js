@@ -12,6 +12,22 @@ const calcLines = (str, screenWidth) => {
     }).reduce((accumulator, currentValue) => accumulator + currentValue, 0)
 }
 
+const btmBarObjToStr = obj => {
+    if (Object.keys(obj).length === 0) {
+        return ''
+    }
+
+    return '\n'+Object.entries(obj).sort(([a], [b]) => {
+        if (!b) {
+            return -1
+        }
+        if (!a) {
+            return 1
+        }
+        return b - a
+    }).map(([namespace, str]) => `${namespace ? `${namespace} ` : ''}${str}`).join('\n')
+}
+
 const ui = (cfg) => {
     const {
         outputStream = process.stdout,
@@ -19,18 +35,18 @@ const ui = (cfg) => {
 
     let screenWidth = cliWidth()
 
-    let bottomBar = ''
+    let bottomBar = {}
 
     const render = (props = {}) => {
-        const btmBarLines = calcLines(bottomBar, screenWidth)
+        const btmBarLines = calcLines(btmBarObjToStr(bottomBar), screenWidth)
         if (props.bottomBar) {
             bottomBar = props.bottomBar
         }
 
         outputStream.write([
-            ansiEscapes.eraseLines(btmBarLines),
+            btmBarLines ? ansiEscapes.eraseLines(btmBarLines) : '',
             props.logLine || '',
-            bottomBar,
+            btmBarObjToStr(bottomBar),
         ].join(''))
     }
 
@@ -43,11 +59,12 @@ const ui = (cfg) => {
         log: {
             write: (logLine) => {
                 render({
-                    logLine: logLine + '\n',
+                    logLine: logLine + (logLine.endsWith('\n') ? '' : '\n'),
                 })
             }
         },
-        updateBottomBar: (bottomBar) => {
+        updateBottomBar: (namespace, btm) => {
+            bottomBar[namespace] = btm
             render({
                 bottomBar,
             })

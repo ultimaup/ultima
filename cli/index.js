@@ -97,7 +97,7 @@ const main = async () => {
 
     program.on('--help', async () => {
         await checkToken(true)
-    });
+    })
 
     await program.parseAsync(process.argv)
 }

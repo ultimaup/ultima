@@ -15,3 +15,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 secrets.env
+
+# agents binaries
+dev-agent-bin
+build-agent-bin

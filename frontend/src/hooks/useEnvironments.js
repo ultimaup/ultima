@@ -9,6 +9,7 @@ const GET_ENVIRONMENTS = gql`
             startedAt
             stoppedAt
             hash
+            runtime
             routes {
                 id
                 url

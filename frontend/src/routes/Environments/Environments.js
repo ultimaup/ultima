@@ -4,33 +4,31 @@ import moment from 'moment'
 import Modal from 'react-modal'
 import { HashRouter as Router } from 'react-router-dom'
 
-import Octicon, { GitBranch, Terminal, LinkExternal } from '@primer/octicons-react'
+import Octicon, { GitBranch, LinkExternal } from '@primer/octicons-react'
 
-import useEnvironments from '../../hooks/useEnvironments'
+import useResources from '../../hooks/useResources'
 
 import StatusDot from '../../components/StatusDot'
+import langs from '../../utils/langs'
 
 import { ActionList, ActionContainer } from '../Deployments/Deployments'
 
 const LangLogo = styled.div`
     width: 75px;
     height: 75px;
-    background-image: url('${require('programming-languages-logos/src/javascript/javascript.png')}');
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
     background-color: white;
+    color: white;
+    background: rgba(0,0,0,0.4);
+    font-size: 58px;
 
-    ${({ isStatic }) => isStatic && `background-size: 75%; background-image: url('${require('programming-languages-logos/src/html/html.png')}')`}
-`
-
-const stageToName = stage => {
-    let name = stage
-    if (stage.startsWith('refs/heads/')) {
-        name = stage.split('refs/heads/')[1]
+    i {
+        display: flex;
+        justify-content: center;
     }
-    return name
-}
+`
 
 const Route = styled.div`
     background: #176615;
@@ -43,6 +41,7 @@ const Route = styled.div`
 
 const Env = styled.a`
     display: inline-flex;
+    min-width: 300px;
     border-radius: 4px;
     color: white;
     background: rgba(0,0,0,0.2);
@@ -101,42 +100,60 @@ const Env = styled.a`
     }
 `
 
-const Environment = ({ id, stage, createdAt, startedAt, stoppedAt, routes = [], className }) => {
-    return routes.map(({ id, url }) => {
-        const isStatic = url.includes('//static')
-        return (
-            <Env href={url} target="_blank">
-                <Octicon icon={LinkExternal} className="ext" />
-                <div>
-                    <LangLogo isStatic={isStatic} />
-                    <div>
-                        <h4>
-                            <StatusDot complete status={stoppedAt ? 'error' : 'success'} />
-                            {isStatic ? 'Static Frontend' : 'NodeJS API'}
-                        </h4>
-                        <span>Created on {moment(startedAt || createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
-                        {stoppedAt && <span>stopped on {moment(stoppedAt).format('YYYY-MM-DD [at] HH:mm A')}</span>}
-                        {stoppedAt && <span>Live for {moment.duration(moment(stoppedAt).diff(startedAt || createdAt)).humanize()}</span>}
-                    </div>
-                </div>
-                <Route>{url}</Route>
-            </Env>
-        )
-    })
+let nf
+const ensureNF = () => {
+    if (!nf) {
+        nf = import('../../nf.css')
+    }
 }
 
-const groupByStage = (environments) => {
-    const stages = {}
-    
-    environments.forEach(e => {
-        if (!stages[e.stage]) {
-            stages[e.stage] = []
-        }
-        stages[e.stage].push(e)
-    })
-    
-    return Object.entries(stages)
+const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions, createdAt, startedAt, apiDeployment, stoppedAt, routes = [], className }) => {
+    ensureNF()
+    const runtime = apiDeployment ? apiDeployment.runtime : undefined
+    const lang = langs.find(lang => lang.runtime === (type === 'api' ? runtime : 'html'))
+    if (type === 'postgres') {
+        return (
+            <Env onClick={() => {
+                setDbConnectionInstructions(name)
+            }}>
+                <Octicon icon={LinkExternal} className="ext" />
+                <div>
+                    <LangLogo><i className={`nf nf-dev-postgresql`} /></LangLogo>
+                    <div>
+                        <h4>
+                            <StatusDot complete/>
+                            Postgres DB
+                        </h4>
+                        <span>Created on {moment(createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
+                    </div>
+                </div>
+                <Route>Click for Connection Instructions</Route>
+            </Env>
+        )
+    }
+
+    return (
+        <Env href={route ? route.url : undefined} target="_blank">
+            <Octicon icon={LinkExternal} className="ext" />
+            <div>
+                <LangLogo>
+                    <i className={`nf ${lang ? lang.nerdfontClassName : 'nf-dev-docker'}`} />
+                </LangLogo>
+                <div>
+                    <h4>
+                        <StatusDot complete status={stoppedAt ? 'error' : 'success'} />
+                        {name}
+                    </h4>
+                    <span>Created on {moment(startedAt || createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
+                    {stoppedAt && <span>stopped on {moment(stoppedAt).format('YYYY-MM-DD [at] HH:mm A')}</span>}
+                    {stoppedAt && <span>Live for {moment.duration(moment(stoppedAt).diff(startedAt || createdAt)).humanize()}</span>}
+                </div>
+            </div>
+            {route && <Route>{route.url}</Route>}
+        </Env>
+    )
 }
+
 
 const EnvironmentsContainer = styled.div`
     margin-bottom: 24px;
@@ -177,6 +194,7 @@ const EnvironmentsContainer = styled.div`
 
 const EnvList = styled.div`
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
 `
 
@@ -189,7 +207,7 @@ const DeploymentsContainer = styled.div`
 `
 
 const Environments = ({ owner, repoName, hasConfig }) => {
-    const { loading, error, environments } = useEnvironments({ owner, repoName })
+    const { loading, error, resources } = useResources({ owner, repoName })
     const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
 
     if (loading) {
@@ -200,54 +218,22 @@ const Environments = ({ owner, repoName, hasConfig }) => {
         return error.message
     }
 
-    let r = [...environments].reverse()
-
     return (
         <Router>
             <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Project Config</a>
 
-            {groupByStage(r).sort(([a],[b]) => {
-                if (a.startsWith('refs/heads/') && !b.startsWith('refs/heads/')) {
-                    return -1
-                } else {
-                    return 1
-                }
-            }).filter(([stage]) => stage.startsWith('refs/heads/')).map(([stage, environments]) => {
-                const live = environments.filter(e => !e.stoppedAt)
-                // const history = environments.filter(e => !!e.stoppedAt)
-                const name = stageToName(stage)
-
-                const hasAPI = live && live.length && live[0].routes.find(r => !r.url.includes('//static'))
-
+            {resources.map(({ name, id, resources }) => {
                 return (
-                    <EnvironmentsContainer key={stage}>
+                    <EnvironmentsContainer key={id}>
                         <h3 className="ui top attached header">
                             <a href={`/${owner}/${repoName}/src/branch/${name}`}>
-                                <Octicon icon={stage.startsWith('refs/heads/') ? GitBranch : Terminal} size={21} />
+                                <Octicon icon={GitBranch} size={21} />
                                 {name}
                             </a>
                         </h3>
                         <h5>Resources</h5>
                         <EnvList>
-                            {!!live.length && live.map(env => <Environment key={env.id} {...env} />)}
-
-                            {hasAPI && (
-                            <Env onClick={() => {
-                                setDbConnectionInstructions(name)
-                            }}>
-                                <Octicon icon={LinkExternal} className="ext" />
-                                <div>
-                                    <LangLogo style={{ backgroundImage: `url('${require('./postgres.svg')}')`, backgroundSize: '75%' }} />
-                                    <div>
-                                        <h4>
-                                            <StatusDot complete/>
-                                            Postgres DB
-                                        </h4>
-                                        <span>Created on {moment(environments[0].createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
-                                    </div>
-                                </div>
-                                <Route>Click for Connection Instructions</Route>
-                            </Env>)}
+                            {resources && resources.map(resource => <Environment setDbConnectionInstructions={setDbConnectionInstructions} key={resource.id} {...resource} />)}
                         </EnvList>
                         <h5>Recent Deployments</h5>
                         <DeploymentsContainer>

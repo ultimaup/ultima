@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: example
 
   gitea:
-    image: gitea/gitea:latest
+    image: gitea/gitea:1.12.0-rc1
     environment:
       - USER_UID=1000
       - USER_GID=1000
@@ -106,15 +106,17 @@ services:
       PUBLIC_IPV4: '78.46.16.197'
       PUBLIC_IPV6: 2a01:4f8:201:206f::2
 
-      REGISTRY_CACHE_ENDPOINT: http://172.23.69.216:4493/
+      INTERNAL_MGMT_ENDPOINT: http://192.168.1.112:4467
+      REGISTRY_CACHE_ENDPOINT: http://192.168.1.112:4493/
 
   dind:
     image: docker:dind
     privileged: true
-    volumes:
-      - './endpoints/certs:/certs-output'
     environment:
+      DOCKER_TLS_VERIFY: ""
       DOCKER_TLS_CERTDIR: /certs-output
+    volumes:
+      - './tmp/docker-certs:/certs-output'
     expose:
       - 2375
       - 2376
@@ -129,6 +131,7 @@ services:
       - "dind"
     volumes:
       - './endpoints:/app'
+      - './tmp/docker-certs:/docker-certs'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
@@ -212,6 +215,9 @@ services:
       GITEA_COOKIE_NAME: sessionid
       KIBANA_ENDPOINT: http://kibana:5601
       PGBROKER_ENDPOINT: tcp://mgmt:4497
+
+      # CERT_RESOLVER:
+      # CERT_RESOLVER_HTTP:
 
   frontend:
     image: node

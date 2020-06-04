@@ -4,6 +4,7 @@ const got = require('got')
 
 const Deployment = require('./db/Deployment')
 const s3 = require('./s3')
+const langs = require('./langs')
 
 const {
 	DOCKER_HOSTNAME,
@@ -14,29 +15,36 @@ const {
 
 const getBundle = async url => {
 	const Key = url.split(BUILDER_BUCKET_ID)[1]
+
 	return s3.getStream({ Key })
 }
 
 let docker = undefined
 if(!IN_PROD) {
     docker = new Docker({
-	    ca: fs.readFileSync('./certs/client/ca.pem'),
-  	    cert: fs.readFileSync('./certs/client/cert.pem'),
-  	    key: fs.readFileSync('./certs/client/key.pem'),
+	    ca: fs.readFileSync('/docker-certs/client/ca.pem'),
+  	    cert: fs.readFileSync('/docker-certs/client/cert.pem'),
+  	    key: fs.readFileSync('/docker-certs/client/key.pem'),
     })
 }else{
     docker = new Docker()
 }
 
+const runtimes = langs
+	.map(({ runtime }) => runtime)
+	.filter(runtime => runtime !== 'html')
+
 const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
 
-docker.pull('node:latest').then((stream) => {
-	docker.modem.followProgress(stream, () => {
-		console.log('node:latest', 'downloaded')
-	}, (e) => {
-		console.log('node:latest', 'progress:', e)
-	})
-})
+// docker.pull('node:latest').then((stream) => {
+// 	docker.modem.followProgress(stream, () => {
+// 		console.log('node:latest', 'downloaded')
+// 	}, (e) => {
+// 		console.log('node:latest', 'progress:', e)
+// 	})
+// })
+
+
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
@@ -125,6 +133,25 @@ const putArchive = async (container, file, options) => {
 	})
 }
 
+const pullImage = image => {
+	return new Promise((resolve, reject) => {
+		docker.pull(image, (err, stream) => {
+			if (err) {
+				reject(err)
+			} else {
+				const onFinished = (err, output) => {
+				  if (err) {
+					  reject(err)
+				  } else {
+					  resolve(output)
+				  }
+				}
+				docker.modem.followProgress(stream, onFinished, () => {})
+			}
+		})
+	})
+}
+
 const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 	const deployment = await Deployment.get(deploymentId)
 	if (!deployment) {
@@ -195,8 +222,8 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		},{ })
 
 		const config = {
-			Image: 'node',
-			Cmd: ['npm', 'start'],
+			Image: deployment.runtime || 'node',
+			Cmd: ['sh', '-c', deployment.command || 'npm start'],
 			WorkingDir: '/app',
 			name: deploymentId,
 			ExposedPorts,
@@ -212,13 +239,19 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 					Type: 'gelf',
 					Config: {
 						'gelf-address': GELF_ADDRESS,
-						tag: (deployment.repoName ? deployment.repoName.split('/').join('-') : deploymentId).toLowerCase(),
+						tag: (deployment.stage.startsWith('refs/') ? deployment.repoName.split('/').join('-') : deploymentId).toLowerCase(),
 					},
 				},
 			},
 		}
 
 		console.log(requestId, 'creating container', config)
+
+		if (!runtimes.includes(config.Image)) {
+			await pullImage(config.Image)
+	
+			console.log('pulled image', config.Image)
+		}
 
 		const container = await docker.createContainer(config)
 
@@ -320,6 +353,14 @@ const listContainers = async () => {
 	const containerInfo = await Promise.all(containers.map(c => docker.getContainer(c.Id).inspect()))
 	return containerInfo
 }
+
+Promise.all(
+	runtimes.map(runtime => pullImage(runtime).catch(e => {
+		console.error('error pulling image '+runtime, e)
+	}))
+).then((imgs) => {
+	console.log(`pulled ${imgs.length} images`)
+})
 
 module.exports = {
 	ensureContainerForDeployment,

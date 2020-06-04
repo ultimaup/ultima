@@ -6,6 +6,7 @@ import UltimaModal from './UltimaModal'
 import CNameDebugger from './CNameDebugger'
 
 import useDNSInfo from '../hooks/useDNSInfo'
+import langs from '../utils/langs'
 
 const BranchDomains = styled.div`
     .heading {
@@ -133,27 +134,366 @@ const BranchDomainMap = ({ value, onChange }) => {
     )
 }
 
+const StyledMultiList = styled.div`
+    display: flex;
+    flex-direction: column;
+    input {
+        max-width: 140px;
+    }
+    button {
+        width: 50px;
+    }
+`
 
+const MultiList = ({ value, onChange, ...props }) => (
+    <StyledMultiList>
+        {value.map((val, i) => <input key={i} {...props} value={val} onChange={e => {
+            const newValue = [...value]
+            newValue[i] = e.target.value
+            onChange({
+                target: {
+                    value: newValue,
+                }
+            })
+        }} />)}
+        <button className="ui green button" onClick={(e) => {
+            e.preventDefault()
+            onChange({
+                target: {
+                    value: [...value, ''],
+                },
+            })
+        }}>+</button>
+    </StyledMultiList>
+)
+
+const ConfigModule = ({ moduleKey, module, setValue, value }) => {
+    const [expanded, setExpanded] = useState(true)
+
+    return (
+        <Module>
+            <h3 className="ui attached header top" onClick={() => setExpanded(!expanded)} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+            }}>
+                {expanded ? <i className="fa fa-caret-up" /> : <i className="fa fa-caret-down" />}&nbsp;
+                {moduleKey || 'New Module'}
+                <button className="ui button small red" onClick={() => {
+                    const newV = {
+                        ...value,
+                    }
+                    delete newV[moduleKey]
+                    setValue(newV)
+                }}>x</button>
+            </h3>
+            {expanded && <ModuleBody>
+
+                <div className="inline required field">
+                    <strong>Repository Subdirectory</strong>
+                    <input placeholder="." value={value[moduleKey].directory} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                directory: e.target.value || undefined,
+                            }
+                        })
+                    }} />
+                </div>
+
+                {(module.type === 'web' || moduleKey === 'web') && (
+                    <div className="inline required field">
+                        <strong>Website built output location</strong>
+                        <input autoFocus required value={value[moduleKey].buildLocation} onChange={e => {
+                            setValue({
+                                ...value,
+                                [moduleKey]: {
+                                    ...value[moduleKey],
+                                    buildLocation: e.target.value,
+                                }
+                            })
+                        }} />
+                    </div>
+                )}
+                {(module.type === 'api' || moduleKey === 'api') && (
+                    <div className="inline required field">
+                        <strong>Runtime</strong>
+                        <select onChange={(e) => {
+                            setValue({
+                                ...value,
+                                [moduleKey]: {
+                                    ...value[moduleKey],
+                                    'runtime': e.target.value,
+                                }
+                            })
+                        }} value={value[moduleKey].runtime} className="ui search normal selection dropdown">
+                            {langs.filter(({ runtime }) => runtime !== 'html').map(({ name, runtime }) => (
+                                <option key={runtime} value={runtime}>{name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div className="ui divider"></div>
+                <h3>Build Steps</h3>
+                
+                <div className="inline required field">
+                    <strong>Install</strong>
+                    <input placeholder="# skip" required value={value[moduleKey].install && value[moduleKey].install.command || ''} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                install: {
+                                    ...(value[moduleKey].install || {}),
+                                    command: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Build</strong>
+                    <input placeholder="# skip" value={value[moduleKey].build} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                build: e.target.value || undefined,
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Test</strong>
+                    <input placeholder="# skip" value={value[moduleKey].test} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                test: e.target.value || undefined,
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Start</strong>
+                    <input placeholder="# skip" required={module.type === 'api' || moduleKey === 'api'} value={value[moduleKey].start} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                start: e.target.value || undefined,
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="ui divider"></div>
+
+                <h3>Development Settings</h3>
+
+                <div className="inline required field">
+                    <strong>Dev Command</strong>
+                    <input placeholder="# skip" required={module.type !== 'web'} value={value[moduleKey].dev && value[moduleKey].dev.command || ''} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    command: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Re-run when these files change</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.watch || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    watch: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Don't re-run when these files change</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.ignore || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    ignore: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Don't sync these files to the dev environment</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                dev: {
+                                    ...(value[moduleKey].dev || {}),
+                                    'sync-ignore': e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="inline required field">
+                    <strong>Run Install when these files change</strong>
+                    <br />
+                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
+                    <br />
+                    <MultiList value={value[moduleKey].install && value[moduleKey].install.watch || []} onChange={e => {
+                        setValue({
+                            ...value,
+                            [moduleKey]: {
+                                ...value[moduleKey],
+                                install: {
+                                    ...(value[moduleKey].install || {}),
+                                    watch: e.target.value || undefined,
+                                },
+                            }
+                        })
+                    }} />
+                </div>
+
+                <div className="ui divider"></div>
+                <BranchDomainMap value={value[moduleKey]['branch-domains']} onChange={v => {
+                    setValue({
+                        ...value,
+                        [moduleKey]: {
+                            ...value[moduleKey],
+                            'branch-domains': v || undefined,
+                        }
+                    })
+                }} />
+            </ModuleBody>}
+        </Module>
+    )
+}
+
+const AddModule = ({ value, setValue }) => {
+    const [newResourceType, setNewResourceType] = useState('api')
+    const [expanded, setExpanded] = useState(false)
+    const [resourceName, setResourceName] = useState('')
+
+    if (!expanded) {
+        return (
+            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => setExpanded(true)}>
+                Add Module
+            </button>
+        )
+    }
+
+    return (
+        <form className="inline field" onSubmit={(e) => {
+            e.preventDefault()
+            if (newResourceType === 'api') {
+                setValue({
+                    ...value,
+                    [resourceName]: {
+                        type: 'api',
+                        runtime: 'node',
+                    },
+                })
+            } else {
+                setValue({
+                    ...value,
+                    [resourceName]: {
+                        type: 'web',
+                        buildLocation: '/build'
+                    },
+                })
+            }
+
+            setExpanded(false)
+            setResourceName('')
+            setNewResourceType('api')
+        }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label style={{ width: 150 }}>Add Module</label>
+                    <select onChange={(e) => {
+                        setNewResourceType(e.target.value)
+                    }} value={newResourceType} className="ui search normal selection dropdown">
+                        <option value="api">API</option>
+                        <option value="web">Website</option>
+                    </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label style={{ width: 150 }}>Name</label>
+                    <input className="ui search normal selection" onChange={e => setResourceName(e.target.value)} value={resourceName} />
+                </div>
+
+                <button disabled={!resourceName} style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green">
+                    Add
+                </button>
+                <span style={{
+                    cursor: 'pointer',
+                }} onClick={() => {
+                    setExpanded(false)
+                    setResourceName('')
+                    setNewResourceType('api')
+                }}>Cancel</span>
+            </div>
+        </form>
+    )
+}
 
 const ConfigEditor = ({ ioEle }) => {
     const [value, setV] = useState({})
-    const [newResourceType, setNewResourceType] = useState('api')
 
     useEffect(() => {
-        let codeMirror
+        let model
+
         const onChange = () => {
-            const data = YAML.parse(codeMirror.getValue())
+            const content = model.getLinesContent().join('\n')
+            const data = YAML.parse(content)
             setV(data || {})
         }
+
         if (ioEle) {
-            codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
-            if (codeMirror) {
-                codeMirror.on('change', onChange)
+            model = window.monaco && window.monaco.editor.getModels()[0]
+            if (model) {
+                model.onDidChangeContent(onChange)
             } else {
                 let a = setInterval(() => {
-                    codeMirror = ioEle.nextSibling && ioEle.nextSibling.CodeMirror
-                    if (codeMirror) {
-                        codeMirror.on('change', onChange)
+                    model = window.monaco && window.monaco.editor.getModels()[0]
+                    if (model) {
+                        model.onDidChangeContent(onChange)
                         clearInterval(a)
                     }
                 },50)
@@ -164,19 +504,14 @@ const ConfigEditor = ({ ioEle }) => {
                 setV(data)
             }
         }
-
-        return () => {
-            codeMirror && codeMirror.off('change', onChange)
-        }
     }, [ioEle])
 
     const setValue = newValue => {
         if (!Object.keys(newValue).length) {
-            ioEle.nextSibling.CodeMirror.setValue('')
+            window.monaco.editor.getModels()[0].setValue('')
         } else {
-            ioEle.nextSibling.CodeMirror.setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}')).join('\n'))
+            window.monaco.editor.getModels()[0].setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}') && !l.endsWith('null')).join('\n'))
         }
-        // window.CodeMirror.signal(ioEle.nextSibling.CodeMirror, 'keydown', { which: 32, keyCode: 32 })
         document.getElementById('commit-button').disabled = false
     }
 
@@ -194,104 +529,10 @@ const ConfigEditor = ({ ioEle }) => {
 
                 <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
                     {Object.entries(value || {}).map(([key, module]) => (
-                        <Module>
-                            <h3 className="ui attached header top" style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}>
-                                {key}
-                                <button className="ui button small red" onClick={() => {
-                                    const newV = {
-                                        ...value,
-                                    }
-                                    delete newV[key]
-                                    setValue(newV)
-                                }}>x</button>
-                            </h3>
-                            <ModuleBody>
-                                {(module.type === 'web' || key === 'web') && (
-                                    <div className="inline required field">
-                                        <strong>Website built output location</strong>
-                                        <input autoFocus required value={value[key].buildLocation} onChange={e => {
-                                            setValue({
-                                                ...value,
-                                                [key]: {
-                                                    ...value[key],
-                                                    buildLocation: e.target.value,
-                                                }
-                                            })
-                                        }} />
-                                    </div>
-                                )}
-                                {(module.type === 'api' || key === 'api') && (
-                                    <div className="inline required field">
-                                        <strong>Runtime</strong>
-                                        <select disabled onChange={(e) => {
-                                            setValue({
-                                                ...value,
-                                                [key]: {
-                                                    ...value[key],
-                                                    'runtime': e.target.value,
-                                                }
-                                            })
-                                        }} value={value[key].runtime} className="ui search normal selection dropdown">
-                                            <option value="node">Node JS</option>
-                                            <option value="go">Go</option>
-                                            <option value="dotnet">.net core</option>
-                                        </select>
-                                        <span style={{ marginLeft: 8 }}>More Coming soon</span>
-                                    </div>
-                                )}
-                                <div className="ui divider"></div>
-                                <BranchDomainMap value={value[key]['branch-domains']} onChange={v => {
-                                    setValue({
-                                        ...value,
-                                        [key]: {
-                                            ...value[key],
-                                            'branch-domains': v,
-                                        }
-                                    })
-                                }} />
-                            </ModuleBody>
-                        </Module>
+                        <ConfigModule moduleKey={key} key={key} module={module} value={value} setValue={setValue} />
                     ))}
 
-                    <div className="inline field">
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <label style={{ width: 150 }}>Add Module</label>
-                                <select onChange={(e) => {
-                                    setNewResourceType(e.target.value)
-                                }} value={newResourceType} className="ui search normal selection dropdown">
-                                    <option value="api">API</option>
-                                    <option value="web">Website</option>
-                                </select>
-                            </div>
-                            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => {
-                                if (newResourceType === 'api') {
-                                    setValue({
-                                        ...value,
-                                        api: {
-                                            type: 'api',
-                                            runtime: 'node',
-                                        },
-                                    })
-                                } else {
-                                    setValue({
-                                        ...value,
-                                        web: {
-                                            type: 'web',
-                                            buildLocation: '/build'
-                                        },
-                                    })
-                                }
-                            }} disabled={!!value[newResourceType]}>
-                                Add
-                            </button>
-                            <span>(Currently max 1 API and 1 Website per project)</span>
-                        </div>
-                    </div>
+                    <AddModule value={value} setValue={setValue} />
                 </div>
                 
             </form>

@@ -3,16 +3,26 @@ const got = require('got')
 
 const agent = new http2.Agent()
 
-const initSession = async (config) => {
+const initSession = async ({ rootEndpoint, token, ultimaCfg }) => {
     const client = got.extend({
-        prefixUrl: config.rootEndpoint,
+        prefixUrl: rootEndpoint,
         agent: {
             http2: agent,
+        },
+        headers: {
+            authorization: `Bearer ${token}`,
         },
         http2: true,
     })
 
-    const data = await client.post(`new-session`).json()
+    const data = await client.post(`new-session`, {
+        json: {ultimaCfg},
+        retry: {
+            methods: ['POST'],
+            statusCodes: [404],
+            limit: 100,
+        }
+    }).json()
 
     if (!data) {
         throw new Error('unable to connect to allocated development session')
