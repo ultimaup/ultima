@@ -77,6 +77,16 @@ const startContainer = async (containerId) => {
 	await container.start()
 }
 
+const getContainer = async (containerId) => {
+	return docker.getContainer(containerId)
+}
+
+const listContainers = async () => {
+	const containers = await docker.listContainers()
+	const containerInfo = await Promise.all(containers.map(c => getContainer(c.Id).then(c => c.inspect())))
+	return containerInfo
+}
+
 module.exports = {
     init,
     pullImage,
@@ -85,4 +95,6 @@ module.exports = {
     removeContainer,
 	getContainerHostname,
 	startContainer,
+	getContainer,
+	listContainers,
 }

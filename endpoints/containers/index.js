@@ -72,6 +72,22 @@ const startContainer = containerId => {
 	}
 }
 
+const getContainer = async containerId => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.getContainer(containerId)
+	} else {
+		return dockerMgmt.getContainer(containerId)
+	}
+}
+
+const listContainers = async () => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.listContainers()
+	} else {
+		return dockerMgmt.listContainers()
+	}
+}
+
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
 		const result = await got(healthcheckUrl)
@@ -100,7 +116,7 @@ const startContainerAndHealthcheck = async ({ requestId, deploymentId }, contain
 		const timeout = setTimeout(() => {
 			clearInterval(int)
 			reject(new Error('timeout'))
-		}, 5 * 1000) // timeout after 5 secs
+		}, 15 * 1000) // timeout after 15 secs
 
 		const int = setInterval(async () => {
 			const passed = await doHealthcheck(healthcheckUrl)
@@ -118,8 +134,6 @@ const randomPort = () => {
 	const num = 1023 + Math.round(Math.random() * (65535 - 1023))
 	return num
 }
-
-const wait = ms => new Promise((resolve) => setTimeout(resolve, ms))
 
 const putArchive = async (container, file, options) => {
 	const stream = await container.putArchive(file, options)
@@ -315,7 +329,7 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 	if (containerId) {
 		console.log(requestId, 'found container', containerId)
 		try {
-			const container = docker.getContainer(containerId)
+			const container = await getContainer(containerId)
 
 			const exec = await container.exec({ Cmd: cmd, AttachStdin: true, AttachStdout: true, AttachStderr: true, WorkingDir, DetachKeys: 'ctrl-c' })
 			const stream = await exec.start({ hijack: true, stdin: true })
@@ -329,12 +343,6 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 		console.log(requestId, 'could not find container for deployment', deploymentId)
 		return null
 	}
-}
-
-const listContainers = async () => {
-	const containers = await docker.listContainers()
-	const containerInfo = await Promise.all(containers.map(c => docker.getContainer(c.Id).inspect()))
-	return containerInfo
 }
 
 if (CONTAINER_MANAGEMENT === 'swarm') {
