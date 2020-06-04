@@ -114,7 +114,7 @@ app.post('/', async (req, res) => {
 			console.log('no .ultima.yml found, assuming nodejs api app')
 		}
 
-		if (config && config) {
+		if (config && config.directory) {
 			wkdir = path.resolve(wkdir, repoRelative(config.directory || ''))
 		}
 
