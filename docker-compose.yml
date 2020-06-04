@@ -121,6 +121,13 @@ services:
       - 2375
       - 2376
 
+  dind-worker:
+    image: docker:dind
+    privileged: true
+    expose:
+      - 2375
+      - 2376
+
   endpoints:
     build: ./endpoints
     privileged: true
@@ -153,6 +160,10 @@ services:
 
       GELF_ADDRESS: udp://logstash:12201
       MGMT_ENDPOINT: http://mgmt:4467
+
+      CONTAINER_MANAGEMENT: swarm
+      SWARM_LISTEN_ADDRESS: 0.0.0.0
+      SWARM_ADVERTISE_ADDRESS: 172.20.114.84
 
   files:
     image: minio/minio
