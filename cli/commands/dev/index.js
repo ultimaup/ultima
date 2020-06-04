@@ -33,6 +33,14 @@ const liveSpinner = (writeFrame) => {
     }, spinner.interval)
 }
 
+const formatUrl = str => {
+    try {
+        return new URL(str).toString()
+    } catch (e) {
+        return str
+    }
+}
+
 const stringToColour = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -209,8 +217,8 @@ const dev = async () => {
                     }
                     if (total === completed && isInitialized) {
                         const { appUrl, staticContentUrl } = server
-                        let url = (appUrl && appUrl.endsWith(':443')) ? appUrl.split(':443')[0] : appUrl
-                        let staticUrl = (staticContentUrl && staticContentUrl.endsWith(':443')) ? staticContentUrl.split(':443')[0] : staticContentUrl
+                        let url = formatUrl(appUrl)
+                        let staticUrl = formatUrl(staticContentUrl)
                         ui.updateBottomBar(resourceName, `url: ${url || staticUrl}${staticUrl && url ? ` buildLocation content: ${staticUrl}` : ''}`)
                     }
                 }, () => {
