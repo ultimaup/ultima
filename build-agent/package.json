@@ -19,7 +19,7 @@
     "express": "^4.17.1",
     "fs-extra": "^9.0.0",
     "gunzip-maybe": "^1.4.1",
-    "tar-fs": "^2.0.0",
+    "tar-fs": "^2.1.0",
     "yaml": "^1.10.0"
   },
   "devDependencies": {
