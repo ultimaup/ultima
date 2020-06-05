@@ -175,16 +175,24 @@ const dockerPBToSwarm = PortBindings => {
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const removeServiceIfExists = async name => {
-    const [service] = await master.listServices({ name })
-    if (service) {
-        await master.getService(service.ID).remove()
+const ensureService = async serviceConfig => {
+    const [existing] = await master.listServices({ filters: {
+        name: [name]
+    } })
+
+    if (existing) {
+        return {
+            id: existing.ID,
+        }
+    }
+    const service = await master.createService(serviceConfig)
+    return {
+        id: service.id
     }
 }
 
 const createService = async serviceConfig => {
-    // await removeServiceIfExists(serviceConfig.Name)
-    const service = await master.createService(serviceConfig)
+    const service = await ensureService(serviceConfig)
     console.log(service.id, 'service creation started, waiting for completion')
 
     let containerId
@@ -282,10 +290,10 @@ const getContainerWithService = async containerId => {
 
 const removeContainer = async (containerId) => {
     const { service } = await getContainerWithService(containerId)
-    console.log('not removing service', service.id,'for containerId', containerId)
-    // await service.remove().catch(e => {
-    //     // service might not exist anymore and that's ok
-    // })
+    // console.log('not removing service', service.id,'for containerId', containerId)
+    await service.remove().catch(e => {
+        // service might not exist anymore and that's ok
+    })
     return true
 }
 
