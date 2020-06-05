@@ -6,6 +6,7 @@ const {
 } = process.env
 
 module.exports = {
+    port: 2376,
     ca: fs.readFileSync(path.resolve(CERTS_FOLDER, 'ca.pem')),
     cert: fs.readFileSync(path.resolve(CERTS_FOLDER, 'cert.pem')),
     key: fs.readFileSync(path.resolve(CERTS_FOLDER, 'key.pem')),
