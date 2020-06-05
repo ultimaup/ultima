@@ -121,6 +121,8 @@ services:
       - 2375
       - 2376
       - 2377
+      - 4789
+      - 7946 
 
   dind-worker:
     image: docker:dind
@@ -133,6 +135,8 @@ services:
       - 2375
       - 2376
       - 2377
+      - 4789
+      - 7946
 
   endpoints:
     build: ./endpoints
@@ -170,7 +174,7 @@ services:
 
       CONTAINER_MANAGEMENT: swarm
       SWARM_LISTEN_ADDRESS: 0.0.0.0
-      SWARM_ADVERTISE_ADDRESS: 172.20.114.84
+      SWARM_ADVERTISE_ADDRESS: eth0
 
       WORKER_CERTS_FOLDER: /worker-certs
 
