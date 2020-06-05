@@ -177,7 +177,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const ensureService = async serviceConfig => {
     const [existing] = await master.listServices({ filters: {
-        name: [name]
+        name: [serviceConfig.Name]
     } })
 
     if (existing) {
