@@ -12,8 +12,6 @@ const {
     SWARM_LISTEN_ADDRESS,
     SWARM_ADVERTISE_ADDRESS,
     DOCKER_HOSTNAME,
-    
-	IN_PROD = false,
 } = process.env
 
 const pullImage = (image, docker) => {
@@ -83,9 +81,9 @@ const doWorkerCheck = async () => {
     hostnames.forEach(host => {
         if (!workerInstances[host]) {
             console.log('connecting to new worker:', host)
-            workerInstances[host] = new Docker({ 
+            workerInstances[host] = new Docker({
                 host,
-                ...(IN_PROD ? {} : require('../keys')),
+                ...require('../keys'),
             })
             newWorkers.push(host)
         }
