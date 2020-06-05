@@ -183,7 +183,7 @@ const removeServiceIfExists = async name => {
 }
 
 const createService = async serviceConfig => {
-    await removeServiceIfExists(serviceConfig.Name)
+    // await removeServiceIfExists(serviceConfig.Name)
     const service = await master.createService(serviceConfig)
     console.log(service.id, 'service creation started, waiting for completion')
 
