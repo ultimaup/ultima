@@ -149,7 +149,6 @@ services:
     volumes:
       - './endpoints:/app'
       - './tmp/docker-certs:/docker-certs'
-      - './tmp/docker-worker-certs:/worker-certs'
     working_dir: '/app'
     command: ["yarn", "dev"]
     environment:
@@ -176,7 +175,7 @@ services:
       SWARM_LISTEN_ADDRESS: 0.0.0.0
       SWARM_ADVERTISE_ADDRESS: eth0
 
-      WORKER_CERTS_FOLDER: /worker-certs
+      CERTS_FOLDER: /docker-certs/client
 
   files:
     image: minio/minio
