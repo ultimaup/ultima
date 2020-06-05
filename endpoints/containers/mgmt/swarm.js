@@ -2,6 +2,12 @@ const Docker = require('dockerode')
 
 const master = require('../docker')
 
+const langs = require('../../langs')
+
+const runtimes = langs
+	.map(({ runtime }) => runtime)
+    .filter(runtime => runtime !== 'html')
+
 const {
     SWARM_LISTEN_ADDRESS,
     SWARM_ADVERTISE_ADDRESS,
@@ -9,6 +15,25 @@ const {
     
 	IN_PROD = false,
 } = process.env
+
+const pullImage = (image, docker) => {
+	return new Promise((resolve, reject) => {
+		docker.pull(image, (err, stream) => {
+			if (err) {
+				reject(err)
+			} else {
+				const onFinished = (err, output) => {
+				  if (err) {
+					  reject(err)
+				  } else {
+					  resolve(output)
+				  }
+				}
+				docker.modem.followProgress(stream, onFinished, () => {})
+			}
+		})
+	})
+}
 
 const ensureSwarm = async () => {
     let info
@@ -37,11 +62,22 @@ const getTokens = async () => {
 
 const workerInstances = {}
 
+const ensureDockerHasRuntimes = async (docker, host) => {
+    await Promise.all(
+        runtimes.map(runtime => pullImage(runtime, docker).catch(e => {
+            console.error('error pulling image '+runtime, e)
+        }))
+    ).then((imgs) => {
+        console.log(`pulled ${imgs.length} images to host ${host}`)
+    })
+}
+
 const doWorkerCheck = async () => {
     const nodes = await master.listNodes()
     const workers = nodes.filter(n => n.Spec.Role === 'worker')
     const onlineWorkers = workers.filter(n => n.Spec.Availability === 'active' && n.Status.State === 'ready')
     
+    let newWorkers = []
     // make Docker instances for each worker
     const hostnames = onlineWorkers.map(worker => worker.Description.Hostname)
     hostnames.forEach(host => {
@@ -51,6 +87,7 @@ const doWorkerCheck = async () => {
                 host,
                 ...(IN_PROD ? {} : require('../keys')),
             })
+            newWorkers.push(host)
         }
     })
 
@@ -68,6 +105,12 @@ const doWorkerCheck = async () => {
             delete workerInstances[host]
         }))
     )
+
+    await Promise.all(newWorkers.map(host => {
+        if (workerInstances[host]) {
+            return ensureDockerHasRuntimes(workerInstances[host], host)
+        }
+    }))
 }
 
 const init = async () => {
@@ -76,18 +119,14 @@ const init = async () => {
     const { Worker, Manager } = info.JoinTokens
     console.log(`Initialised swarm with tokens:\nWorker: ${Worker}\nManager: ${Manager}`)
 
-    doWorkerCheck()
-    setInterval(doWorkerCheck, 10000)
+    ensureDockerHasRuntimes(master, 'master').catch(console.error)
+    doWorkerCheck().catch(console.error)
+    setInterval(() => doWorkerCheck().catch(console.error), 10000)
 }
 
 const trimName = name => {
     const s = name.substring(name.startsWith('/') ? 1 : 0,62)
     return s.endsWith('-') ? s.substring(0, s.length - 1) : s
-}
-
-const getService = async name => {
-    const services = await master.listServices()
-    return services.filter(s => s.Spec.Name === trimName(name))
 }
 
 const listContainers = async (opts) => {
@@ -138,7 +177,52 @@ const dockerPBToSwarm = PortBindings => {
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, ExposedPorts, AttachStdout, AttachStderr, Cmd, ...config }) => {
+const removeServiceIfExists = async name => {
+    const [service] = await master.listServices({ name })
+    if (service) {
+        await master.getService(service.ID).remove()
+    }
+}
+
+const createService = async serviceConfig => {
+    await removeServiceIfExists(serviceConfig.Name)
+    const service = await master.createService(serviceConfig)
+    console.log(service.id, 'service creation started, waiting for completion')
+
+    let containerId
+    let message
+    let lastMessage
+    while (!containerId) {
+        const [container] = await listContainers({
+            filters: {
+                label: [`com.docker.swarm.service.id=${service.id}`],
+            }
+        })
+        if (!container) {
+            message = 'no container yet'
+        } else {
+            containerId = container.Id
+            message = 'container found '+containerId
+        }
+
+        if (message !== lastMessage) {
+            console.log(service.id, message)
+        }
+        lastMessage = message
+        if (!containerId) {
+            await wait(50)
+        }
+    }
+
+    console.log(service.id, 'service creation complete')
+
+    return {
+        service,
+        containerId,
+    }
+}
+
+const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, Labels, ExposedPorts, AttachStdout, AttachStderr, Cmd, ...config }) => {
     console.log('docker swarm createContainer')
 
     const Ports = dockerPBToSwarm(PortBindings)
@@ -153,6 +237,7 @@ const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, 
         TaskTemplate: {
             ContainerSpec: {
                 ...config,
+                Labels,
                 Command: ['sh', '-c', `echo "Started container";mkdir /app;until [ -f /.ultimastart ]; do sleep 0.1; done; cd /app; echo "Starting process"; ${command}`],
             },
             LogDriver: {
@@ -166,49 +251,51 @@ const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, 
         },
     }
 
-    const service = await master.createService(serviceConfig).catch(e => {
+    const { service, containerId } = await createService(serviceConfig).catch(e => {
         console.error(`failed to create service with config ${JSON.stringify(serviceConfig)}`, e)
+        throw e
     })
+
     console.log('created service', service.id, 'with config', serviceConfig)
-    let containerId
-    let ctr = 0
-
-    console.log('looking for container with name', name)
-
-    while (!containerId && ctr < 1000) {
-        const [container] = await getContainerByName(name)
-        if (container) {
-            containerId = container.Id
-        }
-        await wait(100)
-        ctr++
-    }
 
     if (!containerId) {
         await master.getService(service.id).remove()
         throw new Error('failed to create container')
     }
 
-    await wait(500)
-
     return await getContainer(containerId)
 }
 
-const removeContainer = async (containerId, deploymentId) => {
-    const [service] = await getService(deploymentId)
-    // console.log('not removing service', service.id,'for deployment', deploymentId)
-    await master.getService(service.id).remove().catch(e => {
-        // service might not exist anymore and that's ok
-    })
+const getContainerWithService = async containerId => {
+    const container = await getContainer(containerId)
+    const containerInfo = await container.inspect()
+    const { Config: { Labels } } = containerInfo
+    const serviceId = Labels['com.docker.swarm.service.id']
+    const service = master.getService(serviceId)
+    const serviceInfo = await service.inspect()
+    
+    return {
+        container,
+        service,
+        containerInfo,
+        serviceInfo,
+    }
+}
+
+const removeContainer = async (containerId) => {
+    const { service } = await getContainerWithService(containerId)
+    console.log('not removing service', service.id,'for containerId', containerId)
+    // await service.remove().catch(e => {
+    //     // service might not exist anymore and that's ok
+    // })
     return true
 }
 
-const getContainerHostname = async (containerId, deploymentId) => {
-    const [service] = await getService(deploymentId)
-    const container = await getContainer(containerId)
-    const { Config: { Env } } = await container.inspect()
+const getContainerHostname = async (containerId) => {
+    const { containerInfo, serviceInfo } = await getContainerWithService(containerId)
+    const { Config : { Env } } = containerInfo
+    const { Endpoint: { Ports = [] } } = serviceInfo
 
-    const { Endpoint: { Ports = [] } } = service
     const exposedPorts = Ports.map(({ TargetPort, PublishedPort }) => {
         return PublishedPort
     })
@@ -231,8 +318,26 @@ const getContainerHostname = async (containerId, deploymentId) => {
 	}
 }
 
+const waitForContainerToStart = async container => {
+    let shouldReturn = false
+    let status
+    
+    while (!shouldReturn) {
+        const info = await container.inspect()
+        status = info.State.Status
+        shouldReturn = ['running', 'exited', 'exited'].includes(status)
+        if (!shouldReturn) {
+            await wait(20)
+        }
+    }
+
+    return status
+}
+
 const startContainer = async (containerId) => {
-	const container = await getContainer(containerId)
+    const container = await getContainer(containerId)
+    const status = await waitForContainerToStart(container)
+    console.log(containerId, 'status:', status)
     const exec = await container.exec({ Cmd: ['touch', '/.ultimastart'], AttachStdin: false, AttachStdout: false, AttachStderr: false, Tty: false })
     await exec.start()
 }

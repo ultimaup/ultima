@@ -193,6 +193,9 @@ const deploymentToConfig = deployment => {
 			...deployment.env,
 			...portEnvs,
 		}).map(([k, v]) => `${k}=${v}`),
+		Labels: {
+			'com.ultima.deployment.id': deployment.id,
+		},
 		HostConfig: {
 			PortBindings,
 			LogConfig: {
