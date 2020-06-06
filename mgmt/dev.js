@@ -15,6 +15,7 @@ const s3 = require('./s3')
 const route = require('./route')
 const { headersToUser } = require('./jwt')
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
+const { genBucketEnv, deployBucketResource } = require('./ci')
 
 const {
 	S3_ENDPOINT,
@@ -164,7 +165,16 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
 		}
 	}).forEach(({ resourceName, url }) => {
 		renv[`${repoName.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
-	})
+    })
+    
+    await Promise.all(
+        Object.entries(config)
+            .filter(([resourceName, { type }]) => type === 'bucket')
+            .map(([resourceName]) => {
+                return deployBucketResource({ owner, resourceName, ref: environmentStage, repository: { full_name: `${owner}/${repoName}` } })
+            })
+    )
+
 
     const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, directory, buildLocation }]) => {
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
@@ -222,6 +232,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
                 ...customEnv,
                 ...schemaEnv,
                 ...renv,
+                ...genBucketEnv(envCfg, owner, { full_name: `${owner}/${repoName}` }),
                 ULTIMA_RESOURCE_NAME: resourceName,
                 ULTIMA_RESOURCE_TYPE: type,
                 ULTIMA_RESOURCE_CONFIG: JSON.stringify(envCfg[resourceName]),
