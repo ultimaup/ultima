@@ -250,6 +250,9 @@ const createContainer = async ({ HostConfig: { LogConfig, PortBindings }, name, 
                 name: LogConfig.Type,
                 Options: LogConfig.Config,
             },
+            RestartPolicy: {
+                Condition: 'none',
+            },
         },
         EndpointSpec: {
             Mode: 'vip',
