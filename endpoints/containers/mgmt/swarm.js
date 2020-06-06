@@ -33,6 +33,21 @@ const pullImage = (image, docker) => {
 	})
 }
 
+const cleanup = async () => {
+    const services = await master.listServices()
+    console.log('cleanup starting')
+    await Promise.all(
+        services.filter(s => {
+            const name = s.Spec.Name
+            return name.includes('builder') || (name.includes('dev') && !name.startsWith('edsaperia-ether-dev'))
+        }).map(({ ID, Spec: { Name } }) => {
+            console.log(`cleanup removing ${Name}`)
+            return master.getService(ID).remove()
+        })
+    )
+    console.log('cleanup complete')
+}
+
 const ensureSwarm = async () => {
     let info
     try {
@@ -120,6 +135,7 @@ const init = async () => {
     ensureDockerHasRuntimes(master, 'master').catch(console.error)
     doWorkerCheck().catch(console.error)
     setInterval(() => doWorkerCheck().catch(console.error), 10000)
+    cleanup().catch(console.error)
 }
 
 const trimName = name => {
