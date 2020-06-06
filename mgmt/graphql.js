@@ -418,14 +418,14 @@ const server = new ApolloServer({
         }
     },
     formatError: (err) => {
-        if (!error.message.includes('unauthorized')) {
+        if (!err.message.includes('unauthorized')) {
             console.error(err)
         }
         
         // Otherwise return the original error.  The error can also
         // be manipulated in other ways, so long as it's returned.
         return err;
-      },
+    },
 })
 
 module.exports = app => {
