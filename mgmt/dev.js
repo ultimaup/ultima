@@ -10,6 +10,7 @@ const YAML = require('yaml')
 const mime = require('mime')
 
 const Deployment = require('./db/Deployment')
+const Resource = require('./db/Resource')
 const s3 = require('./s3')
 const route = require('./route')
 const { headersToUser } = require('./jwt')
@@ -126,6 +127,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
     const invocationId = uuid()
 
     const envCfg = ultimaCfg ? YAML.parse(ultimaCfg) : {}
+    const environmentStage = `development/${invocationId}`
 
     if (envCfg.noAPI) {
         delete envCfg.noAPI
@@ -185,6 +187,14 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
             console.log(invocationId, 'created bucket proxy for',actualBucketName, repoRelative(buildLocation))
 
             if (!dev || !dev.command) {
+                await Resource.query().insert({
+                    id: uuid(),
+                    type,
+                    repoName: `${owner}/${repoName}`,
+                    deploymentId: actualBucketName,
+                    name: resourceName,
+                    stage: environmentStage,
+                })
                 // return to cli
                 return {
                     url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}${bucketProxyUrl}`,
@@ -223,9 +233,18 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
             repoName: `${owner}/${repoName}`,
         })
 
+        await Resource.query().insert({
+            id: uuid(),
+            type,
+            repoName: `${owner}/${repoName}`,
+            deploymentId: devEndpointId,
+            name: resourceName,
+            stage: environmentStage,
+        })
+
         console.log(invocationId, `dev endpoint with id ${devEndpointId} exists`)
 
-        const container = JSON.parse(await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${devEndpointId}/`).then(r => r.body))
+        const container = await got(`${ENDPOINTS_ENDPOINT}/ensure-deployment/${devEndpointId}/`).json()
         const endpointUrl = container.hostname
         console.log(invocationId, 'got internal url', endpointUrl)
         const internalUrl = endpointUrl.split('http://').join('h2c://')
@@ -262,6 +281,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
 
     return {
         id: schemaId,
+        environmentStage,
         schemaId,
         servers,
     }
