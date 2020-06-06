@@ -3,6 +3,8 @@ import styled, { css } from 'styled-components'
 
 import jwtDecode from 'jwt-decode'
 
+import { setToken } from '../../utils/token'
+
 const LoginButton = (props) => (
     <svg width="260" height="40" viewBox="0 0 260 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
         <rect width="260" height="40" rx="5" fill="white"/>
@@ -104,7 +106,7 @@ const Login = () => {
 
     useEffect(() => {
         if (auth) {
-            window.localStorage.setItem('token', auth.token)
+            setToken(auth.token)
         }
 
         if (auth && !isWaitlist) {
