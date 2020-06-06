@@ -151,7 +151,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
     const bundleLocation = await ensureDevelopmentBundle()
     
     const renv = {}
-    Object.entries(envCfg).map(([resourceName, { type, dev, buildLocation }]) => {
+    Object.entries(envCfg).filter(([resourceName, { type }]) => type !== 'bucket').map(([resourceName, { type, dev, buildLocation }]) => {
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
         let subdomain
         if (type === 'web' && buildLocation && (!dev || !dev.command)) {

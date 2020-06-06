@@ -330,7 +330,9 @@ const getSubdomain = ({
 
 const routesEnv = (config, { branch, repo, user }) => {
 	const obj = {}
-	Object.keys(config).map(resourceName => {
+	Object.entries(config).filter(([resourceName, { type }]) => {
+		return type !== 'bucket'
+	}).map(([resourceName]) => {
 		const subdomain = getSubdomain({ resourceName, branch, repo, user })
 		return {
 			resourceName,
@@ -466,7 +468,7 @@ const deployBucketResource = async ({ owner, resourceName, ref, repository, pare
 		// ensure user
 		await s3.ensureFileUserExists(owner, genBucketPass(owner))
 		// create bucket as user
-		const actualBucketName = await s3.ensureFileBucket(genBucketName(resourceName, repository, ref))
+		const actualBucketName = await s3.ensureFileBucket(genBucketName(resourceName, repository, ref), owner)
 	
 		let resourceId
 		if (actualBucketName) {
@@ -795,5 +797,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 module.exports = {
 	runTests,
 	genBucketEnv,
+	genBucketPass,
 	deployBucketResource,
 }
