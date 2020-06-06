@@ -7,6 +7,7 @@ import { HashRouter as Router } from 'react-router-dom'
 import Octicon, { GitBranch, LinkExternal } from '@primer/octicons-react'
 
 import useResources from '../../hooks/useResources'
+import useGetMinioToken from '../../hooks/useGetMinioToken'
 
 import StatusDot from '../../components/StatusDot'
 import langs from '../../utils/langs'
@@ -107,8 +108,9 @@ const ensureNF = () => {
     }
 }
 
-const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions, createdAt, startedAt, apiDeployment, stoppedAt, routes = [], className }) => {
+const Environment = ({ id, stage, type, name, route, deploymentId, setDbConnectionInstructions, createdAt, startedAt, apiDeployment, stoppedAt, routes = [], className }) => {
     ensureNF()
+    const { getMinioToken } = useGetMinioToken()
     const runtime = apiDeployment ? apiDeployment.runtime : undefined
     const lang = langs.find(lang => lang.runtime === (type === 'api' ? runtime : 'html'))
     if (type === 'postgres') {
@@ -135,6 +137,10 @@ const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions
     if (type === 'bucket') {
         return (
             <Env onClick={() => {
+                getMinioToken(deploymentId).then(({ token }) => {
+                    window.localStorage.setItem('token', token)
+                    window.open(`/minio/${deploymentId}`)
+                })
             }}>
                 <Octicon icon={LinkExternal} className="ext" />
                 <div>

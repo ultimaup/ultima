@@ -81,6 +81,23 @@ const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	})
 }
 
+const getWebLoginToken = async ({ username, password }) => {
+	const { result: { token } } = await got.post('minio/webrpc', {
+		prefixUrl: S3_ENDPOINT,
+		json: {
+			id: 1,
+			jsonrpc: "2.0",
+			params: { username, password },
+			method: "Web.Login"
+		},
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+		}
+	}).json()
+
+	return token
+}
+
 module.exports = {
 	uploadStream,
 	getStream,
@@ -88,4 +105,5 @@ module.exports = {
 	ensureWebBucket,
 	ensureFileUserExists,
 	ensureFileBucket,
+	getWebLoginToken,
 }
