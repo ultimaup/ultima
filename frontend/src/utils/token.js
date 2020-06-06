@@ -1,3 +1,4 @@
+const ULTIMA_TOKEN_KEY = 'ultimaToken'
 
-export const getToken = () => localStorage.getItem('token')
-export const setToken = () => window.localStorage.setItem('token', auth.token)
+export const getToken = () => localStorage.getItem(ULTIMA_TOKEN_KEY)
+export const setToken = (token) => window.localStorage.setItem(ULTIMA_TOKEN_KEY, token)
