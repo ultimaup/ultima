@@ -95,6 +95,16 @@ const ensureUserExists = async (userId, secret) => {
 
 app.use(bodyParser.json())
 
+app.post('/file-bucket', async (req, res) => {
+	const { bucketName, ownerId } = req.body
+	const actualBucketName = `${ownerId}-${bucketName}`
+	console.log('file-bucket', { bucketName, ownerId, actualBucketName })
+	const cbResult = await createBucket(actualBucketName)
+	console.log('cbResult', cbResult)
+
+	res.json(actualBucketName)
+})
+
 app.post('/web-bucket', async (req, res) => {
 	const { bucketName, ownerId } = req.body
 	const actualBucketName = `${ownerId}-${bucketName}`
