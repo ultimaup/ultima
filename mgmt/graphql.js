@@ -349,7 +349,9 @@ const resolvers = {
             // const resource = await Resource.query().where({ deploymentId: bucketName }).first()
             // TODO: check user has access to resource.repoName
             const username = bucketName.split('-')[0]
-            console.log('getMinioToken:', context.user.username, 'accessing', username)
+            if (context.user.username !== username) {
+                console.log('getMinioToken:', context.user.username, 'accessing', username)
+            }
             const password = genBucketPass(username)
             const token = await s3.getWebLoginToken({ username, password })
 
