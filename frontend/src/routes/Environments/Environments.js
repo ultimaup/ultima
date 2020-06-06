@@ -132,6 +132,26 @@ const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions
         )
     }
 
+    if (type === 'bucket') {
+        return (
+            <Env onClick={() => {
+            }}>
+                <Octicon icon={LinkExternal} className="ext" />
+                <div>
+                    <LangLogo><i className={`nf nf-dev-bitbucket`} /></LangLogo>
+                    <div>
+                        <h4>
+                            <StatusDot complete/>
+                            {name}
+                        </h4>
+                        <span>Created on {moment(createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
+                    </div>
+                </div>
+                <Route>Click to Explore</Route>
+            </Env>
+        )
+    }
+
     return (
         <Env href={route ? route.url : undefined} target="_blank">
             <Octicon icon={LinkExternal} className="ext" />
