@@ -120,6 +120,23 @@ services:
     expose:
       - 2375
       - 2376
+      - 2377
+      - 4789
+      - 7946 
+
+  dind-worker:
+    image: docker:dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs-output
+    volumes:
+      - './tmp/docker-certs:/certs-output:ro'
+    expose:
+      - 2375
+      - 2376
+      - 2377
+      - 4789
+      - 7946
 
   endpoints:
     build: ./endpoints
@@ -153,6 +170,12 @@ services:
 
       GELF_ADDRESS: udp://logstash:12201
       MGMT_ENDPOINT: http://mgmt:4467
+
+      CONTAINER_MANAGEMENT: swarm
+      SWARM_LISTEN_ADDRESS: 0.0.0.0
+      SWARM_ADVERTISE_ADDRESS: eth0
+
+      CERTS_FOLDER: /docker-certs/client
 
   files:
     image: minio/minio

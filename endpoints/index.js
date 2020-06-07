@@ -102,7 +102,7 @@ const markStoppedContainers = async () => {
 
     const newContainerInfo = containers.map(c => {
         return {
-            deploymentId: c.Name.split('/')[1],
+            deploymentId: c.Config.Labels['com.ultima.deployment.id'] || c.Name.split('/')[1],
             startedAt: c.State.StartedAt,
             stoppedAt: c.State.FinishedAt.startsWith('0001') ? null : c.State.FinishedAt,
         }
