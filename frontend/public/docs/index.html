@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Ultima Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/docute@4/dist/docute.css">
+  </head>
+  <body>
+    <div id="docute"></div>
+    <script src="https://unpkg.com/docute@4/dist/docute.js"></script>
+    <script>
+        new Docute({
+            target: '#docute',
+            title: 'Ultima Docs',
+            theme: 'dark',
+            darkThemeToggler: true,
+            sourcePath: './md/',
+            nav: [
+                {
+                    title: 'Home',
+                    link: '/'
+                },
+                {
+                    title: 'About',
+                    link: '/about'
+                }
+            ],
+            sidebar: [
+                {
+                    title: 'Guide',
+                    links: [
+                        {
+                            title: 'Introduction',
+                            link: '/introduction'
+                        },
+                        {
+                            title: 'Installation',
+                            link: '/installation'
+                        }
+                    ]
+                }
+            ]
+        })
+    </script>
+  </body>
+</html>
