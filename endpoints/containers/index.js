@@ -1,16 +1,17 @@
-const fs = require('fs')
-const Docker = require('dockerode')
 const got = require('got')
 
-const Deployment = require('./db/Deployment')
-const s3 = require('./s3')
-const langs = require('./langs')
+const Deployment = require('../db/Deployment')
+const s3 = require('../s3')
+const langs = require('../langs')
+const docker = require('./docker')
+
+const swarm = require('./mgmt/swarm')
+const dockerMgmt = require('./mgmt/docker')
 
 const {
-	DOCKER_HOSTNAME,
 	BUILDER_BUCKET_ID,
-	IN_PROD = false,
 	GELF_ADDRESS,
+	CONTAINER_MANAGEMENT,
 } = process.env
 
 const getBundle = async url => {
@@ -19,32 +20,73 @@ const getBundle = async url => {
 	return s3.getStream({ Key })
 }
 
-let docker = undefined
-if(!IN_PROD) {
-    docker = new Docker({
-	    ca: fs.readFileSync('/docker-certs/client/ca.pem'),
-  	    cert: fs.readFileSync('/docker-certs/client/cert.pem'),
-  	    key: fs.readFileSync('/docker-certs/client/key.pem'),
-    })
-}else{
-    docker = new Docker()
-}
-
 const runtimes = langs
 	.map(({ runtime }) => runtime)
 	.filter(runtime => runtime !== 'html')
 
-const getContainerByName = (name) => docker.listContainers({ all: true, filters: { name: [name] } })
+const getContainerByName = (name) => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.getContainerByName(name)
+	} else {
+		return dockerMgmt.getContainerByName(name)
+	}
+}
 
-// docker.pull('node:latest').then((stream) => {
-// 	docker.modem.followProgress(stream, () => {
-// 		console.log('node:latest', 'downloaded')
-// 	}, (e) => {
-// 		console.log('node:latest', 'progress:', e)
-// 	})
-// })
+const pullImage = (image) => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		// not needed in swarm
+	} else {
+		return dockerMgmt.pullImage(image)
+	}
+}
 
+const createContainer = config => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.createContainer(config)
+	} else {
+		return dockerMgmt.createContainer(config)
+	}
+}
 
+const removeContainer = (containerId, deploymentId) => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.removeContainer(containerId, deploymentId)
+	} else {
+		return dockerMgmt.removeContainer(containerId, deploymentId)
+	}
+}
+
+const getContainerHostname = (containerId, deploymentId) => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.getContainerHostname(containerId, deploymentId)
+	} else {
+		return dockerMgmt.getContainerHostname(containerId, deploymentId)
+	}
+}
+
+const startContainer = containerId => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.startContainer(containerId)
+	} else {
+		return dockerMgmt.startContainer(containerId)
+	}
+}
+
+const getContainer = async containerId => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.getContainer(containerId)
+	} else {
+		return dockerMgmt.getContainer(containerId)
+	}
+}
+
+const listContainers = async () => {
+	if (CONTAINER_MANAGEMENT === 'swarm') {
+		return swarm.listContainers()
+	} else {
+		return dockerMgmt.listContainers()
+	}
+}
 
 const doHealthcheck = async (healthcheckUrl) => {
 	try {
@@ -55,40 +97,14 @@ const doHealthcheck = async (healthcheckUrl) => {
 	}
 }
 
-const getContainerHostname = async (containerId) => {
-	const info = await docker.getContainer(containerId).inspect()
-	const { Config: { ExposedPorts, Env } } = info
-
-	const exposedPorts = Object.keys(ExposedPorts).map(s => s.split('/')[0])
-
-	const ports = Env.map(e => e.split('='))
-		.filter(([k, value]) => exposedPorts.includes(value))
-		.map(([name, number]) => ({ name, number }))
-
-	const host = DOCKER_HOSTNAME
-	const port = ports.find(({ name }) => name === 'PORT').number
-	const protocol = 'http'
-
-	return {
-		hostname: `${protocol}://${host}:${port}`,
-		ports: ports.map(({ name, number }) => ({
-			name,
-			number,
-			url: `${protocol}://${host}:${number}`,
-		}))
-	}
-}
-
-const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
+const startContainerAndHealthcheck = async ({ requestId, deploymentId }, containerId) => {
 	console.log(requestId, 'starting container', containerId)
 
-	const container = docker.getContainer(containerId)
-
-	await container.start()
+	await startContainer(containerId)
 	// const logStream = await container.logs({ stdout: true, stderr: true, follow: true })
 	// container.modem.demuxStream(logStream, process.stdout, process.stderr)
 
-	const {hostname} = await getContainerHostname(containerId)
+	const {hostname} = await getContainerHostname(containerId, deploymentId)
 	const endpoint = '/health'
 
 	const healthcheckUrl = `${hostname}${endpoint}`
@@ -100,7 +116,7 @@ const startContainerAndHealthcheck = async ({ requestId }, containerId) => {
 		const timeout = setTimeout(() => {
 			clearInterval(int)
 			reject(new Error('timeout'))
-		}, 5 * 1000) // timeout after 5 secs
+		}, 15 * 1000) // timeout after 15 secs
 
 		const int = setInterval(async () => {
 			const passed = await doHealthcheck(healthcheckUrl)
@@ -133,23 +149,66 @@ const putArchive = async (container, file, options) => {
 	})
 }
 
-const pullImage = image => {
-	return new Promise((resolve, reject) => {
-		docker.pull(image, (err, stream) => {
-			if (err) {
-				reject(err)
-			} else {
-				const onFinished = (err, output) => {
-				  if (err) {
-					  reject(err)
-				  } else {
-					  resolve(output)
-				  }
-				}
-				docker.modem.followProgress(stream, onFinished, () => {})
-			}
-		})
-	})
+const deploymentToConfig = deployment => {
+	const ports = [
+		'PORT',
+		...deployment.ports,
+	].map(name => ({
+		number: randomPort(),
+		name,
+	}))
+
+	const ExposedPorts = ports.reduce((acc = {}, cv) => {
+		return {
+			...acc,
+			[`${cv.number}/tcp`]: {}
+		}
+	}, {})
+
+	const portEnvs = ports.reduce((acc = {}, cv) => {
+		return {
+			...acc,
+			[cv.name]: cv.number,
+		}
+	}, {})
+
+	const PortBindings = ports.reduce((acc = {}, cv) => {
+		return {
+			...acc,
+			[`${cv.number}/tcp`]: [{
+				HostPort: `${cv.number}`
+			}]
+		}
+	},{ })
+
+	const config = {
+		Image: deployment.runtime || 'node',
+		Cmd: ['sh', '-c', deployment.command || 'npm start'],
+		WorkingDir: '/app',
+		name: deployment.id,
+		ExposedPorts,
+		AttachStdout: false,
+		AttachStderr: false,
+		Env: Object.entries({
+			...deployment.env,
+			...portEnvs,
+		}).map(([k, v]) => `${k}=${v}`),
+		Labels: {
+			'com.ultima.deployment.id': deployment.id,
+		},
+		HostConfig: {
+			PortBindings,
+			LogConfig: {
+				Type: 'gelf',
+				Config: {
+					'gelf-address': GELF_ADDRESS,
+					tag: (deployment.stage.startsWith('refs/') ? deployment.repoName.split('/').join('-') : deployment.id).toLowerCase(),
+				},
+			},
+		},
+	}
+
+	return config
 }
 
 const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
@@ -167,19 +226,17 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		// if it exists but isn't running start it
 		if (containerList[0].State !== 'running') {
 			console.log(requestId, 'found container', containerId)
-			await startContainerAndHealthcheck({ requestId }, containerList[0].Id)
+			await startContainerAndHealthcheck({ requestId, deploymentId }, containerList[0].Id)
 		} else {
 			console.log(requestId, 'found container', containerId, 'running healthcheck')
 			// if it exists and is running do a healthcheck
-			const {hostname} = await getContainerHostname(containerId)
+			const {hostname} = await getContainerHostname(containerId, deploymentId)
 			const passesHealthcheck = await doHealthcheck(`${hostname}/health`)
 
 			if (!passesHealthcheck) {
 				console.log(requestId, containerId, 'healthcheck failed, removing')
 				// bad egg, kill and don't use
-				await docker.getContainer(containerId).remove({
-					force: true,
-				})
+				await removeContainer(containerId, deploymentId)
 				console.log(requestId, containerId, 'healthcheck failed, removed')
 				containerId = null
 			} else {
@@ -190,60 +247,7 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 
 	if (!containerId) {
 		// if not create and start it
-		const ports = [
-			'PORT',
-			...deployment.ports,
-		].map(name => ({
-			number: randomPort(),
-			name,
-		}))
-
-		const ExposedPorts = ports.reduce((acc = {}, cv) => {
-			return {
-				...acc,
-				[`${cv.number}/tcp`]: {}
-			}
-		}, {})
-
-		const portEnvs = ports.reduce((acc = {}, cv) => {
-			return {
-				...acc,
-				[cv.name]: cv.number,
-			}
-		}, {})
-
-		const PortBindings = ports.reduce((acc = {}, cv) => {
-			return {
-				...acc,
-				[`${cv.number}/tcp`]: [{
-					HostPort: `${cv.number}`
-				}]
-			}
-		},{ })
-
-		const config = {
-			Image: deployment.runtime || 'node',
-			Cmd: ['sh', '-c', deployment.command || 'npm start'],
-			WorkingDir: '/app',
-			name: deploymentId,
-			ExposedPorts,
-			AttachStdout: false,
-			AttachStderr: false,
-			Env: Object.entries({
-				...deployment.env,
-				...portEnvs,
-			}).map(([k, v]) => `${k}=${v}`),
-			HostConfig: {
-				PortBindings,
-				LogConfig: {
-					Type: 'gelf',
-					Config: {
-						'gelf-address': GELF_ADDRESS,
-						tag: (deployment.stage.startsWith('refs/') ? deployment.repoName.split('/').join('-') : deploymentId).toLowerCase(),
-					},
-				},
-			},
-		}
+		const config = deploymentToConfig(deployment)
 
 		console.log(requestId, 'creating container', config)
 
@@ -253,14 +257,13 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 			console.log('pulled image', config.Image)
 		}
 
-		const container = await docker.createContainer(config)
+		const container = await createContainer(config)
 
 		containerId = container.id
 		console.log(requestId, 'created container', containerId)
 
 		console.log(requestId, 'downloading bundle url', deployment.bundleLocation)
 
-		// will make this pipe from s3 or dev
 		const bundleStreamOrLocalLocation = await getBundle(deployment.bundleLocation)
 
 		console.log(requestId, 'uploading bundle to /app')
@@ -272,18 +275,16 @@ const ensureContainerForDeployment = async ({ requestId }, deploymentId) => {
 		console.log(requestId, 'uploaded bundle to /app: ', par)
 
 		try {
-			await startContainerAndHealthcheck({ requestId }, containerId)
+			await startContainerAndHealthcheck({ deploymentId, requestId }, containerId)
 		} catch (e) {
 			// clearly a bad egg
 			console.log(requestId, 'removing container due to error', containerId, e)
-			await container.remove({
-				force: true,
-			})
+			await removeContainer(containerId, deploymentId)
 			throw e
 		}
 	}
 
-	const { hostname, ports } = await getContainerHostname(containerId)
+	const { hostname, ports } = await getContainerHostname(containerId, deploymentId)
 
 	return {
 		hostname,
@@ -305,8 +306,7 @@ const removeContainerFromDeployment = async ({ requestId }, deploymentId) => {
 	if (containerId) {
 		console.log(requestId, 'found container', containerId)
 		try {
-			const container = docker.getContainer(containerId)
-			await container.remove({ force: true })
+			await removeContainer(containerId, deploymentId)
 			console.log(requestId, 'container removed', containerId)
 		} catch (e) {
 			console.error('error removing container', e)
@@ -332,7 +332,7 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 	if (containerId) {
 		console.log(requestId, 'found container', containerId)
 		try {
-			const container = docker.getContainer(containerId)
+			const container = await getContainer(containerId)
 
 			const exec = await container.exec({ Cmd: cmd, AttachStdin: true, AttachStdout: true, AttachStderr: true, WorkingDir, DetachKeys: 'ctrl-c' })
 			const stream = await exec.start({ hijack: true, stdin: true })
@@ -348,19 +348,12 @@ const exec = async ({ requestId }, deploymentId, cmd, WorkingDir) => {
 	}
 }
 
-const listContainers = async () => {
-	const containers = await docker.listContainers()
-	const containerInfo = await Promise.all(containers.map(c => docker.getContainer(c.Id).inspect()))
-	return containerInfo
+if (CONTAINER_MANAGEMENT === 'swarm') {
+	swarm.init().catch(console.error)
+} else {
+	dockerMgmt.init()
 }
 
-Promise.all(
-	runtimes.map(runtime => pullImage(runtime).catch(e => {
-		console.error('error pulling image '+runtime, e)
-	}))
-).then((imgs) => {
-	console.log(`pulled ${imgs.length} images`)
-})
 
 module.exports = {
 	ensureContainerForDeployment,
