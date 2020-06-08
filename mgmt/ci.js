@@ -493,6 +493,7 @@ const deployBucketResource = async ({ owner, resourceName, ref, repository, pare
 		return {
 			resourceName,
 			resourceId,
+			actualBucketName,
 		}
 	} catch (e) {
 		console.error(invocationId, `allocating ${resourceName} bucket failed`, e)

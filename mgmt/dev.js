@@ -167,16 +167,15 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
 		renv[`${repoName.toUpperCase().split('-').join('_')}_${resourceName.toUpperCase()}_URL`] = url
     })
     
-    await Promise.all(
-        Object.entries(config)
+    const buckets = await Promise.all(
+        Object.entries(envCfg)
             .filter(([resourceName, { type }]) => type === 'bucket')
             .map(([resourceName]) => {
                 return deployBucketResource({ owner, resourceName, ref: environmentStage, repository: { full_name: `${owner}/${repoName}` } })
             })
     )
 
-
-    const servers = await Promise.all(Object.entries(envCfg).map(async ([resourceName, { runtime = 'node', type = 'api', dev, directory, buildLocation }]) => {
+    const servers = await Promise.all(Object.entries(envCfg).filter(([resourceName, { type }]) => type !== 'bucket').map(async ([resourceName, { runtime = 'node', type = 'api', dev, directory, buildLocation }]) => {
         const sid = `${resourceName}-${invocationId.split('-')[0]}-${user.username}`
         let staticContentUrl
         let bucketProxyUrl
@@ -295,6 +294,7 @@ const startDevSession = async ({ token, user, details: { ultimaCfg, repoName, ow
         environmentStage,
         schemaId,
         servers,
+        buckets,
     }
 }
 

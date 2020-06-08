@@ -189,6 +189,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
         { source: `pg.${PUBLIC_ROUTE_ROOT}`, destination: PGBROKER_ENDPOINT, extensions: ['tcp'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/minio`, destination: S3_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/dev-bucket`, destination: FRONTEND_ENDPOINT },
     ]
 }
 
