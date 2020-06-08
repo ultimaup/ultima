@@ -62,7 +62,7 @@ const Home = () => (
         </div>
         <div className="link-list">
             <span>Developers</span>
-            <a href="#" className="disabled">Documentation</a>
+            <a href="/docs">Documentation</a>
             <a href="https://status.onultima.com/">Service Status</a>
             <a id="login" href="/auth/github">
               <Octicon icon={MarkGithub} />
