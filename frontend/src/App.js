@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter, Route, Switch } from 'react-router-dom'
 
 import FullPageLayout from './layouts/FullPage'
+import DevBucketRedirect from './routes/DevBucketRedirect'
 
 import Home from './routes/Home'
 import SlackRedirect from './components/SlackRedirect'
@@ -30,6 +31,7 @@ const App = () => (
                         <Route path="/legals" component={Legals} />
                         <Route path="/security" component={Security} />
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
+                        <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
                         <Route path="/" component={Home} />
                     </Switch>
                 </BrowserRouter>
