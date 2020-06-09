@@ -20,7 +20,7 @@ const {
 const router = new Router()
 
 router.get('/auth/github', async (req, res) => {
-    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user%20user:email`)
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user%20user:email%20repo`)
 })
 
 router.get('/auth/github-redirect', async (req, res) => {
@@ -53,7 +53,12 @@ router.get('/auth/github-redirect', async (req, res) => {
     })
 
     // get token for user
-    const token = await jwt.sign(user.toJSON())
+    const token = await jwt.sign({
+        ...user.toJSON(),
+        githubAccessToken: access_token,
+    })
+
+    console.log(token)
 
     if (!user.activated) {
         return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({

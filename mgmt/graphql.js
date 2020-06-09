@@ -13,6 +13,7 @@ const { runTests, genBucketPass } = require('./ci')
 
 const { getCname } = require('./dns')
 const s3 = require('./s3')
+const github = require('./github')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -137,6 +138,12 @@ const typeDefs = gql`
     type MinioAuth {
         token: String
     }
+    type GithubRepo {
+        id: ID
+        name: String
+        full_name: String
+        private: Boolean
+    }
 
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
@@ -149,6 +156,7 @@ const typeDefs = gql`
         getEnvironments(owner: String, repoName: String): [Environment]
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
+        listGithubRepos: [GithubRepo]
     }
 
     type Mutation {
@@ -169,6 +177,14 @@ const unique = myArray => [...new Set(myArray)]
 
 const resolvers = {
     Query: {
+        listGithubRepos: async (parent, args, context) => {
+            const { githubAccessToken } = context.user
+            if (!githubAccessToken) {
+                throw new Error('unauthorized')
+            }
+            const repos = await github.listRepos({ accessToken: githubAccessToken })
+            return repos
+        },
         getDNSRecords: async () => {
             return {
                 ipv4: PUBLIC_IPV4,
