@@ -10,7 +10,7 @@ const graphql = require('./graphql')
 const { ensureAllLiveDeploymentsExist } = require('./boot')
 
 const migrate = require('./db/migrate')
-const { webhooks } = require('./github')
+const webhooks = require('./routes/githubWebhook')
 
 const {
     PORT = 3000,

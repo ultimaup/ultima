@@ -216,7 +216,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
 		await pipeline(
-			giteaStream(codeTarUrl),
+			(await codeTarUrl()),
 			got.stream.post(container.hostname, {
 				headers: {
 					// 'content-type': 'application/octet-stream',
@@ -252,7 +252,7 @@ const deployWebResource = async ({ ref, repository, resourceName, parentActionId
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying web resource', data: { resourceName } })
 
 	// TODO: use stream from earlier instead of fetching from s3 again
-	const builtBundleStream = builtBundleKey ? s3.getStream({ Key: builtBundleKey }) : giteaStream(codeTarUrl)
+	const builtBundleStream = builtBundleKey ? s3.getStream({ Key: builtBundleKey }) : (await codeTarUrl())
 
 	const ts = tarStream.extract()
 	ts.on('entry', (header, stream, next) => {
@@ -532,7 +532,7 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const runTests = async ({ ref, after, repository, pusher, commits }) => {
+const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, codeZipUrl }) => {
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const branch = ref.split('refs/heads/')[1]
@@ -568,8 +568,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 
 	const invocationId = parentActionId
 
-	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
-
 	let config = {}
 	let shouldDie = false
 
@@ -581,7 +579,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		await new Promise((resolve, reject) => {
 			let promises = []
 			// handle "special" files special-y
-			giteaStream(codeZipUrl)
+			(await codeZipUrl())
 				.pipe(unzip.Parse())
 				.on('entry', entry => {
 					const { path, type } = entry
