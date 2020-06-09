@@ -1,11 +1,15 @@
 const { Router } = require('express')
 const bodyParser = require('body-parser')
+const uuid = require('uuid').v4
 
 const {
 	GITEA_WEBHOOK_SECRET,
+	GITEA_URL,
 } = process.env
 
 const { runTests } = require('../ci')
+const { giteaStream } = require('../gitea')
+const Repository = require('../db/Repository')
 
 const router = new Router()
 
@@ -23,9 +27,38 @@ router.post('/gitea-hook', (req, res) => {
 		
 		if (headers['x-gitea-event'] === 'push') {
 			// do shit
-			runTests(req.body)
-				.then(console.log)
-				.catch(console.error)
+			const { after, repository, commits } = req.body
+
+			const exists = await Repository.query().where({
+				fullName: repository.full_name,
+				vcs: 'ultima-gitea',
+			}).first()
+
+			const touchedUltimaYml = commits.some(({ added, removed, modified }) => {
+				return [added,removed,modified].flat().includes('.ultima.yml')
+			})
+
+			if (exists || touchedUltimaYml) {
+				if (!exists) {
+					// start tracking
+					await Repository.query().insert({
+						id: uuid(),
+						fullName: repository.full_name,
+						vcs: 'ultima-gitea',
+					})
+				}
+	
+				const codeZipUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.zip`)
+				const codeTarUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`)
+
+				runTests({
+					...req.body,
+					codeZipUrl,
+					codeTarUrl,
+				})
+					.then(console.log)
+					.catch(console.error)
+			}
 		}
 
 		return res.json('ayy')

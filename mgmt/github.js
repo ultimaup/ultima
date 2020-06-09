@@ -1,10 +1,10 @@
 const fetch = require('node-fetch')
 const fs = require('fs')
+
 const { App } = require("@octokit/app")
-const { Webhooks } = require("@octokit/webhooks")
 const { Octokit } = require("@octokit/rest")
-const { createAppAuth } = require("@octokit/auth-app");
-const { request } = require("@octokit/request");
+const { createAppAuth } = require("@octokit/auth-app")
+const { request } = require("@octokit/request")
 
 const {
 	GITHUB_APP_ID,
@@ -41,10 +41,6 @@ const githubCodeToAuth = code => fetch('https://github.com/login/oauth/access_to
 	},
 }).then(r => r.json())
 
-const webhooks = new Webhooks({
-	secret: GITHUB_WEBHOOK_SECRET,
-})
-
 const listRepos = async ({ accessToken }) => {
 	const { data: { installations } } = await request("GET /user/installations", {
 		headers: {
@@ -74,6 +70,12 @@ const listRepos = async ({ accessToken }) => {
 	)
 
 	return repos.flat()
+}
+
+const getInstallationToken = async (installationId) => {
+	return await app.getInstallationAccessToken({
+		installationId,
+	})
 }
 
 const getUltimaYml = async (installationId, {owner, repo, branch}) => {
@@ -112,18 +114,11 @@ const setUltimaYml = async (installationId, {owner, repo, branch}, {message, sha
 	return data
 }
 
-webhooks.on("*", ({ id, name, payload }) => {
-  console.log(name, "event received")
-
-  // if push
-	// check if there's an .ultima.yml in this branch/repo
-		// if so, start CI process
-})
-
-
 module.exports = {
     githubGet,
 	githubCodeToAuth,
-	webhooks,
 	listRepos,
+	getUltimaYml,
+	setUltimaYml,
+	getInstallationToken,
 }
