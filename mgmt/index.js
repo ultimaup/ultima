@@ -10,6 +10,7 @@ const graphql = require('./graphql')
 const { ensureAllLiveDeploymentsExist } = require('./boot')
 
 const migrate = require('./db/migrate')
+const { webhooks } = require('./github')
 
 const {
     PORT = 3000,
@@ -24,6 +25,8 @@ auth(app)
 dev(app)
 migrate().catch(console.error)
 graphql(app)
+
+app.use(webhooks.middleware)
 
 app.get('/', (req, res) => {
     res.redirect(`${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${req.hostname}`)

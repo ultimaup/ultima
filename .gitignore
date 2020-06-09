@@ -19,3 +19,5 @@ secrets.env
 # agents binaries
 dev-agent-bin
 build-agent-bin
+
+github-app.pem

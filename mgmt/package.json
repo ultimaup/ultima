@@ -4,6 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "@octokit/app": "^4.2.0",
+    "@octokit/auth-app": "^2.4.6",
+    "@octokit/auth-oauth-app": "^3.0.3",
+    "@octokit/rest": "^17.11.0",
+    "@octokit/webhooks": "^7.6.3",
     "apollo-fetch": "^0.7.0",
     "apollo-server": "^2.14.2",
     "aws-sdk": "^2.635.0",
