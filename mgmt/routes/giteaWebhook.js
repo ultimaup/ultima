@@ -15,7 +15,7 @@ const router = new Router()
 
 router.use(bodyParser.json())
 
-router.post('/gitea-hook', (req, res) => {
+router.post('/gitea-hook', async (req, res) => {
 	console.log('gitea webhook called')
 	try {
 		const { headers, body: { secret } } = req

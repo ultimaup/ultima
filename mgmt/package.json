@@ -7,6 +7,7 @@
     "@octokit/app": "^4.2.0",
     "@octokit/auth-app": "^2.4.6",
     "@octokit/auth-oauth-app": "^3.0.3",
+    "@octokit/plugin-paginate-rest": "^2.2.1",
     "@octokit/rest": "^17.11.0",
     "@octokit/webhooks": "^7.6.3",
     "apollo-fetch": "^0.7.0",

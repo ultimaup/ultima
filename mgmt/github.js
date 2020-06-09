@@ -5,6 +5,9 @@ const { App } = require("@octokit/app")
 const { Octokit } = require("@octokit/rest")
 const { createAppAuth } = require("@octokit/auth-app")
 const { request } = require("@octokit/request")
+const { paginateRest } = require("@octokit/plugin-paginate-rest")
+
+Octokit.plugin(paginateRest)
 
 const {
 	GITHUB_APP_ID,
@@ -12,8 +15,6 @@ const {
 	
     GITHUB_CLIENT_ID,
 	GITHUB_CLIENT_SECRET,
-
-	GITHUB_WEBHOOK_SECRET,
 } = process.env
 
 const PRIVATE_KEY = fs.readFileSync(GITHUB_APP_KEY_LOCATION, 'utf-8')
@@ -41,6 +42,8 @@ const githubCodeToAuth = code => fetch('https://github.com/login/oauth/access_to
 	},
 }).then(r => r.json())
 
+const octokit = new Octokit()
+
 const listRepos = async ({ accessToken }) => {
 	const { data: { installations } } = await request("GET /user/installations", {
 		headers: {
@@ -53,7 +56,7 @@ const listRepos = async ({ accessToken }) => {
 
 	await Promise.all(
 		installations.map(async ({ id }) => {
-			const { data: { repositories } } = await request("GET /user/installations/:installation_id/repositories", {
+			const repositories = await octokit.paginate("GET /user/installations/:installation_id/repositories", {
 				installation_id: id,
 				headers: {
 					authorization: `Bearer ${accessToken}`,
@@ -69,7 +72,9 @@ const listRepos = async ({ accessToken }) => {
 		})
 	)
 
-	return repos.flat()
+	return repos.flat().sort((a,b) => {
+		return a.pushed_at > b.pushed_at ? -1 : 1
+	})
 }
 
 const getInstallationToken = async (installationId) => {
