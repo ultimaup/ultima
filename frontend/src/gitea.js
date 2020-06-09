@@ -13,6 +13,7 @@ import NewRepoRoute from './routes/NewRepo'
 import Environments from './routes/Environments'
 import CLIModal from './components/CLIModal'
 import ConfigEditor from './components/ConfigEditor'
+import RepoList from './components/RepoList'
 import client from './graphql'
 
 import { getToken } from './utils/token'
@@ -121,6 +122,21 @@ const gitea = () => {
                 div
             )
         }
+
+        const repoList = asdf.nextElementSibling
+        if (repoList) {
+            const div = document.createElement('div')
+            repoList.children[0].insertAdjacentElement('beforeBegin', div)
+            ReactDOM.render(
+                <React.StrictMode>
+                    <ApolloProvider client={client}>
+                        <RepoList />
+                    </ApolloProvider>
+                </React.StrictMode>,
+                div
+            )
+        }
+
     }
 
     const newRepo = document.getElementById('new-repo-container')

@@ -6,6 +6,7 @@ const Action = require('./db/Action')
 const Deployment = require('./db/Deployment')
 const User = require('./db/User')
 const Resource = require('./db/Resource')
+const Repository = require('./db/Repository')
 
 const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
@@ -143,7 +144,15 @@ const typeDefs = gql`
         name: String
         full_name: String
         private: Boolean
+        isUltima: Boolean
     }
+
+    # type Repository {
+    #     id: ID,
+    #     fullName: String
+    #     vcs: String
+    #     createdAt: DateTime
+    # }
 
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
@@ -157,6 +166,7 @@ const typeDefs = gql`
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
         listGithubRepos: [GithubRepo]
+        # listRepos: [Repository]
     }
 
     type Mutation {
@@ -175,15 +185,31 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
 
 const unique = myArray => [...new Set(myArray)]
 
+const repoCache = {}
+
 const resolvers = {
     Query: {
-        listGithubRepos: async (parent, args, context) => {
+        listGithubRepos: async (parent, { force }, context) => {
             const { githubAccessToken } = context.user
             if (!githubAccessToken) {
                 throw new Error('unauthorized')
             }
-            const repos = await github.listRepos({ accessToken: githubAccessToken })
-            return repos
+            if (!repoCache[githubAccessToken] || force) {
+                repoCache[githubAccessToken] = await github.listRepos({ accessToken: githubAccessToken })
+            }
+
+            const ultimaRepos = await Repository.query().whereIn('fullName', repoCache[githubAccessToken].map(r => r.full_name))
+            const urMap = {}
+            ultimaRepos.forEach(({ fullName }) => {
+                urMap[fullName] = true
+            })
+
+            return repoCache[githubAccessToken].map(repo => {
+                return {
+                    ...repo,
+                    isUltima: !!ultimaRepos[repo.full_name],
+                }
+            })
         },
         getDNSRecords: async () => {
             return {

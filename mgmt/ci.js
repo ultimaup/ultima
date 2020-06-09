@@ -576,7 +576,7 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 	let hasConfig = false
 
 	try {
-		await new Promise((resolve, reject) => {
+		await new Promise(async (resolve, reject) => {
 			let promises = []
 			// handle "special" files special-y
 			(await codeZipUrl())

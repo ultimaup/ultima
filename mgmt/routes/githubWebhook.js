@@ -2,7 +2,7 @@ const { Webhooks } = require("@octokit/webhooks")
 const got = require('got')
 const uuid = require('uuid').v4
 
-const Repository = require('./db/Repository')
+const Repository = require('../db/Repository')
 const { runTests } = require('../ci')
 const { getInstallationToken } = require('../github')
 
