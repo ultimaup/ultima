@@ -9,9 +9,10 @@ const Resource = require('./db/Resource')
 
 const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
-const { runTests } = require('./ci')
+const { runTests, genBucketPass } = require('./ci')
 
 const { getCname } = require('./dns')
+const s3 = require('./s3')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -133,6 +134,10 @@ const typeDefs = gql`
         resources: [Resource]
     }
 
+    type MinioAuth {
+        token: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -151,6 +156,7 @@ const typeDefs = gql`
         addSSHkey(key: String, title: String) : Boolean
         createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
         queryCname(hostname: String): CNameResult
+        getMinioToken(bucketName: String): MinioAuth
     }
 `
 
@@ -335,6 +341,24 @@ const resolvers = {
         },
     },
     Mutation: {
+        getMinioToken: async (parent, { bucketName }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            // const resource = await Resource.query().where({ deploymentId: bucketName }).first()
+            // TODO: check user has access to resource.repoName
+            const username = bucketName.split('-')[0]
+            if (context.user.username !== username) {
+                console.log('getMinioToken:', context.user.username, 'accessing', username)
+            }
+            const password = genBucketPass(username)
+            const token = await s3.getWebLoginToken({ username, password })
+
+            return {
+                token,
+            }
+        },
         queryCname: async (parent, { hostname }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
@@ -418,14 +442,14 @@ const server = new ApolloServer({
         }
     },
     formatError: (err) => {
-        if (!error.message.includes('unauthorized')) {
+        if (!err.message.includes('unauthorized')) {
             console.error(err)
         }
         
         // Otherwise return the original error.  The error can also
         // be manipulated in other ways, so long as it's returned.
         return err;
-      },
+    },
 })
 
 module.exports = app => {

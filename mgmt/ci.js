@@ -11,6 +11,7 @@ const yaml = require('js-yaml');
 const gunzip = require('gunzip-maybe')
 const mime = require('mime-types')
 const fse = require('fs-extra')
+const crypto = require('crypto')
 
 const s3 = require('./s3')
 const Deployment = require('./db/Deployment')
@@ -34,6 +35,7 @@ const {
 	PUBLIC_ROUTE_ROOT_PROTOCOL,
 	PUBLIC_ROUTE_ROOT,
 	PUBLIC_ROUTE_ROOT_PORT,
+	SALT,
 } = process.env
 
 const streamToBuf = stream => {
@@ -328,7 +330,9 @@ const getSubdomain = ({
 
 const routesEnv = (config, { branch, repo, user }) => {
 	const obj = {}
-	Object.keys(config).map(resourceName => {
+	Object.entries(config).filter(([resourceName, { type }]) => {
+		return type !== 'bucket'
+	}).map(([resourceName]) => {
 		const subdomain = getSubdomain({ resourceName, branch, repo, user })
 		return {
 			resourceName,
@@ -450,6 +454,75 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 		resourceUrl,
 		resourceName,
 	}
+}
+
+const genBucketPass = seed => crypto.createHash('sha256').update(`${seed}-${SALT.split().reverse().join()}`).digest('hex')
+
+const genBucketHash = (repoName, ref) => crypto.createHash('sha256').update([repoName, ref].join('/')).digest('hex').substring(0, 8)
+
+const genBucketName = (resourceName, repository, ref) => `${genBucketHash(repository.full_name.split('/')[1], ref)}-${resourceName}`
+
+const deployBucketResource = async ({ owner, resourceName, ref, repository, parentActionId, invocationId }) => {
+	const deployBucketActionId = parentActionId && (await logAction(parentActionId, { type: 'info', title: 'Allocating bucket', data: { resourceName } }))
+	try {
+		// ensure user
+		await s3.ensureFileUserExists(owner, genBucketPass(owner))
+		// create bucket as user
+		const actualBucketName = await s3.ensureFileBucket(genBucketName(resourceName, repository, ref), owner)
+	
+		let resourceId
+		if (actualBucketName) {
+			resourceId = uuid()
+			await Resource.query().insert({
+				id: resourceId,
+				type: 'bucket',
+				repoName: repository.full_name,
+				deploymentId: actualBucketName,
+				name: resourceName,
+				stage: ref,
+			})
+			console.log(invocationId, `deployed ${actualBucketName}`)
+			if (deployBucketActionId) {
+				await markActionComplete(deployBucketActionId, { title: 'Allocating bucket succeeded', data: { resourceId, actualBucketName, resourceName } })
+			}
+		} else {
+			console.error(invocationId, actualBucketName, 'bucket deployment failed')
+			throw new Error('bucket deployment failed')
+		}
+	
+		return {
+			resourceName,
+			resourceId,
+			actualBucketName,
+		}
+	} catch (e) {
+		console.error(invocationId, `allocating ${resourceName} bucket failed`, e)
+		if (deployBucketActionId) {
+			await markActionComplete(deployBucketActionId, { type: 'error', title: 'Allocating bucket failed', data: { error: e.message, resourceName } })
+		}
+	}
+}
+
+const genBucketEnv = (config, owner, repository, ref) => {
+	const key = owner
+	const secret = genBucketPass(owner)
+
+	const bucketNames = Object.entries(config).filter(([resourceName, { type }]) => type === 'bucket').map(([resourceName]) => ({
+		resourceName,
+		actualBucketName: `${owner}-${genBucketName(resourceName, repository, ref)}`,
+	}))
+
+	const bucketEnv = {
+		ULTIMA_BUCKET_ACCESS_KEY_ID: key,
+		ULTIMA_BUCKET_ACCESS_KEY_SECRET: secret,
+		ULTIMA_BUCKET_S3_SERVER: S3_ENDPOINT,
+	}
+
+	bucketNames.forEach(({ resourceName, actualBucketName }) => {
+		bucketEnv[`${resourceName.toUpperCase()}_BUCKET_NAME`] = actualBucketName
+	})
+
+	return bucketEnv
 }
 
 const removeLeadingSlash = (str) => {
@@ -644,20 +717,46 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			}
 		}
 
+		if (Object.values(config).some(({ type }) => type === 'bucket')) {
+			schemaEnv = {
+				...schemaEnv,
+				...genBucketEnv(config, user, repository, ref)
+			}
+		}
+
 		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
-		const resourceRoutes = await Promise.all(Object.keys(config).map(resourceName => {
-			return buildResource({
-				invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo
-			}).then(({ resultingBundleLocation, builtBundleKey, codeTarUrl, resourceName }) => {
-				if (config[resourceName].type === 'api') {
-					return deployApiResource({ ref, codeTarUrl, invocationId, repository, parentActionId, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
-				} else {
-					const staticContentLocation = codeTarUrl ? repoRelative(config[resourceName].directory || '', repoRelative(config[resourceName].buildLocation)) : repoRelative(config[resourceName].buildLocation)
-					return deployWebResource({ ref, codeTarUrl, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
-				}
-			})
-		}))
+		await Promise.all(
+			Object.entries(config)
+				.filter(([resourceName, { type }]) => type === 'bucket')
+				.map(([resourceName]) => {
+					return deployBucketResource({
+						owner: user,
+						resourceName,
+						repository,
+						parentActionId,
+						invocationId,
+						ref,
+					})
+				})
+		)
+
+		const resourceRoutes = await Promise.all(
+			Object.entries(config)
+				.filter(([resourceName, { type }]) => type !== 'bucket')
+				.map(([resourceName]) => {
+					return buildResource({
+						invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo
+					}).then(({ resultingBundleLocation, builtBundleKey, codeTarUrl, resourceName }) => {
+						if (config[resourceName].type === 'api') {
+							return deployApiResource({ ref, codeTarUrl, invocationId, repository, parentActionId, config, resourceName, after, resultingBundleLocation, schemaEnv, branch, repo, user })
+						} else {
+							const staticContentLocation = codeTarUrl ? repoRelative(config[resourceName].directory || '', repoRelative(config[resourceName].buildLocation)) : repoRelative(config[resourceName].buildLocation)
+							return deployWebResource({ ref, codeTarUrl, invocationId, repository, parentActionId, resourceName, after, builtBundleKey, staticContentLocation })
+						}
+					})
+				})
+		)
 
 		const liveResourceRoutes = await Promise.all(resourceRoutes.map(route => deployRoute({ ...route, config, parentActionId ,branch, repo, user })))
 
@@ -698,5 +797,8 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 }
 
 module.exports = {
-    runTests,
+	runTests,
+	genBucketEnv,
+	genBucketPass,
+	deployBucketResource,
 }

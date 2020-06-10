@@ -15,9 +15,15 @@ import CLIModal from './components/CLIModal'
 import ConfigEditor from './components/ConfigEditor'
 import client from './graphql'
 
+import { getToken } from './utils/token'
+
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
     ele.classList.add('active')
 })
+
+if (!getToken()) {
+    window.location.href = '/auth/github'
+}
 
 const [cliLink] = document.querySelectorAll('.cli-link')
 

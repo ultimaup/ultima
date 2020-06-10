@@ -238,6 +238,7 @@ services:
       GITEA_COOKIE_NAME: sessionid
       KIBANA_ENDPOINT: http://kibana:5601
       PGBROKER_ENDPOINT: tcp://mgmt:4497
+      S3_ENDPOINT: http://files:9000
 
       # CERT_RESOLVER:
       # CERT_RESOLVER_HTTP:

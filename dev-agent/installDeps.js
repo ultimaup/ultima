@@ -33,8 +33,10 @@ const installDeps = async (wkdir, cfg, msgCb) => {
 		if (typeof cfg.install.command === 'string') {
 			try {
 				const p = await spawn('sh', ['-c', cfg.install.command], { cwd: wkdir, ignoreStdio: true })
-				p.child.stdout.on('data', msgCb)
-				p.child.stderr.on('data', msgCb)
+				if (p.child) {
+					p.child.stdout.on('data', msgCb)
+					p.child.stderr.on('data', msgCb)
+				}
 			
 				await p
 			} catch (e) {

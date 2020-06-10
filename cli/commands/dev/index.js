@@ -230,6 +230,12 @@ const dev = async () => {
         })
     )
 
+    if (server.buckets) {
+        server.buckets.forEach(({ resourceName, actualBucketName }) => {
+            ui.updateBottomBar(`${resourceName} Bucket`, `view contents: ${program.server}/dev-bucket/${actualBucketName}`)
+        })
+    }
+
     ui.updateBottomBar('Postgres DB', `host: localhost:${dbPort} database: ${schemaId}`)
     liveSpinner((str) => {
         ui.updateBottomBar('', `Watching for changes ${str}`)
