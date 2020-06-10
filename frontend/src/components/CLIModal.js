@@ -11,6 +11,21 @@ const TerminalContainer = styled.div`
     }
 `
 
+export const ControlledCLIModal = ({ isOpen, setIsOpen }) => {
+    return (
+        <UltimaModal
+            isOpen={isOpen}
+            onRequestClose={() => setIsOpen(false)}
+            title="Ultima CLI"
+        >
+            <p>Make sure you have <a href="https://nodejs.org/en/">nodejs</a> installed, then just run the following commands in your terminal to get started:</p>
+            <TerminalContainer>
+                <TerminalContent />
+            </TerminalContainer>
+        </UltimaModal>
+    )
+}
+
 const CLIModal = ({ triggerEle }) => {
     const [isOpen, setIsOpen] = useState(false)
 
@@ -24,18 +39,7 @@ const CLIModal = ({ triggerEle }) => {
         }
     }, [triggerEle])
 
-    return (
-        <UltimaModal
-            isOpen={isOpen}
-            onRequestClose={() => setIsOpen(false)}
-            title="Ultima CLI"
-        >
-            <p>Make sure you have <a href="https://nodejs.org/en/">nodejs</a> installed, then just run the following commands in your terminal to get started:</p>
-            <TerminalContainer>
-                <TerminalContent />
-            </TerminalContainer>
-        </UltimaModal>
-    )
+    return <ControlledCLIModal isOpen={isOpen} setIsOpen={setIsOpen} />
 }
 
 export default CLIModal
