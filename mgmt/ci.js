@@ -515,10 +515,11 @@ const genBucketEnv = (config, owner, repository, ref) => {
 	const bucketEnv = {
 		ULTIMA_BUCKET_ACCESS_KEY_ID: key,
 		ULTIMA_BUCKET_ACCESS_KEY_SECRET: secret,
+		ULTIMA_BUCKET_S3_SERVER: S3_ENDPOINT,
 	}
 
 	bucketNames.forEach(({ resourceName, actualBucketName }) => {
-		bucketEnv[`${resourceName.toUpperCase()}-BUCKET-NAME`] = actualBucketName
+		bucketEnv[`${resourceName.toUpperCase()}_BUCKET_NAME`] = actualBucketName
 	})
 
 	return bucketEnv
