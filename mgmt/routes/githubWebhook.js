@@ -4,7 +4,7 @@ const uuid = require('uuid').v4
 
 const Repository = require('../db/Repository')
 const { runTests } = require('../ci')
-const { getInstallationToken } = require('../github')
+const { getInstallationToken, getUltimaYml } = require('../github')
 
 const {
 	GITHUB_WEBHOOK_SECRET,
@@ -17,7 +17,7 @@ const webhooks = new Webhooks({
 webhooks.on("*", async ({ id, name, payload }) => {
 	console.log(name, "event received")
 	if (name === 'push') {
-		const { installation, commits, repository } = payload
+		const { installation, repository, ref } = payload
 		const installationId = installation.id
 
 		const exists = await Repository.query().where({
@@ -25,11 +25,13 @@ webhooks.on("*", async ({ id, name, payload }) => {
 			vcs: 'github',
 		}).first()
 
-		const touchedUltimaYml = commits.some(({ added, removed, modified }) => {
-			return [added,removed,modified].flat().includes('.ultima.yml')
-		})
+		const branch = ref.split('refs/heads/')[1]
+		const [owner, repo] = repository.full_name.split('/')
+		const yml = await getUltimaYml(installationId, { owner, repo, branch })
+
+		const hasUltimaYml = !!yml
 		
-		if (exists || touchedUltimaYml) {
+		if (exists || hasUltimaYml) {
 			if (!exists) {
 				// start tracking
 				await Repository.query().insert({

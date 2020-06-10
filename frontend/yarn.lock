@@ -1281,6 +1281,11 @@
     "@types/yargs" "^15.0.0"
     chalk "^3.0.0"
 
+"@monaco-editor/react@^3.3.1":
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-3.3.1.tgz#abc2a587f7413b60b250c170a9cfa3454875ac6a"
+  integrity sha512-0Slv0d7aX6yS3/Rbk2AWKGSsD4zc7J7BSMCygzXlNJUlzxk1fXb7iITkCYrqLWtQzlGCTCXHrn9kW8PYVpmxQA==
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"

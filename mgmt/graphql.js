@@ -7,6 +7,7 @@ const Deployment = require('./db/Deployment')
 const User = require('./db/User')
 const Resource = require('./db/Resource')
 const Repository = require('./db/Repository')
+const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
@@ -27,6 +28,8 @@ const {
 
     PUBLIC_IPV4,
     PUBLIC_IPV6,
+
+    GITHUB_APP_NAME,
 } = process.env
 
 const admins = [
@@ -166,6 +169,8 @@ const typeDefs = gql`
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
         listGithubRepos: [GithubRepo]
+        getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): String
+        getGithubAppName: String
         # listRepos: [Repository]
     }
 
@@ -185,26 +190,90 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
 
 const unique = myArray => [...new Set(myArray)]
 
-const repoCache = {}
+const listGithubRepos = async (accessToken, username) => {
+    const repos = await github.listRepos({ accessToken })
+    const repoIds = repos.map(r => r.id)
+
+    const existing = await GithubRepository.query().whereIn('id', repos.map(r => r.id))
+    const existingIds = existing.map(r => r.id)
+    const newRepos = repos.filter(r => !existingIds.includes(r.id))
+
+    const deletedRepoIds = existingIds.filter(id => !repoIds.includes(id))
+
+    if (newRepos.length) {
+        await GithubRepository.query().insert(
+            newRepos.map(({ id, created_at, pushed_at, name, full_name, private, installationId }) => ({
+                id,
+                createdAt: created_at,
+                pushedAt: pushed_at,
+                username,
+                name,
+                full_name,
+                private,
+                installationId,
+            }))
+        )
+    }
+
+    if (deletedRepoIds.length) {
+        await GithubRepository.query().where({
+            username,
+        }).whereIn('id', deletedRepoIds).delete()
+    }
+
+    if (existing.length) {
+        await Promise.all(
+            existing.map(({ id, created_at, pushed_at, name, full_name, private, installationId }) => GithubRepository.query().update({
+                id,
+                createdAt: created_at,
+                pushedAt: pushed_at,
+                username,
+                name,
+                full_name,
+                private,
+                installationId,
+            }).where({
+                id,
+                username,
+            }))
+        )
+    }
+}
 
 const resolvers = {
     Query: {
+        getGithubAppName: () => GITHUB_APP_NAME,
+        getUltimaYml: async (parent, { owner, repoName, branch, force }, context) => {
+            const { username } = context.user
+            const repo = await GithubRepository.query().where({ username, full_name: [owner, repoName].join('/') }).first()
+            if (!repo) {
+                return null
+            }
+
+            const file = await github.getUltimaYml(repo.installationId, { owner, repo: repoName, branch })
+            console.log(file)
+
+            return file
+        },
         listGithubRepos: async (parent, { force }, context) => {
-            const { githubAccessToken } = context.user
+            const { githubAccessToken, username } = context.user
             if (!githubAccessToken) {
                 throw new Error('unauthorized')
             }
-            if (!repoCache[githubAccessToken] || force) {
-                repoCache[githubAccessToken] = await github.listRepos({ accessToken: githubAccessToken })
+            
+            let results = await GithubRepository.query().where({ username })
+            if (!results.length || force) {
+                await listGithubRepos(githubAccessToken, username)
+                results = await GithubRepository.query().where({ username })
             }
 
-            const ultimaRepos = await Repository.query().whereIn('fullName', repoCache[githubAccessToken].map(r => r.full_name))
+            const ultimaRepos = await Repository.query().whereIn('fullName', results.map(r => r.full_name))
             const urMap = {}
             ultimaRepos.forEach(({ fullName }) => {
                 urMap[fullName] = true
             })
 
-            return repoCache[githubAccessToken].map(repo => {
+            return results.map(repo => {
                 return {
                     ...repo,
                     isUltima: !!ultimaRepos[repo.full_name],

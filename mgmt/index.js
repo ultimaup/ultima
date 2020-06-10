@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 
 app.listen({ port: PORT }, () => {
     console.log(`🚀  Server ready at ${PORT}`)
-    setTimeout(() => {
-        ensureAllLiveDeploymentsExist().catch(console.error)
-    }, 2000)
+    // setTimeout(() => {
+    //     ensureAllLiveDeploymentsExist().catch(console.error)
+    // }, 2000)
 })
