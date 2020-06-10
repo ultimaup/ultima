@@ -34,9 +34,8 @@ const Right = styled.div`
     }
 
     a:not(:last-child) {
-        margin-right: 12px;
+        margin-right: 36px;
     }
-
 `
 
 const Divider = styled.div`
@@ -95,6 +94,7 @@ const UserMenuContainer = styled.div`
     position: relative;
     display: flex;
     align-items: center;
+    cursor: pointer;
     ${Avatar} {
         margin-right: 12px;
     }
@@ -105,7 +105,7 @@ const UserName = styled.span`
     text-transform: uppercase;
     color: #dbdbdb;
     max-width: 300px;
-    overflow-x: hidden;
+    overflow: hidden;
     text-overflow: ellipsis;
     font-size: .8em;
     font-weight: bold;
@@ -119,7 +119,6 @@ const UserMenu = () => {
     const [isActive, setIsActive] = useState(false)
     const token = getToken()
     const user = token ? jwtDecode(token) : {}
-    console.log(user)
     return <UserMenuContainer onClick={() => setIsActive(!isActive)}>
         <Avatar src={user.imageUrl} />
         <div>
@@ -165,10 +164,10 @@ const Navbar = () => {
                         </a>
                     </div>
                     <Right>
-                        <a className="cli-link" onClick={() => setCliModalOpen(true)}>
+                        <a title="CLI Login" className="cli-link" onClick={() => setCliModalOpen(true)}>
                             <Octicon icon={Terminal} width={24} />
                         </a>
-                        <a href="/repo/create">
+                        <a title="Create new Repository" href="/repo/create">
                             <Octicon icon={Plus} width={12} />
                         </a>
                         <UserMenu />

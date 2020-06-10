@@ -12,6 +12,11 @@ import useGetUltimaYml from '../../hooks/useGetUltimaYml'
 const Container = styled.div`
     display: flex;
     position: relative;
+    margin-top: 16px;
+
+    p { 
+        font-size: 100%;
+    }
 `
 
 const ConfigEditorContainer = styled.div`
@@ -83,7 +88,7 @@ const RepoHome = () => {
                             zIndex: 10,
                             top: 0,
                         }}>
-                            Manage Project Config
+                            Manage Environment Config
                         </h3>
 
                         <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>

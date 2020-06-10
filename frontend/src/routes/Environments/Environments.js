@@ -246,7 +246,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
 
     return (
         <Router>
-            <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Project Config</a>
+            <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Environment Config</a>
 
             {resources.map(({ name, id, resources }) => {
                 return (

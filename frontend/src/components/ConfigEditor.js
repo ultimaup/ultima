@@ -548,7 +548,7 @@ const ConfigEditor = ({ ioEle, monaco = window.monaco }) => {
                     zIndex: 10,
                     top: 0,
                 }}>
-                    Manage Project Config
+                    Manage Environment Config
                 </h3>
 
                 <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
