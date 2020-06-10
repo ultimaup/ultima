@@ -5,6 +5,7 @@ import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions } from '@primer/octicons-react'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
+import NavBar from '../../components/Navbar'
 
 import useGetUltimaYml from '../../hooks/useGetUltimaYml'
 
@@ -51,11 +52,12 @@ const RepoHome = () => {
     }, [ultimaYml])
 
     return (
-        <div className="repository file list">
+        <div className="repository file list" style={{ paddingTop: 0 }}>
+            <NavBar />
             <GiteaStyles />
-            <div className="header-wrapper">
-                <div className="ui container">
-                    <div className="repo-header">
+            <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
+                <div className="ui container" >
+                    <div className="repo-header"style={{ marginTop: 8, marginBottom: 12 }}>
                         <div class="ui huge breadcrumb repo-title">
                             <a href="/joshbalfour">joshbalfour</a>
                             <div class="divider"> / </div>
