@@ -58,8 +58,6 @@ router.get('/auth/github-redirect', async (req, res) => {
         githubAccessToken: access_token,
     })
 
-    console.log(token)
-
     if (!user.activated) {
         return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({
             token,

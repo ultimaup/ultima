@@ -6,6 +6,7 @@ const { Octokit } = require("@octokit/rest")
 const { createAppAuth } = require("@octokit/auth-app")
 const { request } = require("@octokit/request")
 const { paginateRest } = require("@octokit/plugin-paginate-rest")
+const JWT = require('jsonwebtoken')
 
 Octokit.plugin(paginateRest)
 
@@ -18,8 +19,6 @@ const {
 } = process.env
 
 const PRIVATE_KEY = fs.readFileSync(GITHUB_APP_KEY_LOCATION, 'utf-8')
-
-const app = new App({ id: GITHUB_APP_ID, privateKey: PRIVATE_KEY })
 
 const githubGet = (url, token) => fetch(url, {
 	method: 'get',
@@ -43,6 +42,7 @@ const githubCodeToAuth = code => fetch('https://github.com/login/oauth/access_to
 }).then(r => r.json())
 
 const octokit = new Octokit()
+const app = new App({ id: GITHUB_APP_ID, privateKey: PRIVATE_KEY })
 
 const listRepos = async ({ accessToken }) => {
 	const { data: { installations } } = await request("GET /user/installations", {
@@ -78,32 +78,44 @@ const listRepos = async ({ accessToken }) => {
 }
 
 const getInstallationToken = async (installationId) => {
-	return await app.getInstallationAccessToken({
-		installationId,
-	})
-}
-
-const getUltimaYml = async (installationId, {owner, repo, branch}) => {
-	const installationAccessToken = await app.getInstallationAccessToken({
-		installationId,
-	})
-	const path = '.ultima.yml'
-	const { data } = await request("GET /repos/:owner/:repo/contents/:path", {
-		owner, repo,
-		path, ref: branch,
+	const jwt = app.getSignedJsonWebToken()
+	const { data: { token } } = await request('POST /app/installations/:installation_id/access_tokens', {
+		installation_id: installationId,
 		headers: {
-			authorization: `Bearer ${installationAccessToken}`,
+			authorization: `Bearer ${jwt}`,
 			accept: "application/vnd.github.machine-man-preview+json",
 		},
 	})
+
+	return token
+}
+
+const getUltimaYml = async (installationId, {owner, repo, branch}) => {
+	const installationAccessToken = await getInstallationToken(installationId)
+	const path = '.ultima.yml'
+	try {
+		const { data } = await request("GET /repos/:owner/:repo/contents/:path", {
+			owner, repo,
+			path, ref: branch,
+			headers: {
+				authorization: `Bearer ${installationAccessToken}`,
+				accept: "application/vnd.github.machine-man-preview+json",
+			},
+		})
+
+		console.log(data)
 	
-	return data
+		return data
+	} catch (e) {
+		if (e.message.toLowerCase().includes('not found')) {
+			return ''
+		}
+		throw e
+	}
 }
 
 const setUltimaYml = async (installationId, {owner, repo, branch}, {message, sha}, content) => {
-	const installationAccessToken = await app.getInstallationAccessToken({
-		installationId,
-	})
+	const installationAccessToken = await getInstallationToken(installationId)
 	const path = '.ultima.yml'
 
 	const { data } = await request("PUT /repos/:owner/:repo/contents/:path", {

@@ -480,47 +480,64 @@ const AddModule = ({ value, setValue }) => {
     )
 }
 
-const ConfigEditor = ({ ioEle }) => {
-    const [value, setV] = useState({})
+export const ControlledConfigEditor = ({ value, setValue }) => {
+    const [data, setD] = useState({}) 
+    
+    useEffect(() => {
+        setD(value ? YAML.parse(value) : {})
+    }, [value])
+
+    const setData = (newValue) => {
+        if (!Object.keys(newValue).length) {
+            return setValue('')
+        }
+
+        const v = YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}') && !l.endsWith('null')).join('\n')
+        setValue(v)
+    }
+
+    console.log(data)
+
+    return (
+        <>
+            {Object.entries(data || {}).map(([key, module]) => (
+                <ConfigModule moduleKey={key} key={key} module={module} value={data} setValue={setData} />
+            ))}
+        
+            <AddModule value={data} setValue={setData} />
+        </>
+    )
+}
+
+const ConfigEditor = ({ ioEle, monaco = window.monaco }) => {
+    const [value, setV] = useState('')
 
     useEffect(() => {
         let model
 
         const onChange = () => {
-            const content = model.getLinesContent().join('\n')
-            const data = YAML.parse(content)
-            setV(data || {})
+            setV(model.getLinesContent().join('\n'))
         }
 
         if (ioEle) {
-            model = window.monaco && window.monaco.editor.getModels()[0]
+            model = monaco && monaco.editor.getModels()[0]
             if (model) {
                 model.onDidChangeContent(onChange)
             } else {
                 let a = setInterval(() => {
-                    model = window.monaco && window.monaco.editor.getModels()[0]
+                    model = monaco && monaco.editor.getModels()[0]
                     if (model) {
                         model.onDidChangeContent(onChange)
                         clearInterval(a)
                     }
                 },50)
             }
-
-            const data = YAML.parse(ioEle.value)
-            if (data) {
-                setV(data)
-            }
+            setV(ioEle.value)
         }
-    }, [ioEle])
 
-    const setValue = newValue => {
-        if (!Object.keys(newValue).length) {
-            window.monaco.editor.getModels()[0].setValue('')
-        } else {
-            window.monaco.editor.getModels()[0].setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}') && !l.endsWith('null')).join('\n'))
-        }
-        document.getElementById('commit-button').disabled = false
-    }
+    }, [ioEle, monaco])
+
+    console.log(value)
 
     return (
         <div>
@@ -535,11 +552,10 @@ const ConfigEditor = ({ ioEle }) => {
                 </h3>
 
                 <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
-                    {Object.entries(value || {}).map(([key, module]) => (
-                        <ConfigModule moduleKey={key} key={key} module={module} value={value} setValue={setValue} />
-                    ))}
-
-                    <AddModule value={value} setValue={setValue} />
+                    <ControlledConfigEditor value={value} setValue={(value) => {
+                        document.getElementById('commit-button').disabled = false
+                        monaco.editor.getModels()[0].setValue(value)
+                    }} />
                 </div>
                 
             </form>

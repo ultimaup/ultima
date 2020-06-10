@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import Octicon, { MarkGithub, Lock, Repo, Star } from '@primer/octicons-react'
+import Octicon, { MarkGithub, Lock, Repo } from '@primer/octicons-react'
 
 import useRepositories from '../../hooks/useRepositories'
+import useGithubAppName from '../../hooks/useGithubAppName'
 
 const StyledRLI = styled.li`
     svg {
@@ -43,18 +44,29 @@ const SmallLogoContainer = styled.div`
     justify-content: flex-end;
 `
 
-const RepoListItem = ({ isPrivate, name, isUltima }) => (
+const RepoListItem = ({ id, isPrivate, name, onAddRepo, isUltima }) => (
     <StyledRLI className={isPrivate ? 'private' : null}>
-        <a>
+        <a href={`/repo/${name}`}>
             <Octicon icon={isPrivate ? Lock : Repo} />
             &nbsp;
             <strong className="text truncate item-name">{name}</strong>
             <SmallLogoContainer>
-                {isUltima ? <SmallLogo /> : <Badge>Add</Badge>}
+                {isUltima ? <SmallLogo /> : <Badge onClick={() => onAddRepo(id)}>Add</Badge>}
             </SmallLogoContainer>
         </a>
     </StyledRLI>
 )
+
+const EmptyState = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 12px;
+    a {
+        margin-top: 12px !important;
+    }
+`
 
 const RepoListContainer = styled.div`
     margin-bottom: 24px !important;
@@ -62,41 +74,49 @@ const RepoListContainer = styled.div`
 
 const RepoList = () => {
     const { loading, repositories } = useRepositories()
+    const { githubAppName } = useGithubAppName()
     const [onlyUltima, setOnlyUltima] = useState(true)
-
     const displayedRepos = repositories ? repositories.filter(r => onlyUltima ? r.isUltima : true) : []
 
     return (
-        <RepoListContainer className="ui tab active list dashboard-repos">
-            <h4 class="ui top attached header">
-                <Octicon icon={MarkGithub} /> &nbsp;
-                GitHub Repositories 
-                <span class="ui grey label">{repositories ? repositories.filter(r => r.isUltima).length : ''}</span> 
-                <div class="ui right">
-                    <a onClick={() => {
-                        setOnlyUltima(!onlyUltima)
-                    }} data-content="New Repository" data-variation="tiny inverted" data-position="left center" className="poping up">
-                        {!loading && displayedRepos.length === 0 && (
-                            <>
-                                Add a GitHub Repo&nbsp;
-                            </>
-                        )}
-                        <i className="plus icon" style={{
-                            transform: onlyUltima ? undefined : 'rotate(45deg)',
-                        }}></i> 
-                        <span className="sr-only">New Repository</span>
-                    </a>
-                </div>
-            </h4>
+        <>
+            <RepoListContainer className="ui tab active list dashboard-repos">
+                <h4 className="ui top attached header">
+                    <Octicon icon={MarkGithub} /> &nbsp;
+                    GitHub Repositories 
+                    <span className="ui grey label">{repositories ? repositories.filter(r => r.isUltima).length : ''}</span> 
+                    <div className="ui right">
+                        <a onClick={() => {
+                            setOnlyUltima(!onlyUltima)
+                        }} data-content="New Repository" data-variation="tiny inverted" data-position="left center" className="poping up">
+                            {!loading && repositories.length !== 0 && displayedRepos.length === 0 && (
+                                <>
+                                    Add a GitHub Repo&nbsp;
+                                </>
+                            )}
+                            <i className="plus icon" style={{
+                                transform: onlyUltima ? undefined : 'rotate(45deg)',
+                            }}></i> 
+                            <span className="sr-only">New Repository</span>
+                        </a>
+                    </div>
+                </h4>
 
-            <div className="ui attached table segment">
-                <ul className="repo-owner-name-list">
-                    {loading ? <li>Loading...</li> : (
-                        displayedRepos.map(repo => (<RepoListItem key={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
-                    )}
-                </ul>
-            </div>
-        </RepoListContainer>
+                <div className="ui attached table segment">
+                    <ul className="repo-owner-name-list">
+                        {loading ? <li>Loading...</li> : (
+                            displayedRepos.map(repo => (<RepoListItem onAddRepo={id => {}} key={repo.id} id={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
+                        )}
+                        {!loading && repositories.length === 0 && (
+                            <EmptyState>
+                                <span>Use Ultima to ship your GitHub projects faster</span>
+                                <a className="ui button green" href={`https://github.com/apps/${githubAppName}/installations/new`}>Link with GitHub</a>
+                            </EmptyState>
+                        )}
+                    </ul>
+                </div>
+            </RepoListContainer>
+        </>
     )
 }
 

@@ -4,7 +4,6 @@ import { ApolloProvider } from '@apollo/client'
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
 import Modal from 'react-modal'
 
-import Navbar from './components/Navbar'
 import DeploymentNotification from './components/DeploymentNotification'
 import GettingStarted from './components/GettingStarted'
 import Deployments from './routes/Deployments'
@@ -15,6 +14,7 @@ import CLIModal from './components/CLIModal'
 import ConfigEditor from './components/ConfigEditor'
 import RepoList from './components/RepoList'
 import client from './graphql'
+import DashboardHome from './routes/DashboardHome'
 
 import { getToken } from './utils/token'
 
@@ -123,20 +123,20 @@ const gitea = () => {
             )
         }
 
-        const repoList = asdf.nextElementSibling
-        if (repoList) {
+        const asdfg = document.querySelectorAll('.ui.mobile.reversed.stackable.grid')[0]
+        if (asdfg) {
             const div = document.createElement('div')
-            repoList.children[0].insertAdjacentElement('beforeBegin', div)
+            asdfg.insertAdjacentElement('beforeBegin', div)
+
             ReactDOM.render(
                 <React.StrictMode>
                     <ApolloProvider client={client}>
-                        <RepoList />
+                        <DashboardHome giteaHomepage={asdfg} />
                     </ApolloProvider>
                 </React.StrictMode>,
                 div
             )
         }
-
     }
 
     const newRepo = document.getElementById('new-repo-container')

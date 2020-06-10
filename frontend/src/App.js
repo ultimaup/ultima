@@ -14,6 +14,8 @@ const Login = React.lazy(() => import('./routes/Login'))
 const Legals = React.lazy(() => import('./routes/Legals'))
 const WaitlistAdmin = React.lazy(() => import('./routes/WaitlistAdmin'))
 const Security = React.lazy(() => import('./routes/Security'))
+const RepoHome = React.lazy(() => import('./routes/RepoHome'))
+
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
@@ -32,6 +34,7 @@ const App = () => (
                         <Route path="/security" component={Security} />
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
                         <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
+                        <Route path="/repo/:owner/:repoName" component={RepoHome} />
                         <Route path="/" component={Home} />
                     </Switch>
                 </BrowserRouter>

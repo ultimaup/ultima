@@ -1,10 +1,10 @@
 exports.up = (knex) => {
 	return knex.schema
 		.createTable('repository', (table) => {
-                table.uuid('id').primary()
-                table.string('fullName')
-                table.string('vcs')
-                table.timestamp('createdAt').defaultTo(knex.fn.now())
+                        table.uuid('id').primary()
+                        table.string('fullName')
+                        table.string('vcs')
+                        table.timestamp('createdAt').defaultTo(knex.fn.now())
         })
 }
 

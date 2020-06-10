@@ -18,7 +18,7 @@ const useRepositories = () => {
     return {
         loading,
         error,
-        repositories: data && [...data.listGithubRepos].sort((a,b) => {
+        repositories: data ? [...data.listGithubRepos].sort((a,b) => {
             if (a.isUltima) {
                 return 1
             } else if (b.isUltima) {
@@ -26,7 +26,7 @@ const useRepositories = () => {
             } else {
                 return 0
             }
-        }),
+        }) : [],
     }
 }
 
