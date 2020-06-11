@@ -12,7 +12,6 @@ import NewRepoRoute from './routes/NewRepo'
 import Environments from './routes/Environments'
 import CLIModal from './components/CLIModal'
 import ConfigEditor from './components/ConfigEditor'
-import RepoList from './components/RepoList'
 import client from './graphql'
 import DashboardHome from './routes/DashboardHome'
 

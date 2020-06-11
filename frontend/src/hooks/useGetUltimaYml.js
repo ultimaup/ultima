@@ -2,7 +2,10 @@ import { gql, useQuery } from '@apollo/client'
 
 const GET_ULTIMA_YML = gql`
     query getUltimaYml($owner: String, $repoName: String, $branch: String) {
-        getUltimaYml(owner: $owner, repoName: $repoName, branch: $branch)
+        getUltimaYml(owner: $owner, repoName: $repoName, branch: $branch) {
+            content
+            sha
+        }
     }
 `
 

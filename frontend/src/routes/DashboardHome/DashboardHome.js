@@ -1,9 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { HashRouter as Router, Route, useLocation } from 'react-router-dom'
-
 import RepoList from '../../components/RepoList'
-import RepoHome from '../RepoHome'
 
 const asdf = document.querySelectorAll('.ui.container.ten.wide.column')[0]
 let div
@@ -14,8 +11,7 @@ if (asdf) {
 }
 
 const GiteaHomepage = ({ ele }) => {
-
-    return ReactDOM.createPortal(<RepoList />, div)
+    return ReactDOM.createPortal(<RepoList />, ele)
 }
 
 const DashboardHome = ({ giteaHomepage }) => {

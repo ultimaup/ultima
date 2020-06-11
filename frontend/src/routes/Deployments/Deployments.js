@@ -1,6 +1,6 @@
 import React from 'react'
 import styled, { css } from 'styled-components'
-import { HashRouter, Route, Switch, Link, useParams } from 'react-router-dom'
+import { Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
 import Octicon, {GitBranch} from '@primer/octicons-react'
 import { readableColor } from 'polished'
@@ -191,8 +191,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
 
         if (data.commits) {
             commit = data.commits.find(c => c.id === hash)
-            imageUrl = new URL(data.pusherImageUrl)
-            imageUrl = imageUrl.pathname
+            imageUrl = data.pusherImageUrl
         }
 
         return (
@@ -247,8 +246,8 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
     )
 }
 
-const ActionDetails = ({ owner }) => {
-    const { parentId } = useParams()
+const ActionDetails = () => {
+    const { parentId, owner } = useParams()
     const { action } = useAction(parentId)
     const { loading, error, actions } = useActions({ parentId })
 
@@ -294,22 +293,23 @@ export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick 
     return (
         <ActionsContainer>
             {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
-                <Action key={action.id} {...action} to={`/${action.id}`} onClick={() => onClick && onClick(action.id)} />
+                <Action key={action.id} {...action} to={`/repo/${owner}/${repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )
 }
 
-const Deployments = () => {
+const ActionListRoute = () => {
     const { owner, repoName } = useParams()
+    return <ActionList owner={owner} repoName={repoName} />
+}
 
+const Deployments = () => {
     return (
-        <HashRouter>
-            <Switch>
-                <Route path="/:parentId" component={props => <ActionDetails owner={owner} repoName={repoName} {...props} />} />
-                <Route path="/" component={props => <ActionList owner={owner} repoName={repoName} {...props} />} />
-            </Switch>
-        </HashRouter>
+        <Switch>
+            <Route path="/repo/:owner/:repoName/deployments/:parentId" component={ActionDetails} />
+            <Route path="/repo/:owner/:repoName/deployments" component={ActionListRoute} />
+        </Switch>
     )
 }
 

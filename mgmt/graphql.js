@@ -157,6 +157,11 @@ const typeDefs = gql`
     #     createdAt: DateTime
     # }
 
+    type File {
+        content: String
+        sha: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -169,8 +174,9 @@ const typeDefs = gql`
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
         listGithubRepos: [GithubRepo]
-        getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): String
+        getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getGithubAppName: String
+        getRepo(owner: String, repoName: String): Repo
         # listRepos: [Repository]
     }
 
@@ -180,6 +186,7 @@ const typeDefs = gql`
         createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
         queryCname(hostname: String): CNameResult
         getMinioToken(bucketName: String): MinioAuth
+        setUltimaYml(owner: String, repoName: String, branch: String, commitMessage: String, commitDescription: String, value: String, sha: String) : File
     }
 `
 
@@ -247,12 +254,10 @@ const resolvers = {
             const { username } = context.user
             const repo = await GithubRepository.query().where({ username, full_name: [owner, repoName].join('/') }).first()
             if (!repo) {
-                return null
+                throw new Error('repository not found')
             }
 
             const file = await github.getUltimaYml(repo.installationId, { owner, repo: repoName, branch })
-            console.log(file)
-
             return file
         },
         listGithubRepos: async (parent, { force }, context) => {
@@ -439,8 +444,23 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
             const { username } = context.user
+            const giteaRepos = await getUserRepos({ username })
 
-            return await getUserRepos({ username })
+            return giteaRepos
+        },
+        getRepo: async (parent, { owner, repoName }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+            const { username } = context.user
+
+            const githubRepo = await GithubRepository.query().where({ username, owner, repoName }).first()
+            if (githubRepo) {
+                return githubRepo
+            }
+
+            const giteaRepos = await getUserRepos({ username })
+            return giteaRepos.find(({ full_name }) => full_name === [owner, repoName].join('/'))
         },
         getPGEndpoint: () => {
             let port = PG_BROKER_PORT
@@ -537,6 +557,21 @@ const resolvers = {
                 console.error(e)
             }
             return repo
+        },
+        setUltimaYml: async (parent, { owner, repoName, branch, value, commitMessage, commitDescription, sha }, context) => {
+            const { username } = context.user
+            const repo = await GithubRepository.query().where({ username, full_name: [owner, repoName].join('/') }).first()
+            if (!repo) {
+                throw new Error('repository not found')
+            }
+
+            await github.setUltimaYml(repo.installationId, { owner, repo: repoName, branch }, {
+                message: commitMessage,
+                description: commitDescription,
+                sha,
+            }, value)
+
+            return await github.getUltimaYml(repo.installationId, { owner, repo, branch })
         },
     },
 }
