@@ -21,9 +21,6 @@ document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(e
     ele.classList.add('active')
 })
 
-if (!getToken()) {
-    window.location.href = '/auth/github'
-}
 
 const [cliLink] = document.querySelectorAll('.cli-link')
 
@@ -38,6 +35,9 @@ if (cliLink) {
     )
 }
 const gitea = () => {
+    if (!getToken()) {
+        window.location.href = '/auth/github'
+    }
     const navbar = document.getElementById('ultima-navbar')
 
     if (navbar) {
