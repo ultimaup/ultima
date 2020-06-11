@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { useParams, Route, Switch, NavLink } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
-import Octicon, { Versions, Rocket, Pulse, MarkGithub, Code } from '@primer/octicons-react'
+import Octicon, { Versions, Rocket, Pulse, MarkGithub, Code, Repo, Lock } from '@primer/octicons-react'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
 import NavBar from '../../components/Navbar'
@@ -14,6 +14,7 @@ import useSetUltimaYml from '../../hooks/useSetUltimaYml'
 
 import CommitChanges from './CommitChanges'
 import Logs from '../Logs/Logs'
+import useRepo from '../../hooks/useRepo'
 
 const Container = styled.div`
     display: flex;
@@ -123,7 +124,8 @@ const EditConfig = () => {
 
 const RepoHome = () => {
     const { owner, repoName, branch = 'master' } = useParams()
-
+    const { repo } = useRepo({ repoName, owner })
+    console.log(repo)
     return (
         <>
             <GiteaStyles />
@@ -131,10 +133,12 @@ const RepoHome = () => {
                 <NavBar />
                 <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
                     <div className="ui container" >
-                        <div className="repo-header"style={{ marginTop: 8, marginBottom: 12 }}>
+                        <div className="repo-header"style={{ marginTop: 8, marginBottom: 27 }}>
                             <div class="ui huge breadcrumb repo-title">
+                                <Octicon size={32} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
+                                &nbsp;&nbsp;
                                 <a href={`/repo/${owner}`}>{owner}</a>
-                                <div class="divider"> / </div>
+                                <div class="divider">&nbsp;/&nbsp;</div>
                                 <a href={`/repo/${owner}/${repoName}`}>{repoName}</a>
                             </div>
                         </div>
@@ -153,10 +157,10 @@ const RepoHome = () => {
                                 <Octicon icon={Pulse} />&nbsp;
                                 Logs
                             </NavLink>
-                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
+                            <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
                                 <Octicon icon={MarkGithub} />&nbsp;
-                                Code
-                            </NavLink>
+                                View on GitHub
+                            </a>
                         </div>
                     </div>
                 </div>
