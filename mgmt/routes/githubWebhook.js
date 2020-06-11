@@ -28,9 +28,9 @@ webhooks.on("*", async ({ id, name, payload }) => {
 
 		const branch = ref.split('refs/heads/')[1]
 		const [owner, repo] = repository.full_name.split('/')
-		const yml = await getUltimaYml(installationId, { owner, repo, branch })
+		const { content } = await getUltimaYml(installationId, { owner, repo, branch })
 
-		const hasUltimaYml = !!yml
+		const hasUltimaYml = !!content
 		
 		if (exists || hasUltimaYml) {
 			if (!exists) {
