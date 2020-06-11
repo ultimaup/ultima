@@ -578,8 +578,9 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 	try {
 		await new Promise(async (resolve, reject) => {
 			let promises = []
+			const zipStream = await codeZipUrl()
 			// handle "special" files special-y
-			(await codeZipUrl())
+			zipStream
 				.pipe(unzip.Parse())
 				.on('entry', entry => {
 					const { path, type } = entry
@@ -721,8 +722,6 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 				...genBucketEnv(config, user, repository, ref)
 			}
 		}
-
-		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
 		await Promise.all(
 			Object.entries(config)

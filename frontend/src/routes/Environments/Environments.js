@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import moment from 'moment'
 import Modal from 'react-modal'
-import { HashRouter as Router } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import Octicon, { GitBranch, LinkExternal } from '@primer/octicons-react'
 
@@ -245,17 +245,16 @@ const Environments = ({ owner, repoName, hasConfig }) => {
     }
 
     return (
-        <Router>
-            <a className="ui button green" style={{ marginBottom: 22 }} href={`/${owner}/${repoName}/${hasConfig ? '_edit' : '_new'}/master/.ultima.yml`}>Edit Environment Config</a>
-
+        <>
             {resources.map(({ name, id, resources }) => {
                 return (
                     <EnvironmentsContainer key={id}>
-                        <h3 className="ui top attached header">
+                        <h3 className="ui top attached header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <a href={`/${owner}/${repoName}/src/branch/${name}`}>
                                 <Octicon icon={GitBranch} size={21} />
                                 {name}
                             </a>
+                            <Link className="ui button" to={`/repo/${owner}/${repoName}/${name}/config`}>Edit Config</Link>
                         </h3>
                         <h5>Resources</h5>
                         <EnvList>
@@ -263,9 +262,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
                         </EnvList>
                         <h5>Recent Deployments</h5>
                         <DeploymentsContainer>
-                            <ActionList owner={owner} repoName={repoName} branch={name} limit={3} onClick={(id) => {
-                                window.location.href = window.location.pathname + `/activity/deployments#/${id}`
-                            }} />
+                            <ActionList owner={owner} repoName={repoName} branch={name} limit={3} />
                         </DeploymentsContainer>
                     </EnvironmentsContainer>
                 )
@@ -311,7 +308,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
                     {/* </div> */}
                 </div>
             </Modal>
-        </Router>
+        </>
     )
 }
 

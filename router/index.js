@@ -258,7 +258,9 @@ const init = async () => {
                 ...c,
                 extensions: c.extensions ? JSON.parse(c.extensions) : c.extensions,
             }))
-        ].map(ensureConfig)
+        ].map(args => ensureConfig(args).catch(e => {
+            console.error(e, args)
+        }))
     )
 
     console.log(`ensured ${configs.length} configs`)

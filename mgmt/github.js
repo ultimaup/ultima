@@ -90,6 +90,9 @@ const getInstallationToken = async (installationId) => {
 	return token
 }
 
+const b64e = data => Buffer.from(data).toString('base64')
+const b64d = data => Buffer.from(data, 'base64').toString()
+
 const getUltimaYml = async (installationId, {owner, repo, branch}) => {
 	const installationAccessToken = await getInstallationToken(installationId)
 	const path = '.ultima.yml'
@@ -103,13 +106,20 @@ const getUltimaYml = async (installationId, {owner, repo, branch}) => {
 			},
 		})
 
-		console.log(data)
+		const { sha, content } = data
 	
-		return data
+		return {
+			sha,
+			content: b64d(content),
+		}
 	} catch (e) {
 		if (e.message.toLowerCase().includes('not found')) {
-			return ''
+			return {
+				content: '',
+				sha: null,
+			}
 		}
+		console.error(e)
 		throw e
 	}
 }
@@ -121,7 +131,7 @@ const setUltimaYml = async (installationId, {owner, repo, branch}, {message, sha
 	const { data } = await request("PUT /repos/:owner/:repo/contents/:path", {
 		owner, repo,
 		path, branch, 
-		message, sha, content,
+		message, sha, content: b64e(content),
 		headers: {
 			authorization: `Bearer ${installationAccessToken}`,
 			accept: "application/vnd.github.machine-man-preview+json",

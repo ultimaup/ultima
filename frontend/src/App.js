@@ -34,7 +34,7 @@ const App = () => (
                         <Route path="/security" component={Security} />
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
                         <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
-                        <Route path="/repo/:owner/:repoName" component={RepoHome} />
+                        <Route path="/repo/:owner/:repoName/:branch?" component={RepoHome} />
                         <Route path="/" component={Home} />
                     </Switch>
                 </BrowserRouter>

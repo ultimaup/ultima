@@ -12,6 +12,7 @@ const {
 
 const webhooks = new Webhooks({
 	secret: GITHUB_WEBHOOK_SECRET,
+	path: '/github/app-webhook'
 })
 
 webhooks.on("*", async ({ id, name, payload }) => {

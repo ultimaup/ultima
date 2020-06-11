@@ -496,8 +496,6 @@ export const ControlledConfigEditor = ({ value, setValue }) => {
         setValue(v)
     }
 
-    console.log(data)
-
     return (
         <>
             {Object.entries(data || {}).map(([key, module]) => (
@@ -537,29 +535,25 @@ const ConfigEditor = ({ ioEle, monaco = window.monaco }) => {
 
     }, [ioEle, monaco])
 
-    console.log(value)
-
     return (
-        <div>
-            <form className="ui form" onSubmit={e => e.preventDefault()} style={{ position: 'initial' }}>
-                <h3 className="ui top attached header" style={{
-                    position: 'absolute',
-                    width: '100%',
-                    zIndex: 10,
-                    top: 0,
-                }}>
-                    Manage Environment Config
-                </h3>
+        <form className="ui form" onSubmit={e => e.preventDefault()} style={{ position: 'initial' }}>
+            <h3 className="ui top attached header" style={{
+                position: 'absolute',
+                width: '100%',
+                zIndex: 10,
+                top: 0,
+            }}>
+                Manage Environment Config
+            </h3>
 
-                <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
-                    <ControlledConfigEditor value={value} setValue={(value) => {
-                        document.getElementById('commit-button').disabled = false
-                        monaco.editor.getModels()[0].setValue(value)
-                    }} />
-                </div>
-                
-            </form>
-        </div>
+            <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
+                <ControlledConfigEditor value={value} setValue={(value) => {
+                    document.getElementById('commit-button').disabled = false
+                    monaco.editor.getModels()[0].setValue(value)
+                }} />
+            </div>
+            
+        </form>
     )
 }
 

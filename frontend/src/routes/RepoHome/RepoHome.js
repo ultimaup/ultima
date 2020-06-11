@@ -1,13 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { useParams } from 'react-router-dom'
+import { useParams, Route, Switch, NavLink } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
-import Octicon, { Versions } from '@primer/octicons-react'
+import Octicon, { Versions, Rocket, Pulse, MarkGithub, Code } from '@primer/octicons-react'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
 import NavBar from '../../components/Navbar'
+import Environments from '../Environments'
+import Deployments from '../Deployments'
 
 import useGetUltimaYml from '../../hooks/useGetUltimaYml'
+import useSetUltimaYml from '../../hooks/useSetUltimaYml'
+
+import CommitChanges from './CommitChanges'
+import Logs from '../Logs/Logs'
 
 const Container = styled.div`
     display: flex;
@@ -15,7 +21,7 @@ const Container = styled.div`
     margin-top: 16px;
 
     p { 
-        font-size: 100%;
+        font-size: 100% !important;
     }
 `
 
@@ -45,40 +51,23 @@ const GiteaStyles = () => (
 )
 
 // repository file list
-const RepoHome = () => {
-    const { owner, repo } = useParams()
+const EditConfig = () => {
+    const { owner, repoName, branch = 'master' } = useParams()
     const [value, setValue] = useState('')
-    const { loading, ultimaYml } = useGetUltimaYml({ owner, repoName: repo, branch: 'master' })
+    const { loading, ultimaYml } = useGetUltimaYml({ owner, repoName, branch })
+    const { setUltimaYml } = useSetUltimaYml({ owner, repoName })
+
+    console.log('ultimaYml', ultimaYml)
 
     useEffect(() => {
-        if (!value && ultimaYml) {
-            setValue(ultimaYml)
+        if (!value && ultimaYml && ultimaYml.content) {
+            setValue(ultimaYml.content)
         }
     }, [ultimaYml])
 
     return (
-        <div className="repository file list" style={{ paddingTop: 0 }}>
-            <NavBar />
-            <GiteaStyles />
-            <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
-                <div className="ui container" >
-                    <div className="repo-header"style={{ marginTop: 8, marginBottom: 12 }}>
-                        <div class="ui huge breadcrumb repo-title">
-                            <a href="/joshbalfour">joshbalfour</a>
-                            <div class="divider"> / </div>
-                            <a href="/joshbalfour/testing17">testing17</a>
-                        </div>
-                    </div>
-                </div>
-                <div className="ui tabs container">
-                    <div className="ui tabular stackable menu navbar">
-                        <a className="active item">
-                            <Octicon icon={Versions} />&nbsp;
-                            Environments
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <>
+            
             <div className="ui container">
                 <Container>
                     <ConfigEditorContainer className="ui form">
@@ -109,7 +98,78 @@ const RepoHome = () => {
                     </EditorContainer>
                 </Container>
             </div>
-        </div>
+            <div className="ui container form repository file editor">
+                <CommitChanges 
+                    branch={branch} 
+                    fileContentsChanged={!!value} 
+                    onSubmit={({ commitMessage, description, branchName }) => {
+                        setUltimaYml({
+                            commitMessage, 
+                            commitDescription:description,
+                            branch: branchName || branch,
+                            value,
+                            sha: ultimaYml.sha,
+                        }).then(() => {
+                            window.location.href = `/repo/${owner}/${repoName}/${branchName || branch}`
+                        }).catch(e => {
+                            console.error(e)
+                        })
+                    }}
+                />
+            </div>
+        </>
+    )
+}
+
+const RepoHome = () => {
+    const { owner, repoName, branch = 'master' } = useParams()
+
+    return (
+        <>
+            <GiteaStyles />
+            <div className="repository file list" style={{ paddingTop: 0 }}>
+                <NavBar />
+                <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
+                    <div className="ui container" >
+                        <div className="repo-header"style={{ marginTop: 8, marginBottom: 12 }}>
+                            <div class="ui huge breadcrumb repo-title">
+                                <a href={`/repo/${owner}`}>{owner}</a>
+                                <div class="divider"> / </div>
+                                <a href={`/repo/${owner}/${repoName}`}>{repoName}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="ui tabs container">
+                        <div className="ui tabular stackable menu navbar">
+                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
+                                <Octicon icon={Versions} />&nbsp;
+                                Environments
+                            </NavLink>
+                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
+                                <Octicon icon={Rocket} />&nbsp;
+                                Deployments
+                            </NavLink>
+                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
+                                <Octicon icon={Pulse} />&nbsp;
+                                Logs
+                            </NavLink>
+                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
+                                <Octicon icon={MarkGithub} />&nbsp;
+                                Code
+                            </NavLink>
+                        </div>
+                    </div>
+                </div>
+                <div className="ui container" style={{ marginTop: 12 }}>
+                    <Switch>
+                        <Route path="/repo/:owner/:repoName/deployments" component={Deployments}/>
+                        <Route path="/repo/:owner/:repoName/logs" component={Logs}/>
+                        <Route path="/repo/:owner/:repoName/:branch/config" component={EditConfig}/>
+                        <Route path="/repo/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
+                    </Switch>
+                </div>
+            </div>
+        </>
     )
 }
 
