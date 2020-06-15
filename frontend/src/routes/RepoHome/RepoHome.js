@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { useParams, Route, Switch, NavLink } from 'react-router-dom'
+import { useParams, Route, Switch, NavLink, Link } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
 
@@ -43,8 +43,6 @@ const EditConfig = () => {
     const [value, setValue] = useState('')
     const { loading, ultimaYml } = useGetUltimaYml({ owner, repoName, branch })
     const { setUltimaYml } = useSetUltimaYml({ owner, repoName })
-
-    console.log('ultimaYml', ultimaYml)
 
     useEffect(() => {
         if (!value && ultimaYml && ultimaYml.content) {
@@ -121,9 +119,9 @@ const RepoHome = () => {
                             <div class="ui huge breadcrumb repo-title">
                                 <Octicon size={32} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
                                 &nbsp;&nbsp;
-                                <a href={`/repo/${owner}`}>{owner}</a>
+                                <a>{owner}</a>
                                 <div class="divider">&nbsp;/&nbsp;</div>
-                                <a href={`/repo/${owner}/${repoName}`}>{repoName}</a>
+                                <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
                             </div>
                         </div>
                     </div>
@@ -158,7 +156,7 @@ const RepoHome = () => {
                         </div>
                     </div>
                 </div>
-                <div className="ui container" style={{ marginTop: 12 }}>
+                <div className="ui container" style={{ marginTop: 12, marginBottom: 36 }}>
                     <Switch>
                         <Route path="/repo/:owner/:repoName/deployments" component={Deployments}/>
                         <Route path="/repo/:owner/:repoName/logs" component={Logs}/>

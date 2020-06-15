@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Switch } from 'react-router-dom'
 
 import FullPageLayout from './layouts/FullPage'
 import DevBucketRedirect from './routes/DevBucketRedirect'
-
 import Home from './routes/Home'
 import SlackRedirect from './components/SlackRedirect'
 import { ApolloProvider } from '@apollo/client'
@@ -16,6 +15,7 @@ const Legals = React.lazy(() => import('./routes/Legals'))
 const WaitlistAdmin = React.lazy(() => import('./routes/WaitlistAdmin'))
 const Security = React.lazy(() => import('./routes/Security'))
 const RepoHome = React.lazy(() => import('./routes/RepoHome'))
+const NewRepo = React.lazy(() => import('./routes/NewRepo'))
 const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
 
 const SecurityRedirect = () => {
@@ -46,6 +46,7 @@ const App = () => (
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
                         <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
                         <Route path="/repo/:owner/:repoName/:branch?" component={RepoHome} />
+                        <Route path="/repo/create" component={NewRepo} />
                         <Route path="/" component={() => {
                             return getToken() ? <DashboardHome/> : <Home />
                         }} />

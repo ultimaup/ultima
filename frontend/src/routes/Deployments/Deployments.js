@@ -9,6 +9,7 @@ import { useActions, useAction } from '../../hooks/useActions'
 import { Badge } from '../../components/Badge'
 import { LogFrame } from '../Logs/Logs'
 import StatusDot from '../../components/StatusDot'
+import Loading from '../../components/Loading'
 
 export const ActionContainer = styled.div`
     display: flex;
@@ -252,7 +253,7 @@ const ActionDetails = () => {
     const { loading, error, actions } = useActions({ parentId })
 
     if (loading) {
-        return <p>Loading...</p>
+        return <Loading />
     }
 
     if (error) {
@@ -274,11 +275,11 @@ const ActionDetails = () => {
     )
 }
 
-export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick }) => {
+export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, onClick }) => {
     const { loading, error, actions } = useActions({ owner, repoName })
 
     if (loading) {
-        return <p>Loading...</p>
+        return <Loading />
     }
 
     if (error) {
@@ -291,9 +292,9 @@ export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick 
     }
 
     return (
-        <ActionsContainer>
+        <ActionsContainer style={style}>
             {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
-                <Action key={action.id} {...action} to={`/repo/${owner}/${repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
+                <Action key={action.id} {...action} to={`/repo/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )

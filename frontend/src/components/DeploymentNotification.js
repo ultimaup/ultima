@@ -6,8 +6,8 @@ import {useActions} from '../hooks/useActions'
 
 const Container = styled.div`
     position: absolute;
-    margin-left: 6px;
-    margin-top: -4px;
+    margin-top: 1px;
+    right: 9px;
 `
 
 const DeploymentNotification = ({ owner, repoName }) => {

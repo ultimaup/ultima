@@ -1,13 +1,6 @@
 <link rel="stylesheet" href="/assets/gitea.css" /> 
-<script>
-__webpack_public_path__ = '/assets/'
-fetch('/assets/asset-manifest.json').then(r => r.json()).then(data => {
-     Object.values(data.files)
-        .filter(e => e.endsWith('.js'))
-        .forEach(e => {
-            const script = document.createElement('script')
-            script.src = e
-            document.head.appendChild(script)
-        })
-})
-</script>
+<script src="/assets/gitea.js"></script>
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+<link rel="manifest" href="/assets/site.webmanifest">

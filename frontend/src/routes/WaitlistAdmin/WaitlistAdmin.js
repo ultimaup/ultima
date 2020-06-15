@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import { gql, useMutation } from '@apollo/client'
 
 import useUsers from '../../hooks/useUsers'
+import Loading from '../../components/Loading'
 
 const ACTIVATE_USER = gql`
   mutation activateUser($id: ID, $activated: Boolean) {
@@ -61,7 +62,7 @@ const WaitlistAdmin = () => {
     const { loading, error, users } = useUsers()
 
     if (loading) {
-        return <p>loading...</p>
+        return <Loading />
     }
 
     if (error) {
