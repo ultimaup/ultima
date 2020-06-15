@@ -7,6 +7,7 @@ import DevBucketRedirect from './routes/DevBucketRedirect'
 import Home from './routes/Home'
 import SlackRedirect from './components/SlackRedirect'
 import { ApolloProvider } from '@apollo/client'
+import { getToken } from './utils/token'
 
 import client from './graphql'
 
@@ -15,16 +16,26 @@ const Legals = React.lazy(() => import('./routes/Legals'))
 const WaitlistAdmin = React.lazy(() => import('./routes/WaitlistAdmin'))
 const Security = React.lazy(() => import('./routes/Security'))
 const RepoHome = React.lazy(() => import('./routes/RepoHome'))
-
+const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
 }
 
+const Loading = () => (
+    <>
+        <div style={{
+            background: '#383c4a',
+            height: '100vh',
+            width: '100%',
+        }} />
+    </>
+)
+
 const App = () => (
     <ApolloProvider client={client}>
         <FullPageLayout>
-            <React.Suspense fallback={<span>Loading...</span>}>
+            <React.Suspense fallback={<Loading />}>
                 <BrowserRouter>
                     <Switch>
                         <Route path="/admin/waitlist" component={WaitlistAdmin} />
@@ -35,7 +46,9 @@ const App = () => (
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
                         <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
                         <Route path="/repo/:owner/:repoName/:branch?" component={RepoHome} />
-                        <Route path="/" component={Home} />
+                        <Route path="/" component={() => {
+                            return getToken() ? <DashboardHome/> : <Home />
+                        }} />
                     </Switch>
                 </BrowserRouter>
             </React.Suspense>

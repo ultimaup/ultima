@@ -11,6 +11,7 @@ const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
 const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
+const gitea = require('./gitea')
 const { runTests, genBucketPass } = require('./ci')
 
 const { getCname } = require('./dns')
@@ -76,6 +77,7 @@ const typeDefs = gql`
         full_name: String
         private: Boolean
         ssh_url: String
+        vcs: String
     }
 
     type Route {
@@ -149,13 +151,6 @@ const typeDefs = gql`
         private: Boolean
         isUltima: Boolean
     }
-
-    # type Repository {
-    #     id: ID,
-    #     fullName: String
-    #     vcs: String
-    #     createdAt: DateTime
-    # }
 
     type File {
         content: String
@@ -252,13 +247,20 @@ const resolvers = {
         getGithubAppName: () => GITHUB_APP_NAME,
         getUltimaYml: async (parent, { owner, repoName, branch, force }, context) => {
             const { username } = context.user
-            const repo = await GithubRepository.query().where({ username, full_name: [owner, repoName].join('/') }).first()
-            if (!repo) {
+            const full_name = [owner, repoName].join('/')
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
+            if (githubRepo) {
+                const file = await github.getUltimaYml(repo.installationId, { owner, repo: repoName, branch })
+                return file
+            }
+
+            const giteaRepos = await getUserRepos({ username })
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            if (!giteaRepo) {
                 throw new Error('repository not found')
             }
 
-            const file = await github.getUltimaYml(repo.installationId, { owner, repo: repoName, branch })
-            return file
+            return await gitea.getUltimaYml({ username, owner, repo: repoName, branch })
         },
         listGithubRepos: async (parent, { force }, context) => {
             const { githubAccessToken, username } = context.user
@@ -281,7 +283,7 @@ const resolvers = {
             return results.map(repo => {
                 return {
                     ...repo,
-                    isUltima: !!ultimaRepos[repo.full_name],
+                    isUltima: !!urMap[repo.full_name],
                 }
             })
         },
@@ -453,14 +455,22 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
             const { username } = context.user
+            const full_name = [owner, repoName].join('/')
 
-            const githubRepo = await GithubRepository.query().where({ username, owner, repoName }).first()
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
             if (githubRepo) {
-                return githubRepo
+                return {
+                    ...githubRepo,
+                    vcs: 'github',
+                }
             }
 
             const giteaRepos = await getUserRepos({ username })
-            return giteaRepos.find(({ full_name }) => full_name === [owner, repoName].join('/'))
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            return giteaRepo && {
+                ...giteaRepo,
+                vcs: 'gitea',
+            }
         },
         getPGEndpoint: () => {
             let port = PG_BROKER_PORT
@@ -560,18 +570,32 @@ const resolvers = {
         },
         setUltimaYml: async (parent, { owner, repoName, branch, value, commitMessage, commitDescription, sha }, context) => {
             const { username } = context.user
-            const repo = await GithubRepository.query().where({ username, full_name: [owner, repoName].join('/') }).first()
-            if (!repo) {
+            const full_name = [owner, repoName].join('/')
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
+            if (githubRepo) { 
+                await github.setUltimaYml(repo.installationId, { owner, repo: repoName, branch }, {
+                    message: commitMessage,
+                    description: commitDescription,
+                    sha,
+                }, value)
+                
+
+                return await github.getUltimaYml(repo.installationId, { owner, repo, branch })
+            }
+
+            const giteaRepos = await getUserRepos({ username })
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            if (!giteaRepo) {
                 throw new Error('repository not found')
             }
 
-            await github.setUltimaYml(repo.installationId, { owner, repo: repoName, branch }, {
+            await gitea.setUltimaYml({ username, owner, repo: repoName, branch }, {
                 message: commitMessage,
                 description: commitDescription,
                 sha,
             }, value)
 
-            return await github.getUltimaYml(repo.installationId, { owner, repo, branch })
+            return await gitea.getUltimaYml({ username, owner, repo: repoName, branch })           
         },
     },
 }

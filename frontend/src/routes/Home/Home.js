@@ -3,7 +3,7 @@ import Octicon, { MarkGithub } from '@primer/octicons-react'
 import './Home.css'
 
 const Home = () => (
-    <>
+    <div id="ultima-root">
     <div className="nav">
       <div className="grid">
         <div className="logo" onClick={() => { window.location.href = '/' }}>
@@ -78,7 +78,7 @@ const Home = () => (
       </div>
     </div>
     <a className="chat-bubble animated bounceInUp" href="/community">Join Slack</a>
-</>
+</div>
 )
 
 export default Home

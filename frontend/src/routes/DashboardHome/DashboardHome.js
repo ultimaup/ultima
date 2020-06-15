@@ -1,22 +1,37 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import styled from 'styled-components'
+
 import RepoList from '../../components/RepoList'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+import GettingStarted from '../../components/GettingStarted'
 
-const asdf = document.querySelectorAll('.ui.container.ten.wide.column')[0]
-let div
-if (asdf) {
-    const repoList = asdf.nextElementSibling
-    div = document.createElement('div')
-    repoList.children[0].insertAdjacentElement('beforeBegin', div)
-}
+const DashboardContainer = styled.div`
+    h2 {
+        font-size: 24px !important;
+    }
+`
 
-const GiteaHomepage = ({ ele }) => {
-    return ReactDOM.createPortal(<RepoList />, ele)
-}
-
-const DashboardHome = ({ giteaHomepage }) => {
+const DashboardHome = () => {
     return (
-        <GiteaHomepage ele={giteaHomepage} />
+        <DashboardContainer>
+            <Navbar />
+            <div className="dashboard feeds">
+                <div className="ui container">
+                    <div className="ui mobile reversed stackable grid">
+                        <div className="ui container ten wide column">
+                            <GettingStarted />
+                        </div>
+                        <div className="six wide column">
+                            <RepoList />
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <Footer />
+        </DashboardContainer>
     )
 }
 

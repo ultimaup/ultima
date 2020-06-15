@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import Octicon, { MarkGithub, Lock, Repo } from '@primer/octicons-react'
 
 import useRepositories from '../../hooks/useRepositories'
+import useLegacyRepositories from '../../hooks/useLegacyRepositories'
 import useGithubAppName from '../../hooks/useGithubAppName'
 
 const StyledRLI = styled.li`
@@ -72,7 +73,7 @@ const RepoListContainer = styled.div`
     margin-bottom: 24px !important;
 `
 
-const RepoList = () => {
+const GithubRepoList = () => {
     const { loading, repositories } = useRepositories()
     const { githubAppName } = useGithubAppName()
     const [onlyUltima, setOnlyUltima] = useState(true)
@@ -119,5 +120,36 @@ const RepoList = () => {
         </>
     )
 }
+
+const UltimaRepoList = () => {
+    const { loading, repositories } = useLegacyRepositories()
+    const displayedRepos = repositories ? repositories : []
+
+    return displayedRepos.length ? (
+        <>
+            <RepoListContainer className="ui tab active list dashboard-repos">
+                <h4 className="ui top attached header">
+                    Legacy Repositories 
+                    <span className="ui grey label">{repositories ? repositories.length : ''}</span> 
+                </h4>
+
+                <div className="ui attached table segment">
+                    <ul className="repo-owner-name-list">
+                        {loading ? <li>Loading...</li> : (
+                            displayedRepos.map(repo => (<RepoListItem isLegacy key={repo.id} id={repo.id} isUltima isPrivate={repo.private} name={repo.full_name} />))
+                        )}
+                    </ul>
+                </div>
+            </RepoListContainer>
+        </>
+    ) : null
+}
+
+const RepoList = () => (
+    <>
+        <GithubRepoList />
+        <UltimaRepoList />
+    </>
+)
 
 export default RepoList

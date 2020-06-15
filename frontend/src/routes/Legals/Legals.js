@@ -106,7 +106,7 @@ const List = () => (
 )
 
 const Legals = () => (
-    <LegalContent>
+    <LegalContent id="ultima-root">
         <a href="/" className="back">{'<--'} back to Ultima</a>
         <Container>
             <List />

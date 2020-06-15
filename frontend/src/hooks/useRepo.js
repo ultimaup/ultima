@@ -7,6 +7,7 @@ const GET_REPO = gql`
             name
             full_name
             private
+            vcs
         }
     }
 `

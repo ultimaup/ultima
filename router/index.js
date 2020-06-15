@@ -187,7 +187,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/repo/create`, destination: GITEA_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/security`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/.well-known`, destination: FRONTEND_ENDPOINT },
-        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
+        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/docs`, destination: FRONTEND_ENDPOINT },
         { source: `pg.${PUBLIC_ROUTE_ROOT}`, destination: PGBROKER_ENDPOINT, extensions: ['tcp'] },
