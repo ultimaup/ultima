@@ -127,7 +127,7 @@ const Login = () => {
 
     if (isWaitlist && me) {
         return (
-            <LoginContainer>
+            <LoginContainer id="ultima-root">
                 <ProfilePic src={me.imageUrl} />
                 <h1>You're on the waitlist</h1>
                 <p>To get earlier access, message @josh in the community</p>
@@ -140,7 +140,7 @@ const Login = () => {
     }
 
     return (
-        <LoginContainer>
+        <LoginContainer id="ultima-root">
             <h1>Sign into Ultima</h1>
             {
                 auth ? (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { useParams, Route, Switch, NavLink } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
-import Octicon, { Versions, Rocket, Pulse, MarkGithub, Code, Repo, Lock } from '@primer/octicons-react'
+import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
 import NavBar from '../../components/Navbar'
@@ -15,6 +15,8 @@ import useSetUltimaYml from '../../hooks/useSetUltimaYml'
 import CommitChanges from './CommitChanges'
 import Logs from '../Logs/Logs'
 import useRepo from '../../hooks/useRepo'
+import DeploymentNotification from '../../components/DeploymentNotification'
+import Footer from '../../components/Footer'
 
 const Container = styled.div`
     display: flex;
@@ -34,22 +36,6 @@ const ConfigEditorContainer = styled.div`
 const EditorContainer = styled.div`
     padding-top: 42px;
 `
-
-const GiteaStyles = () => (
-    <>
-        <link rel="stylesheet" href="/vendor/assets/font-awesome/css/font-awesome.min.css"/>
-        <link rel="preload" as="font" href="/fomantic/themes/default/assets/fonts/icons.woff2" type="font/woff2" crossorigin="anonymous"/>
-        <link rel="preload" as="font" href="/fomantic/themes/default/assets/fonts/outline-icons.woff2" type="font/woff2" crossorigin="anonymous"/>
-
-
-
-        <link rel="stylesheet" href="/fomantic/semantic.min.css?v=9245442d00d25735b3aa4bc8621e29f9" />
-        <link rel="stylesheet" href="/css/index.css?v=9245442d00d25735b3aa4bc8621e29f9"></link>
-        <link rel="stylesheet" href="/css/theme-arc-green.css?v=9245442d00d25735b3aa4bc8621e29f9"></link>
-
-        <link rel="stylesheet" href="/assets/gitea.css" />
-    </>
-)
 
 // repository file list
 const EditConfig = () => {
@@ -123,12 +109,10 @@ const EditConfig = () => {
 }
 
 const RepoHome = () => {
-    const { owner, repoName, branch = 'master' } = useParams()
+    const { owner, repoName } = useParams()
     const { repo } = useRepo({ repoName, owner })
-    console.log(repo)
     return (
         <>
-            <GiteaStyles />
             <div className="repository file list" style={{ paddingTop: 0 }}>
                 <NavBar />
                 <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
@@ -152,15 +136,25 @@ const RepoHome = () => {
                             <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
                                 <Octicon icon={Rocket} />&nbsp;
                                 Deployments
+                                <DeploymentNotification repoName={repoName} owner={owner} />
                             </NavLink>
                             <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
                                 <Octicon icon={Pulse} />&nbsp;
                                 Logs
                             </NavLink>
-                            <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
-                                <Octicon icon={MarkGithub} />&nbsp;
-                                View on GitHub
-                            </a>
+                            {repo && repo.vcs === 'github' && (
+                                <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
+                                    <Octicon icon={MarkGithub} />&nbsp;
+                                    View on GitHub
+                                </a>
+                            )}
+                            {repo && repo.vcs === 'gitea' && (
+                                <a className="item" target="_blank" href={`/${owner}/${repoName}`}>
+                                    <Octicon icon={LinkExternal} />&nbsp;
+                                    View in Legacy UI
+                                </a>
+                            )}
+
                         </div>
                     </div>
                 </div>
@@ -173,6 +167,7 @@ const RepoHome = () => {
                     </Switch>
                 </div>
             </div>
+            <Footer />
         </>
     )
 }

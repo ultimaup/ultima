@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components'
-import Octicon, { Terminal, Plus, TriangleDown, Person, Settings, SignOut } from '@primer/octicons-react'
+import Octicon, { Terminal, Plus, TriangleDown, Person, SignOut } from '@primer/octicons-react'
 
 import { ControlledCLIModal } from './CLIModal'
+import GiteaStyles from './GiteaStyles'
 
 import { ReactComponent as Logo } from './LogoWithText.svg'
 import jwtDecode from 'jwt-decode'
@@ -144,6 +145,7 @@ const Navbar = () => {
 
     return (
         <>
+            <GiteaStyles />
             <Container>
                 <Grid>
                     <div className="item brand">

@@ -1,10 +1,8 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
+import React from 'react'
+import ReactDOM from 'react-dom'
+import './index.css'
 
-const gitea = import('./gitea')
-
-const fullpageContainer = document.getElementById('ultima-root')
+const fullpageContainer = document.getElementById('ultima-root2')
 
 if (fullpageContainer) {
   import('./App').then(({ default: App }) => {
@@ -16,5 +14,5 @@ if (fullpageContainer) {
     )
   })
 } else {
-  gitea.then(g => g.default())
+  import('./gitea').then(g => g.default())
 }

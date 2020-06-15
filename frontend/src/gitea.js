@@ -1,19 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { ApolloProvider } from '@apollo/client'
-import {BrowserRouter, Switch, Route} from 'react-router-dom'
-import Modal from 'react-modal'
 
-import DeploymentNotification from './components/DeploymentNotification'
-import GettingStarted from './components/GettingStarted'
-import Deployments from './routes/Deployments'
-import Logs from './routes/Logs'
 import NewRepoRoute from './routes/NewRepo'
-import Environments from './routes/Environments'
-import CLIModal from './components/CLIModal'
-import ConfigEditor from './components/ConfigEditor'
 import client from './graphql'
-import DashboardHome from './routes/DashboardHome'
 
 import { getToken } from './utils/token'
 
@@ -22,18 +12,6 @@ document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(e
 })
 
 
-const [cliLink] = document.querySelectorAll('.cli-link')
-
-if (cliLink) {
-    const cliModalContainer = document.createElement('div')
-    cliLink.insertAdjacentElement('afterend', cliModalContainer)
-    ReactDOM.render(
-        <React.StrictMode>
-            <CLIModal triggerEle={cliLink} />
-        </React.StrictMode>,
-        cliModalContainer
-    )
-}
 const gitea = () => {
     if (!getToken()) {
         window.location.href = '/auth/github'
@@ -147,21 +125,6 @@ const gitea = () => {
                 </ApolloProvider>
             </React.StrictMode>,
             newRepo
-        )
-    }
-
-    const configEditor = document.getElementById('ultima-config-editor')
-    if (configEditor) {
-        const { io } = configEditor.dataset
-        const ioEle = document.getElementById(io)
-
-        ReactDOM.render(
-            <React.StrictMode>
-                <ApolloProvider client={client}>
-                    <ConfigEditor ioEle={ioEle} />
-                </ApolloProvider>
-            </React.StrictMode>,
-            configEditor
         )
     }
 }
