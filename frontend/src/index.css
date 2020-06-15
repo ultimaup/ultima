@@ -22,3 +22,7 @@
   font-weight: 300;
   font-style: normal;
 }
+
+.dashboard, .repository {
+  min-height: 95vh;
+}
