@@ -14,7 +14,7 @@ Node.js - [https://nodejs.org/en/](https://nodejs.org/en/)
 
 ## **Getting started**
 
-To get started, simply go to the the ultima dashboard in your browser and login with your github account here:
+To get started, simply go to the the ultima dashboard in your browser and login with your GitHub account here:
 [https://build.onultima.com/user/login](https://build.onultima.com/user/login)
 
 > Ultima will ask for read-only access to your email address and profile information. You can check out how we handle your personal data over on our privacy policy [https://build.onultima.com/legals/privacy](https://build.onultima.com/legals/privacy)
