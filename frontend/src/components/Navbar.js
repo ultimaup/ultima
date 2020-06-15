@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components'
 import Octicon, { Terminal, Plus, TriangleDown, Person, SignOut } from '@primer/octicons-react'
+import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
 import GiteaStyles from './GiteaStyles'
@@ -149,7 +150,7 @@ const Navbar = () => {
             <Container>
                 <Grid>
                     <div className="item brand">
-                        <a href="/" style={{
+                        <Link to="/" style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
@@ -163,15 +164,15 @@ const Navbar = () => {
                                 <Logo />
                             </div>
                             <span className="badge" style={{ marginLeft: 1 }}>alpha</span>
-                        </a>
+                        </Link>
                     </div>
                     <Right>
                         <a title="CLI Login" className="cli-link" onClick={() => setCliModalOpen(true)}>
                             <Octicon icon={Terminal} width={24} />
                         </a>
-                        <a title="Create new Repository" href="/repo/create">
+                        <Link title="Create new Repository" to="/repo/create">
                             <Octicon icon={Plus} width={12} />
-                        </a>
+                        </Link>
                         <UserMenu />
                     </Right>
                 </Grid>

@@ -10,6 +10,7 @@ import useResources from '../../hooks/useResources'
 import useGetMinioToken from '../../hooks/useGetMinioToken'
 
 import StatusDot from '../../components/StatusDot'
+import Loading from '../../components/Loading'
 import langs from '../../utils/langs'
 
 import { ActionList, ActionContainer } from '../Deployments/Deployments'
@@ -237,7 +238,7 @@ const Environments = ({ owner, repoName, hasConfig }) => {
     const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
 
     if (loading) {
-        return 'loading...'
+        return <Loading />
     }
 
     if (error) {

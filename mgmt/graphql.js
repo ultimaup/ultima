@@ -10,7 +10,7 @@ const Repository = require('./db/Repository')
 const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
+const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo, giteaStream } = require('./gitea')
 const gitea = require('./gitea')
 const { runTests, genBucketPass } = require('./ci')
 
@@ -31,6 +31,7 @@ const {
     PUBLIC_IPV6,
 
     GITHUB_APP_NAME,
+    GITEA_URL,
 } = process.env
 
 const admins = [
@@ -415,6 +416,30 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
 
+            if (!owner && !repoName && !parentId) {
+                const { username } = context.user
+                const giteaRepos = await getUserRepos({ username })
+                const githubRepos = await GithubRepository.query().where({ username }).whereIn('full_name', Repository.query().select('full_name'))
+                const fullNames = [
+                    ...giteaRepos.map(g => g.full_name),
+                    ...githubRepos.map(g => g.full_name),
+                ]
+
+                // TODO: this is dumb
+                const f = await Promise.all(
+                    fullNames.map(full_name => {
+                        const [ owner, repoName ] = full_name.split('/')
+                        return {
+                            owner, repoName,
+                        }
+                    }).map(({ owner, repoName }) => Action.query().where({ owner, repoName }).orderBy('createdAt', 'DESC'))
+                )
+
+                return f.flat().sort((a, b) => {
+                    return b.createdAt - a.createdAt
+                }).filter((_, i) => i < 20)
+            }
+
             return await Action.query().where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
         },
         getAction: async (parent, { id }, context) => {
@@ -553,6 +578,9 @@ const resolvers = {
 
             try {
                 const latestCommit = await getLatestCommitFromRepo({ owner: repo.owner.login, repo: repo.name })
+                
+				const codeZipUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.zip`)
+				const codeTarUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`)
                 runTests({
                     repository: repo,
                     ref: `refs/heads/${repo.default_branch}`,
@@ -562,6 +590,8 @@ const resolvers = {
                     },
                     commits: [latestCommit],
                     after: latestCommit.sha,
+                    codeZipUrl,
+                    codeTarUrl,
                 })
             } catch (e) {
                 console.error(e)

@@ -1,6 +1,10 @@
 import React from 'react'
 import styled from 'styled-components'
 
+import { Link, useHistory } from 'react-router-dom'
+
+import Navbar from '../../components/Navbar'
+
 import useTemplateRepos from '../../hooks/useTemplateRepos'
 import useCreateRepository from '../../hooks/useCreateRepository'
 
@@ -13,6 +17,7 @@ const Form = styled.form`
 const NewRepo = () => {
     const { templates } = useTemplateRepos()
     const { loading, createRepository } = useCreateRepository()
+    const history = useHistory()
 
     let dv = ''
     const sp = new URLSearchParams(window.location.search)
@@ -29,24 +34,16 @@ const NewRepo = () => {
             const name = repo_name.value
             const isPrivate = e.target.private.checked
 
-            if (template.value === 'blank') {
-                // move to other form
-                document.getElementsByName('repo_name')[1].value = name
-                document.getElementsByName('private')[1].checked = isPrivate
-                document.getElementById('new-repo-container').style.display = 'none'
-                document.getElementById('actual-form').style.display = 'initial'
-            } else {
-                createRepository({
-                    templateId,
-                    name,
-                    private: isPrivate,
-                }).then((repo) => {
-                    document.location.href = `/${repo.full_name}`
-                }).catch(e => {
-                    alert('sorry there was an issue creating your repo')
-                    console.error(e)
-                })
-            }
+            createRepository({
+                templateId,
+                name,
+                private: isPrivate,
+            }).then((repo) => {
+                history.push(`/repo/${repo.full_name}`)
+            }).catch(e => {
+                alert('sorry there was an issue creating your repo')
+                console.error(e)
+            })
 
             return false
         }}>
@@ -81,11 +78,20 @@ const NewRepo = () => {
                     <button className="ui green button" disabled={loading}>
                         Create Repository
                     </button>
-                    <a className="ui button" href="/">Cancel</a>
+                    <Link className="ui button" to="/">Cancel</Link>
                 </div>
             </div>
         </Form>
     )
 }
 
-export default NewRepo
+const NewRepoRoute = () => (
+    <>
+        <Navbar />
+        <div className="repository new repo">
+            <NewRepo />
+        </div>
+    </>
+)
+
+export default NewRepoRoute
