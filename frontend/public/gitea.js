@@ -9,6 +9,10 @@
         }
     }
 
+    if (!localStorage.getItem('ultimaToken')) {
+        document.location.href = '/auth/github'
+    }
+
     docReady((() => {
         const [asdf] = document.querySelectorAll('.repository')
         console.log(asdf)

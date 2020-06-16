@@ -13,6 +13,4 @@ if (fullpageContainer) {
       fullpageContainer
     )
   })
-} else {
-  import('./gitea').then(g => g.default())
 }
