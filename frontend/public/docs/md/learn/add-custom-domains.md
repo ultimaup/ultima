@@ -55,3 +55,5 @@ For example:
           development: dev.test.com
 
 Once you have made the changes you want to make, you can run `ultima up` to push the changes you have made or you can use the native Git commands.
+
+You can view the example architecture diagram for this basic branch domain example [here](../architecture/example-branch-domain-architecture.md)
