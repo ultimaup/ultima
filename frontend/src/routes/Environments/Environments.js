@@ -7,6 +7,7 @@ import { HashRouter as Router } from 'react-router-dom'
 import Octicon, { GitBranch, LinkExternal } from '@primer/octicons-react'
 
 import useResources from '../../hooks/useResources'
+import useGetMinioToken from '../../hooks/useGetMinioToken'
 
 import StatusDot from '../../components/StatusDot'
 import langs from '../../utils/langs'
@@ -107,8 +108,9 @@ const ensureNF = () => {
     }
 }
 
-const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions, createdAt, startedAt, apiDeployment, stoppedAt, routes = [], className }) => {
+const Environment = ({ id, stage, type, name, route, deploymentId, setDbConnectionInstructions, createdAt, startedAt, apiDeployment, stoppedAt, routes = [], className }) => {
     ensureNF()
+    const { getMinioToken } = useGetMinioToken()
     const runtime = apiDeployment ? apiDeployment.runtime : undefined
     const lang = langs.find(lang => lang.runtime === (type === 'api' ? runtime : 'html'))
     if (type === 'postgres') {
@@ -128,6 +130,30 @@ const Environment = ({ id, stage, type, name, route, setDbConnectionInstructions
                     </div>
                 </div>
                 <Route>Click for Connection Instructions</Route>
+            </Env>
+        )
+    }
+
+    if (type === 'bucket') {
+        return (
+            <Env onClick={() => {
+                getMinioToken(deploymentId).then(({ token }) => {
+                    window.localStorage.setItem('token', token)
+                    window.open(`/minio/${deploymentId}`)
+                })
+            }}>
+                <Octicon icon={LinkExternal} className="ext" />
+                <div>
+                    <LangLogo><i className={`nf nf-dev-bitbucket`} /></LangLogo>
+                    <div>
+                        <h4>
+                            <StatusDot complete/>
+                            {name}
+                        </h4>
+                        <span>Created on {moment(createdAt).format('YYYY-MM-DD [at] HH:mm A')}</span>
+                    </div>
+                </div>
+                <Route>Click to Explore</Route>
             </Env>
         )
     }

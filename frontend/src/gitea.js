@@ -15,9 +15,12 @@ import CLIModal from './components/CLIModal'
 import ConfigEditor from './components/ConfigEditor'
 import client from './graphql'
 
+import { getToken } from './utils/token'
+
 document.querySelectorAll(`.item[href="${window.location.pathname}"]`).forEach(ele => {
     ele.classList.add('active')
 })
+
 
 const [cliLink] = document.querySelectorAll('.cli-link')
 
@@ -32,6 +35,9 @@ if (cliLink) {
     )
 }
 const gitea = () => {
+    if (!getToken()) {
+        window.location.href = '/auth/github'
+    }
     const navbar = document.getElementById('ultima-navbar')
 
     if (navbar) {

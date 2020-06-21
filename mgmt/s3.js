@@ -30,6 +30,15 @@ const ensureWebBucket = (bucketName) => (
 	}).json().then(r => r)
 )
 
+const ensureFileBucket = (bucketName, ownerId) => (
+	got.post(`${FILEMANAGER_ENDPOINT}/file-bucket`, {
+		body: JSON.stringify({ bucketName, ownerId }),
+		headers: {
+			'content-type': 'application/json',
+		}
+	}).json().then(r => r)
+)
+
 const s3 = new AWS.S3({
 	accessKeyId: BUILDER_BUCKET_ID,
 	secretAccessKey: BUILDER_BUCKET_SECRET,
@@ -72,9 +81,29 @@ const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 	})
 }
 
+const getWebLoginToken = async ({ username, password }) => {
+	const { result: { token } } = await got.post('minio/webrpc', {
+		prefixUrl: S3_ENDPOINT,
+		json: {
+			id: 1,
+			jsonrpc: "2.0",
+			params: { username, password },
+			method: "Web.Login"
+		},
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+		}
+	}).json()
+
+	return token
+}
+
 module.exports = {
 	uploadStream,
 	getStream,
 	headObject,
 	ensureWebBucket,
+	ensureFileUserExists,
+	ensureFileBucket,
+	getWebLoginToken,
 }

@@ -188,8 +188,7 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                     setValue(newV)
                 }}>x</button>
             </h3>
-            {expanded && <ModuleBody>
-
+            {expanded && value[moduleKey].type !== 'bucket' && <ModuleBody>
                 <div className="inline required field">
                     <strong>Repository Subdirectory</strong>
                     <input placeholder="." value={value[moduleKey].directory} onChange={e => {
@@ -429,12 +428,19 @@ const AddModule = ({ value, setValue }) => {
                         runtime: 'node',
                     },
                 })
-            } else {
+            } else if (newResourceType === 'web') {
                 setValue({
                     ...value,
                     [resourceName]: {
                         type: 'web',
                         buildLocation: '/build'
+                    },
+                })
+            } else if (newResourceType === 'bucket') {
+                setValue({
+                    ...value,
+                    [resourceName]: {
+                        type: 'bucket',
                     },
                 })
             }
@@ -451,6 +457,7 @@ const AddModule = ({ value, setValue }) => {
                     }} value={newResourceType} className="ui search normal selection dropdown">
                         <option value="api">API</option>
                         <option value="web">Website</option>
+                        <option value="bucket">Bucket</option>
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>

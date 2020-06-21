@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import Clipboard from 'react-clipboard.js'
 
 import { LoginBtn } from '../Login/Login'
+import { getToken } from '../../utils/token'
 
 const Terminal = styled.div`
     background: black;
@@ -80,7 +81,7 @@ const Chrome = styled.div`
 
 export const TerminalContent = () => {
     const [copySuccess, setCopySuccess] = useState(null)
-    const token = localStorage.getItem('token')
+    const token = getToken()
     const pkg = "@ultimaup/cli"
 
     return (
@@ -110,7 +111,7 @@ export const TerminalContent = () => {
 }
 
 const CLI = () => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) {
         window.location.href = '/user/login?redirect_to=/cli'
     }
