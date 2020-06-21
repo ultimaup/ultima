@@ -18,7 +18,7 @@ To get started you'll have an onboarding call with Josh, who'll get your account
 
 Ultima should work how you think it should - if it doesn't, let us know!
 
-Projects you build on Ultima are git repositories. Ultima acts the same as Github - the interface should be pretty familiar, with the addition of the deployments and logs tabs in each repository.
+Projects you build on Ultima are git repositories. Ultima acts the same as GitHub - the interface should be pretty familiar, with the addition of the deployments and logs tabs in each repository.
 
 Each branch you make creates a separate environment, containing any other components you use (currently just a database). This allows you to keep production stable, branch off, make and preview your changes, then merge back in when you're ready.
 
@@ -41,7 +41,7 @@ The first two limitations will go away in Alpha 2, until then it might be easier
 
 The CLI allows you to create, develop, and push projects live. Go to [](https://build.onultima.com/cli)[https://build.onultima.com/cli](https://build.onultima.com/cli) for getting started instructions, and get your unique login token.
 
-Once you're logged in, you have 4 commands:
+Once you're logged in, you have 6 commands:
 
 -   **ultima init** _<project name>_ - creates a new Ultima project, and clones it locally
 -   **ultima clone** _<project name>_ - clone an existing Ultima project locally

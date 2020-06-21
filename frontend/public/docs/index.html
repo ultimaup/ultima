@@ -28,19 +28,72 @@
             ],
             sidebar: [
                 {
-                    title: 'Guide',
-                    links: [
+                    title: 'Introduction',
+                    link: '/introduction'
+                },
+                {
+                    title: 'Install',
+                    children: [ 
                         {
-                            title: 'Introduction',
-                            link: '/introduction'
+                            title: 'Install Ultima CLI',
+                            link: '/install/install-ultima-cli'
                         },
                         {
-                            title: 'Installation',
-                            link: '/install-ultima-cli'
+                            title: 'Getting started with your first Ultima Project',
+                            link: '/install/getting-started-ultima-project'
                         },
+
+                        {
+                            title: 'Upgrade Ultima CLI',
+                            link: '/install/upgrade-ultima-cli'
+                        },
+
+                    ]
+                },
+                {
+                    title: 'Ultima CLI',
+                    children: [
+                        {
+                            title: 'ultima clone',
+                            link: '/cli/ultima-clone'
+                        }, 
+                        {
+                            title: 'ultima db',
+                            link: '/cli/ultima-db'
+                        }, 
+                        {
+                            title: 'ultima dev',
+                            link: '/cli/ultima-dev'
+                        }, 
+                        {
+                            title: 'ultima devexec',
+                            link: '/cli/ultima-devexec'
+                        }, 
+                        {
+                            title: 'ultima init',
+                            link: '/cli/ultima-clone'
+                        }, 
+                        {
+                            title: 'ultima up',
+                            link: '/cli/ultima-up'
+                        }, 
+                    ]
+                },
+                {
+                    title: 'Learn',
+                    children: [
                         {
                             title: 'Add Custom Domains',
-                            link: '/add-custom-domains'
+                            link: '/learn/add-custom-domains'
+                        }
+                    ]
+                },
+                {
+                    title: 'Architecture',
+                    children: [
+                        {
+                            title: 'Example Branch Domain Architecture',
+                            link: '/architecture/example-branch-domain-architecture'
                         }
                     ]
                 }
