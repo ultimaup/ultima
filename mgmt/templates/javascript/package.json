@@ -1,0 +1,16 @@
+{
+  "name": "example-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node .",
+    "web": "node web.js",
+    "build:web": "node webbuild.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "fs-extra": "^9.0.0",
+    "yaml": "^1.10.0"
+  }
+}

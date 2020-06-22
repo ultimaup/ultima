@@ -1,0 +1,19 @@
+rustapi:
+  type: api
+  environment:
+    ROCKET_ADDRESS: 0.0.0.0
+  runtime: rustlang/rust:nightly-slim
+  start: ROCKET_PORT=$PORT target/release/rust
+  install:
+    command:
+      - cargo update
+    watch:
+      - Cargo.toml
+  build:
+    - cargo build --release
+  dev:
+    command: ROCKET_PORT=$PORT cargo run
+    sync-ignore:
+      - target
+    watch:
+      - "**/*.rs"

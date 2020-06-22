@@ -1,0 +1,18 @@
+pythonapi:
+  type: api
+  runtime: python
+  environment:
+    PIPENV_VENV_IN_PROJECT: "true"
+  start: python prod.py runserver 0.0.0.0:$PORT
+  install:
+    command:
+      - python -m pip install pipenv
+      - pipenv install
+    watch:
+      - Pipfile.lock
+  dev:
+    command: python -m pipenv run python manage.py runserver 0.0.0.0:$PORT
+    watch:
+      - "*.py"
+    sync-ignore:
+      - .venv

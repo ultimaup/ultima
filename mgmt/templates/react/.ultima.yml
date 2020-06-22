@@ -1,0 +1,11 @@
+react:
+  type: web
+  buildLocation: /build
+  runtime: node
+  install:
+    command: yarn --mutex file --frozen-lockfile
+    watch: 
+      - yarn.lock
+  dev:
+    command: yarn start
+  build: yarn build

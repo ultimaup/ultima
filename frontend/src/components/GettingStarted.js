@@ -55,7 +55,7 @@ const GettingStarted = () => {
                 <ul>
                     <li>
                         
-                        <a target="_blank" rel="noopener noreferrer" href="https://www.notion.so/Alpha-1-ab9d40e30e11442c86810992306da713">
+                        <a target="_blank" rel="noopener noreferrer" href="/docs">
                             <Octicon icon={Rocket} size={32} />
                             <span>Ultima Getting Started</span>
                         </a>

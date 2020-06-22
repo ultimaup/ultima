@@ -1,0 +1,9 @@
+goapi:
+  type: api
+  runtime: golang
+  start: ./main
+  build: go build main.go
+  dev:
+    command: go run main.go
+    watch:
+      - "*.go"

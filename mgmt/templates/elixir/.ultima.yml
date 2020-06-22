@@ -1,0 +1,21 @@
+elixirapi:
+  type: api
+  runtime: elixir
+  start: MIX_HOME=$(pwd)/.mix MIX_ENV=prod mix run --no-compile --no-halt
+  install:
+    command:
+      - MIX_HOME=$(pwd)/.mix mix local.rebar --force
+      - MIX_HOME=$(pwd)/.mix mix local.hex --force 
+      - yes | MIX_HOME=$(pwd)/.mix mix do deps.get
+      - yes | MIX_HOME=$(pwd)/.mix MIX_ENV=prod mix do deps.compile
+    watch:
+      - mix.lock
+  build:
+    - yes | MIX_HOME=$(pwd)/.mix MIX_ENV=prod mix do compile
+  dev:
+    command: yes | MIX_HOME=$(pwd)/.mix mix run --no-halt
+    sync-ignore:
+      - _build
+      - _deps
+    watch:
+      - "*.exs"
