@@ -86,7 +86,8 @@ services:
       GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
-      
+      ELEVATED_AUTH_REDIRECT: http://build.onultima.local:4480/user/login/elevated-complete
+
       PUBLIC_ROUTE_ROOT_PROTOCOL: http
       PUBLIC_ROUTE_ROOT_PORT: 4480
 

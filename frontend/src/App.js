@@ -7,7 +7,6 @@ import Home from './routes/Home'
 import SlackRedirect from './components/SlackRedirect'
 import { ApolloProvider } from '@apollo/client'
 import { getToken } from './utils/token'
-
 import client from './graphql'
 
 const Login = React.lazy(() => import('./routes/Login'))
@@ -17,6 +16,7 @@ const Security = React.lazy(() => import('./routes/Security'))
 const RepoHome = React.lazy(() => import('./routes/RepoHome'))
 const NewRepo = React.lazy(() => import('./routes/NewRepo'))
 const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
+const CLI = React.lazy(() => import('./routes/CLI'))
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
@@ -40,6 +40,7 @@ const App = () => (
                     <Switch>
                         <Route path="/admin/waitlist" component={WaitlistAdmin} />
                         <Route path="/community" component={SlackRedirect} />
+                        <Route path="/user/login/cli" component={CLI} />
                         <Route path="/user/login" component={Login} />
                         <Route path="/legals" component={Legals} />
                         <Route path="/security" component={Security} />

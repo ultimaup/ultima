@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled, { css } from 'styled-components'
+import { useHistory } from 'react-router-dom'
 
 import jwtDecode from 'jwt-decode'
 
@@ -89,6 +90,7 @@ const Login = () => {
     const [auth, setAuth] = useState(null)
     const urlParams = new URLSearchParams(window.location.search)
     const isWaitlist = !!urlParams.get('waitlist')
+    const history = useHistory()
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search)
@@ -108,11 +110,15 @@ const Login = () => {
         if (auth) {
             setToken(auth.token)
         }
+        const urlParams = new URLSearchParams(window.location.search)
 
         if (auth && !isWaitlist) {
-            const redirectTo = window.localStorage.getItem('authRedirect') || '/'
+            let redirectTo = window.localStorage.getItem('authRedirect') || '/'
+            if (urlParams.get('backTo') && urlParams.get('backTo') === 'cli') {
+                redirectTo = '/user/login/cli'
+            }
             window.localStorage.removeItem('authRedirect')
-            window.location.href = redirectTo
+            history.push(redirectTo)
         }
     }, [auth, isWaitlist])
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import Clipboard from 'react-clipboard.js'
+import Octicon, { Check } from '@primer/octicons-react'
 
 import { LoginBtn } from '../Login/Login'
 import { getToken } from '../../utils/token'
@@ -28,10 +29,15 @@ const Container = styled.div`
 
     h2 {
         margin-bottom: 1em;
+        margin-top: 1em;
+        font-family: 'Steradian';
+        font-size: 24px;
+        font-weight: bold;
     }
     p {
         margin-bottom: 0.5em;
         text-align: center;
+        font-family: 'Inter';
     }
 `
 
@@ -111,19 +117,11 @@ export const TerminalContent = () => {
 }
 
 const CLI = () => {
-    const token = getToken()
-    if (!token) {
-        window.location.href = '/user/login?redirect_to=/cli'
-    }
-
     return (
         <Container>
-            <h2>Ultima CLI</h2>
-            <p>Make sure you have <a href="https://nodejs.org/en/">nodejs</a> installed <br />then just run the following commands in your terminal to get started:</p>
-            <TerminalContent />
-            <a href="/" style={{ marginTop: 32 }}>
-               {'<--'} Back to Ultima
-            </a>
+            <Octicon icon={Check} size={56} />
+            <h2>Login Complete</h2>
+            <p>Now head back to the CLI</p>
         </Container>
     )
 }

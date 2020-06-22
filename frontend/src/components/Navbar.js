@@ -8,7 +8,7 @@ import GiteaStyles from './GiteaStyles'
 
 import { ReactComponent as Logo } from './LogoWithText.svg'
 import jwtDecode from 'jwt-decode'
-import { getToken } from '../utils/token'
+import { getToken, clearToken } from '../utils/token'
 
 const Container = styled.div`
     width: 100%;
@@ -133,7 +133,10 @@ const UserMenu = () => {
                     Profile
                 </a>
                 <Divider />
-                <a href="/user/logout">
+                <a onClick={() => {
+                    clearToken()
+                    window.location.href = "/auth/logout"
+                }}>
                     <Octicon width={12} icon={SignOut} /> Sign Out
                 </a>
             </Dropdown>

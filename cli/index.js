@@ -16,22 +16,10 @@ updateNotifier({ pkg }).notify()
 
 config.outputLevel = 'trace'
 
-const outputLoginText = async () => {
-    cli.log(`Welcome to the Ultima CLI`)
-    cli.log(`Please go here to login:`)
-    const authlink = `${program.server}/user/login?redirect_to=/cli`
-    await cli.url(authlink, authlink)
-    try {
-        await cli.open(authlink)
-    } catch (e) {
-        //
-    }
-}
-
 const checkToken = async (noExit) => {
     const cfg = await ultimaConfig.get()
     if (!cfg.token) {
-        await outputLoginText()
+        await login()
         if (!noExit) {
             process.exit(0)
         }
@@ -43,14 +31,9 @@ const main = async () => {
     program
         .option('-s, --server <value>', 'Set server URL', 'https://build.onultima.com')
 
-    program.command('login [token]')
+    program.command('login')
         .description('login to ultima')
-        .action(async (token) => {
-            if (!token) {
-                await checkToken()
-            }
-            return login(token)
-        })
+        .action(login)
 
     program.command('dev')
         .description('develop an ultima project')

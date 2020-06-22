@@ -21,7 +21,7 @@ const app = express()
 
 // projects(app)
 giteaWebhook(app)
-auth(app)
+app.use(auth.router)
 dev(app)
 migrate().catch(console.error)
 graphql(app)

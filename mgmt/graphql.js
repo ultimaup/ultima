@@ -1,5 +1,6 @@
 const { ApolloServer, gql } = require('apollo-server-express')
-const slugify = require('slugify')
+const { GraphQLJSON } = require('graphql-type-json')
+const uuid = require('uuid').v4
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
@@ -10,13 +11,15 @@ const Repository = require('./db/Repository')
 const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo, giteaStream } = require('./gitea')
+const { addSshKey, getUserRepos, } = require('./gitea')
 const gitea = require('./gitea')
-const { runTests, genBucketPass } = require('./ci')
+const { genBucketPass } = require('./ci')
+const templates = require('./templates')
 
 const { getCname } = require('./dns')
 const s3 = require('./s3')
 const github = require('./github')
+const auth = require('./auth')
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -31,7 +34,6 @@ const {
     PUBLIC_IPV6,
 
     GITHUB_APP_NAME,
-    GITEA_URL,
 } = process.env
 
 const admins = [
@@ -40,6 +42,7 @@ const admins = [
 
 const typeDefs = gql`
     scalar DateTime
+    scalar JSON
 
     type User {
         id: ID
@@ -158,12 +161,28 @@ const typeDefs = gql`
         sha: String
     }
 
+    type Template {
+        id: ID,
+        name: String
+        template: JSON
+    }
+
+    input TemplateDirMapping {
+        dir: String
+        templateName: String
+    }
+
+    type LoginSession {
+        id: ID
+        token: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
         getUsers: [User]
-        getTemplateRepos: [Repo]
+        getTemplates: [Template]
         getMyRepos: [Repo]
         getPGEndpoint: String
         getEnvironments(owner: String, repoName: String): [Environment]
@@ -174,12 +193,14 @@ const typeDefs = gql`
         getGithubAppName: String
         getRepo(owner: String, repoName: String): Repo
         # listRepos: [Repository]
+        getLoginSession(id: ID!): LoginSession
     }
 
     type Mutation {
+        createLoginSession: LoginSession
         activateUser(id: ID, activated: Boolean): User
         addSSHkey(key: String, title: String) : Boolean
-        createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
+        createRepo(name: String, private: Boolean, template: String, templatePopulatedDirs: [TemplateDirMapping], vcs: String) : Repo
         queryCname(hostname: String): CNameResult
         getMinioToken(bucketName: String): MinioAuth
         setUltimaYml(owner: String, repoName: String, branch: String, commitMessage: String, commitDescription: String, value: String, sha: String) : File
@@ -244,7 +265,9 @@ const listGithubRepos = async (accessToken, username) => {
 }
 
 const resolvers = {
+    JSON: GraphQLJSON,
     Query: {
+        getLoginSession: (parent, { id }) => auth.getLoginSession(id),
         getGithubAppName: () => GITHUB_APP_NAME,
         getUltimaYml: async (parent, { owner, repoName, branch, force }, context) => {
             const { username } = context.user
@@ -465,7 +488,9 @@ const resolvers = {
 
             return await User.query()
         },
-        getTemplateRepos: listTemplateRepos,
+        getTemplates: async (parent, {}, context) => {
+            return await templates.list()
+        },
         getMyRepos: async (parent, {}, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
@@ -507,6 +532,7 @@ const resolvers = {
         },
     },
     Mutation: {
+        createLoginSession: auth.createLoginSession,
         getMinioToken: async (parent, { bucketName }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
@@ -563,39 +589,58 @@ const resolvers = {
 
             return true
         },
-        createRepo: async (parent, { name, description, private, templateId }, context) => {
+        createRepo: async (parent, { name, private = true, template, templatePopulatedDirs, vcs }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
 
-            const { username, id, imageUrl } = context.user
+            const { githubOauthAccessToken } = context.user
 
-            const result = await createRepoFromTemplate({ username, userId: id }, {
-                name: slugify(name), description, private, templateId
+            if (vcs === 'github' && !githubOauthAccessToken) {
+                throw new Error('unauthorized')
+            }
+            
+            // create blank repo
+            // get tree for template populated dirs [{ templateName, dir }]
+            // add template .ultima.yml to tree
+            // commit tree to repo
+
+            let repo
+
+            if (vcs === 'github') {
+                repo = await github.createEmptyRepo(githubOauthAccessToken, { name, private })
+            }
+
+            let tree = await Promise.all(
+                templatePopulatedDirs
+                    .map(async ({ templateName, dir }) => {
+                        const t = await templates.getTree(templateName)
+                        return t.map(f => {
+                            return {
+                                ...f,
+                                path: [dir, f.path].join('/'),
+                            }
+                        })
+                    })
+            )
+
+            tree = tree.flat()
+            tree.push({
+                path: '.ultima.yml',
+                type: 'blob',
+                mode: '100644',
+                content: template,
             })
 
-            const repo = await getRepo({ username }, { id: result.id })
-
-            try {
-                const latestCommit = await getLatestCommitFromRepo({ owner: repo.owner.login, repo: repo.name })
-                
-				const codeZipUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.zip`)
-				const codeTarUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`)
-                runTests({
-                    repository: repo,
-                    ref: `refs/heads/${repo.default_branch}`,
-                    pusher: {
-                        login: username,
-                        avatar_url: imageUrl,
-                    },
-                    commits: [latestCommit],
-                    after: latestCommit.sha,
-                    codeZipUrl,
-                    codeTarUrl,
-                })
-            } catch (e) {
-                console.error(e)
+            if (vcs === 'github') {
+                try {
+                    await github.commitTreeToRepo(githubOauthAccessToken, { owner: repo.owner.login, repo: repo.name, tree, message: 'Initial commit from Ultima' })
+                } catch (e) {
+                    console.error(e.request)
+                    throw e
+                }
             }
+
             return repo
         },
         setUltimaYml: async (parent, { owner, repoName, branch, value, commitMessage, commitDescription, sha }, context) => {

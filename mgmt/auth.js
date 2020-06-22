@@ -10,20 +10,93 @@ const {
     githubGet,
 } = require('./github')
 const { ensureKibanaUser } = require('./kibana')
+const uuid = require('uuid').v4
 
 const {
     AUTH_REDIRECT,
+    ELEVATED_AUTH_REDIRECT,
     GITHUB_CLIENT_ID,
+    GITHUB_OAUTH_CLIENT_ID,
     GITEA_COOKIE_NAME,
 } = process.env
 
 const router = new Router()
 
 router.get('/auth/github', async (req, res) => {
-    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user%20user:email%20repo`)
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`)
 })
 
-router.get('/auth/github-redirect', async (req, res) => {
+router.get('/auth/github-oauth', async (req, res) => {
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_OAUTH_CLIENT_ID}&scope=${[
+        'read:user',
+        'user:email',
+        'repo',
+        'write:public_key',
+    ].join('%20')}`)
+})
+
+router.get('/auth/github-oauth-redirect', cookieParser(), async (req, res) => {
+    const { code } = req.query
+    const { ultima_token } = req.cookies
+    const auth = await githubCodeToAuth(code, true)
+    const { access_token } = auth
+    const {login: username } = await githubGet('https://api.github.com/user', access_token)
+
+    let githubAccessToken
+
+    if (ultima_token) {
+        const existing = await jwt.verify(ultima_token)
+        githubAccessToken = existing.githubAccessToken
+    }
+
+    const user = await User.query().where({ username }).first()
+
+    const token = await jwt.sign({
+        ...user.toJSON(),
+        githubAccessToken,
+        githubOauthAccessToken: access_token,
+    })
+    res.cookie('ultima_token', token, { httpOnly: true })
+    
+    let redirectUrl = `${ELEVATED_AUTH_REDIRECT}?${querystring.encode({
+        token,
+    })}`
+    const { ultima_cli_sessionId } = req.cookies
+    if (ultima_cli_sessionId) {
+        setLoginSession({
+            id: ultima_cli_sessionId,
+            token,
+        })
+        res.cookie('ultima_cli_sessionId', null, { httpOnly: true })
+        redirectUrl = `${redirectUrl}&backTo=cli`
+    }
+
+    res.redirect(302, redirectUrl)
+})
+
+const loginSessions = {}
+const getLoginSession = id => loginSessions[id]
+const setLoginSession = ({ id, token }) => {
+    loginSessions[id] = {
+        id,
+        token,
+    }
+}
+const createLoginSession = () => {
+    const id = uuid()
+    loginSessions[id] = {
+        id,
+    }
+    return loginSessions[id]
+}
+
+router.get('/auth/cli', async (req, res) => {
+    const { sessionId, oauth } = req.query
+    res.cookie('ultima_cli_sessionId', sessionId, { httpOnly: true })
+    res.redirect(`/auth/github${oauth ? '-oauth' : ''}`, 302)
+})
+
+router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
     const { code } = req.query
     const auth = await githubCodeToAuth(code)
 
@@ -73,13 +146,24 @@ router.get('/auth/github-redirect', async (req, res) => {
 
     const sessionId = await getGiteaSession(username, user.id)
 
+    let redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
+        token,
+    })}`
+    const { ultima_cli_sessionId } = req.cookies
+    if (ultima_cli_sessionId) {
+        setLoginSession({
+            id: ultima_cli_sessionId,
+            token,
+        })
+        res.cookie('ultima_cli_sessionId', null, { httpOnly: true })
+        redirectUrl = `${redirectUrl}&backTo=cli`
+    }
+    
+
     res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
     res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
     res.cookie('ultima_token', token, { httpOnly: true })
 
-    const redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
-        token,
-    })}`
 
     res.redirect(302, redirectUrl)
 })
@@ -132,6 +216,8 @@ router.get('/kibana/*', async (req, res) => {
     res.redirect(302, req.query.next ? `/user/login?redirect_to=${req.query.next}` : '/user/login')
 })
 
-module.exports = app => {
-    app.use(router)
+module.exports = {
+    router,
+    getLoginSession,
+    createLoginSession,
 }

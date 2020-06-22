@@ -16,6 +16,9 @@ const {
 	
     GITHUB_CLIENT_ID,
 	GITHUB_CLIENT_SECRET,
+
+    GITHUB_OAUTH_CLIENT_ID,
+	GITHUB_OAUTH_CLIENT_SECRET,
 } = process.env
 
 const PRIVATE_KEY = fs.readFileSync(GITHUB_APP_KEY_LOCATION, 'utf-8')
@@ -28,11 +31,11 @@ const githubGet = (url, token) => fetch(url, {
 	},
 }).then(r => r.json())
 
-const githubCodeToAuth = code => fetch('https://github.com/login/oauth/access_token', {
+const githubCodeToAuth = (code, oauth) => fetch('https://github.com/login/oauth/access_token', {
 	method: 'post',
 	body: JSON.stringify({
-		client_id: GITHUB_CLIENT_ID,
-		client_secret: GITHUB_CLIENT_SECRET,
+		client_id: oauth ? GITHUB_OAUTH_CLIENT_ID : GITHUB_CLIENT_ID,
+		client_secret: oauth ? GITHUB_OAUTH_CLIENT_SECRET : GITHUB_CLIENT_SECRET,
 		code,
 	}),
 	headers: {
@@ -141,6 +144,53 @@ const setUltimaYml = async (installationId, {owner, repo, branch}, {message, sha
 	return data
 }
 
+const createEmptyRepo = async (token, { name, private }) => {
+	const { data } = await request("POST /user/repos", {
+		name,private, auto_init: true,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+
+	return data
+}
+
+const commitTreeToRepo = async (token, { owner, repo, tree, message }) => {
+	const { data: refs } = await request('GET /repos/:owner/:repo/git/matching-refs/:ref', {
+		owner, repo,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+
+	ref = refs[0].ref.split('refs/')[1]
+
+	const { data : { sha: treeSha } } = await request("POST /repos/:owner/:repo/git/trees", {
+		tree,
+		owner, repo,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+
+	const { data: { sha: commitSha } } = await request("POST /repos/:owner/:repo/git/commits", {
+		owner, repo, tree: treeSha,
+		message,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+
+	const { data } = await request("PATCH /repos/:owner/:repo/git/refs/:ref", { 
+		owner, repo, ref, sha: commitSha, force:true,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+
+	return data
+}
+
 module.exports = {
     githubGet,
 	githubCodeToAuth,
@@ -148,4 +198,6 @@ module.exports = {
 	getUltimaYml,
 	setUltimaYml,
 	getInstallationToken,
+	createEmptyRepo,
+	commitTreeToRepo,
 }
