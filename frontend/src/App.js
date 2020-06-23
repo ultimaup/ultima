@@ -17,6 +17,7 @@ const RepoHome = React.lazy(() => import('./routes/RepoHome'))
 const NewRepo = React.lazy(() => import('./routes/NewRepo'))
 const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
 const CLI = React.lazy(() => import('./routes/CLI'))
+const ConfigGenerator = React.lazy(() => import('./routes/ConfigGenerator'))
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
@@ -46,6 +47,7 @@ const App = () => (
                         <Route path="/security" component={Security} />
                         <Route path="/.well-known/security.txt" component={SecurityRedirect} />
                         <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
+                        <Route path="/config-generator" component={ConfigGenerator} />
                         <Route path="/repo/:owner/:repoName/:branch?" component={RepoHome} />
                         <Route path="/repo/create" component={NewRepo} />
                         <Route path="/" component={() => {

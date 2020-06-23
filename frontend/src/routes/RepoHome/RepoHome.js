@@ -37,7 +37,39 @@ const EditorContainer = styled.div`
     padding-top: 42px;
 `
 
-// repository file list
+export const Editor = ({ title = 'Manage Environment Config', value, setValue }) => (
+    <div className="ui container">
+        <Container>
+            <ConfigEditorContainer className="ui form">
+                <h3 className="ui top attached header" style={{
+                    position: 'absolute',
+                    width: '100%',
+                    zIndex: 10,
+                    top: 0,
+                }}>
+                    {title}
+                </h3>
+
+                <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
+                    <ControlledConfigEditor value={value} setValue={setValue} />
+                </div>
+            </ConfigEditorContainer>
+            <EditorContainer>
+                <ControlledEditor
+                    height="90vh"
+                    language="yaml"
+                    width="600px"
+                    value={value}
+                    theme="vs-dark"
+                    onChange={(ev, value) => {
+                        setValue(value)
+                    }}
+                />
+            </EditorContainer>
+        </Container>
+    </div>
+)
+
 const EditConfig = () => {
     const { owner, repoName, branch = 'master' } = useParams()
     const [value, setValue] = useState('')
@@ -52,37 +84,7 @@ const EditConfig = () => {
 
     return (
         <>
-            
-            <div className="ui container">
-                <Container>
-                    <ConfigEditorContainer className="ui form">
-                        <h3 className="ui top attached header" style={{
-                            position: 'absolute',
-                            width: '100%',
-                            zIndex: 10,
-                            top: 0,
-                        }}>
-                            Manage Environment Config
-                        </h3>
-
-                        <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
-                            <ControlledConfigEditor value={value} setValue={setValue} />
-                        </div>
-                    </ConfigEditorContainer>
-                    <EditorContainer>
-                        <ControlledEditor
-                            height="90vh"
-                            language="yaml"
-                            width="600px"
-                            value={value}
-                            theme="vs-dark"
-                            onChange={(ev, value) => {
-                                setValue(value)
-                            }}
-                        />
-                    </EditorContainer>
-                </Container>
-            </div>
+            <Editor value={value} setValue={setValue} />
             <div className="ui container form repository file editor">
                 <CommitChanges 
                     branch={branch} 
@@ -161,6 +163,7 @@ const RepoHome = () => {
                         <Route path="/repo/:owner/:repoName/deployments" component={Deployments}/>
                         <Route path="/repo/:owner/:repoName/logs" component={Logs}/>
                         <Route path="/repo/:owner/:repoName/:branch/config" component={EditConfig}/>
+                        {/* <Route path="/repo/:owner/:repoName/integrate" component={Integrate}/> */}
                         <Route path="/repo/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
                     </Switch>
                 </div>
