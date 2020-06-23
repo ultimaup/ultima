@@ -27,13 +27,42 @@ router.get('/auth/github', async (req, res) => {
 })
 
 router.get('/auth/github-oauth', async (req, res) => {
+    const { grants } = req.query
+    const scope = []
+    if (grants.includes('repo')) {
+        scope.push('repo')
+    }
+    if (grants.includes('keys')) {
+        scope.push('write:public_key')
+    }
     res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_OAUTH_CLIENT_ID}&scope=${[
         'read:user',
         'user:email',
-        'repo',
-        'write:public_key',
+        ...scope,
     ].join('%20')}`)
 })
+
+const loginSessions = {}
+const getLoginSession = id => loginSessions[id]
+const setLoginSession = ({ id, token }) => {
+    loginSessions[id] = {
+        id,
+        token,
+    }
+
+    setTimeout(() => {
+        delete loginSessions[id]
+    }, 30000)
+}
+
+const createLoginSession = () => {
+    const id = uuid()
+    loginSessions[id] = {
+        id,
+    }
+    return loginSessions[id]
+}
+
 
 router.get('/auth/github-oauth-redirect', cookieParser(), async (req, res) => {
     const { code } = req.query
@@ -74,26 +103,10 @@ router.get('/auth/github-oauth-redirect', cookieParser(), async (req, res) => {
     res.redirect(302, redirectUrl)
 })
 
-const loginSessions = {}
-const getLoginSession = id => loginSessions[id]
-const setLoginSession = ({ id, token }) => {
-    loginSessions[id] = {
-        id,
-        token,
-    }
-}
-const createLoginSession = () => {
-    const id = uuid()
-    loginSessions[id] = {
-        id,
-    }
-    return loginSessions[id]
-}
-
 router.get('/auth/cli', async (req, res) => {
-    const { sessionId, oauth } = req.query
+    const { sessionId, grants } = req.query
     res.cookie('ultima_cli_sessionId', sessionId, { httpOnly: true })
-    res.redirect(`/auth/github${oauth ? '-oauth' : ''}`, 302)
+    res.redirect(`/auth/github${grants ? `-oauth?grants=${grants}` : ''}`, 302)
 })
 
 router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
@@ -155,10 +168,8 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
             id: ultima_cli_sessionId,
             token,
         })
-        res.cookie('ultima_cli_sessionId', null, { httpOnly: true })
         redirectUrl = `${redirectUrl}&backTo=cli`
     }
-    
 
     res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
     res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })

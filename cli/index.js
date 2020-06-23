@@ -1,28 +1,21 @@
 const { program } = require('commander')
-const { cli, config } = require('cli-ux')
-const updateNotifier = require('update-notifier');
+const updateNotifier = require('update-notifier')
+
 const dev = require('./commands/dev')
 const login = require('./commands/login')
-const init = require('./commands/init')
-const up = require('./commands/up')
-const clone = require('./commands/clone')
 const db = require('./commands/db')
 const exec = require('./commands/exec')
+const up = require('./commands/up')
 
 const ultimaConfig = require('./config')
 const pkg = require('./package.json')
  
 updateNotifier({ pkg }).notify()
 
-config.outputLevel = 'trace'
-
-const checkToken = async (noExit) => {
+const checkToken = async () => {
     const cfg = await ultimaConfig.get()
     if (!cfg.token) {
         await login()
-        if (!noExit) {
-            process.exit(0)
-        }
     }
 }
 
@@ -35,33 +28,18 @@ const main = async () => {
         .description('login to ultima')
         .action(login)
 
-    program.command('dev')
-        .description('develop an ultima project')
-        .action(async (...args) => {
-            await checkToken()
-            return dev(...args)
-        })
-
     program.command('up')
-        .alias('push')
-        .description('push your changes live')
+        .description(`watch a push get deployed, or if the current project isn't on ultima, add it to ultima`)
         .action(async (...args) => {
             await checkToken()
             return up(...args)
         })
 
-    program.command('init <project-name>')
-        .description('start a new project')
+    program.command('dev')
+        .description('develop an ultima project')
         .action(async (...args) => {
             await checkToken()
-            return init(...args)
-        })
-    
-    program.command('clone [project-name]')
-        .description('clone an existing project')
-        .action(async (...args) => {
-            await checkToken()
-            return clone(...args)
+            return dev(...args)
         })
 
     program.command('db [environment-name]')

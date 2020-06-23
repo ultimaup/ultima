@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client'
 
 const LIST_REPOS = gql`
     query listGithubRepos {
-        listGithubRepos {
+        listRepos(vcs:"github") {
             id
             name
             full_name
@@ -18,7 +18,7 @@ const useRepositories = () => {
     return {
         loading,
         error,
-        repositories: data ? [...data.listGithubRepos].sort((a,b) => {
+        repositories: data ? [...data.listRepos].sort((a,b) => {
             if (a.isUltima) {
                 return 1
             } else if (b.isUltima) {

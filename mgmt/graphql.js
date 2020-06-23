@@ -11,7 +11,7 @@ const Repository = require('./db/Repository')
 const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, getUserRepos, } = require('./gitea')
+const { addSshKey, getUserRepos } = require('./gitea')
 const gitea = require('./gitea')
 const { genBucketPass } = require('./ci')
 const templates = require('./templates')
@@ -73,15 +73,6 @@ const typeDefs = gql`
         metadata: String
 
         parentId: ID
-    }
-
-    type Repo {
-        id: ID,
-        name: String
-        full_name: String
-        private: Boolean
-        ssh_url: String
-        vcs: String
     }
 
     type Route {
@@ -148,12 +139,14 @@ const typeDefs = gql`
     type MinioAuth {
         token: String
     }
-    type GithubRepo {
+    type Repo {
         id: ID
         name: String
         full_name: String
         private: Boolean
         isUltima: Boolean
+        vcs: String
+        ssh_url: String
     }
 
     type File {
@@ -177,29 +170,34 @@ const typeDefs = gql`
         token: String
     }
 
+    type GithubKey {
+        id: ID
+        key: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
         getUsers: [User]
         getTemplates: [Template]
-        getMyRepos: [Repo]
+        getMyRepos: [Repo] #deprecated
         getPGEndpoint: String
         getEnvironments(owner: String, repoName: String): [Environment]
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
-        listGithubRepos: [GithubRepo]
+        listRepos(vcs: String): [Repo]
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getGithubAppName: String
         getRepo(owner: String, repoName: String): Repo
-        # listRepos: [Repository]
         getLoginSession(id: ID!): LoginSession
+        #getMyPublicKeys(vcs: String): [GithubKey]
     }
 
     type Mutation {
         createLoginSession: LoginSession
         activateUser(id: ID, activated: Boolean): User
-        addSSHkey(key: String, title: String) : Boolean
+        #addSSHkey(key: String, title: String) : Boolean
         createRepo(name: String, private: Boolean, template: String, templatePopulatedDirs: [TemplateDirMapping], vcs: String) : Repo
         queryCname(hostname: String): CNameResult
         getMinioToken(bucketName: String): MinioAuth
@@ -267,6 +265,19 @@ const listGithubRepos = async (accessToken, username) => {
 const resolvers = {
     JSON: GraphQLJSON,
     Query: {
+        // getMyPublicKeys: async (parent, { vcs }, context) => {
+        //     if (vcs === 'github') {
+        //         const { githubAccessToken, username } = context.user
+        //         if (!githubAccessToken) {
+        //             throw new Error('unauthorized')
+        //         }
+        //         const keys = await github.getPublicKeys(githubAccessToken, username)
+    
+        //         return keys
+        //     }
+            
+        //     return []
+        // },
         getLoginSession: (parent, { id }) => auth.getLoginSession(id),
         getGithubAppName: () => GITHUB_APP_NAME,
         getUltimaYml: async (parent, { owner, repoName, branch, force }, context) => {
@@ -286,30 +297,35 @@ const resolvers = {
 
             return await gitea.getUltimaYml({ username, owner, repo: repoName, branch })
         },
-        listGithubRepos: async (parent, { force }, context) => {
+        listRepos: async (parent, { force, vcs }, context) => {
             const { githubAccessToken, username } = context.user
-            if (!githubAccessToken) {
-                throw new Error('unauthorized')
-            }
-            
-            let results = await GithubRepository.query().where({ username })
-            if (!results.length || force) {
-                await listGithubRepos(githubAccessToken, username)
-                results = await GithubRepository.query().where({ username })
-            }
-
-            const ultimaRepos = await Repository.query().whereIn('fullName', results.map(r => r.full_name))
-            const urMap = {}
-            ultimaRepos.forEach(({ fullName }) => {
-                urMap[fullName] = true
-            })
-
-            return results.map(repo => {
-                return {
-                    ...repo,
-                    isUltima: !!urMap[repo.full_name],
+            if (vcs === 'github') {
+                if (!githubAccessToken) {
+                    throw new Error('unauthorized')
                 }
-            })
+                
+                let results = await GithubRepository.query().where({ username })
+                if (!results.length || force) {
+                    await listGithubRepos(githubAccessToken, username)
+                    results = await GithubRepository.query().where({ username })
+                }
+
+                const ultimaRepos = await Repository.query().whereIn('fullName', results.map(r => r.full_name))
+                const urMap = {}
+                ultimaRepos.forEach(({ fullName }) => {
+                    urMap[fullName] = true
+                })
+
+                return results.map(repo => {
+                    return {
+                        ...repo,
+                        vcs: 'github',
+                        isUltima: !!urMap[repo.full_name],
+                    }
+                })
+            }
+
+            return []
         },
         getDNSRecords: async () => {
             return {
@@ -573,22 +589,22 @@ const resolvers = {
             await User.query().update({ activated }).where('id', id)
             return await User.query().findById(id)
         },
-        addSSHkey: async (parent, { key, title }, context) => {
-            if (!context.user) {
-                throw new Error('unauthorized')
-            }
+        // addSSHkey: async (parent, { key, title }, context) => {
+        //     if (!context.user) {
+        //         throw new Error('unauthorized')
+        //     }
 
-            try {
-                await addSshKey(context.user.username, { key, title })
-            } catch (e) {
-                if (e.response) {
-                    throw new Error(e.response.body)
-                }
-                throw e
-            }
+        //     try {
+        //         await addSshKey(context.user.username, { key, title })
+        //     } catch (e) {
+        //         if (e.response) {
+        //             throw new Error(e.response.body)
+        //         }
+        //         throw e
+        //     }
 
-            return true
-        },
+        //     return true
+        // },
         createRepo: async (parent, { name, private = true, template, templatePopulatedDirs, vcs }, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')

@@ -191,6 +191,16 @@ const commitTreeToRepo = async (token, { owner, repo, tree, message }) => {
 	return data
 }
 
+const getPublicKeys = async (token, username) => {
+	const { data } = await request('GET /users/:username/keys', {
+		username,
+		headers: {
+			authorization: `Bearer ${token}`,
+		},
+	})
+	return data
+}
+
 module.exports = {
     githubGet,
 	githubCodeToAuth,
@@ -200,4 +210,5 @@ module.exports = {
 	getInstallationToken,
 	createEmptyRepo,
 	commitTreeToRepo,
+	getPublicKeys,
 }
