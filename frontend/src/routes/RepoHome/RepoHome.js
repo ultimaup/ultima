@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { useParams, Route, Switch, NavLink, Link } from 'react-router-dom'
+import { useParams, Route, Switch, NavLink, Link, useLocation } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
 
@@ -17,6 +17,7 @@ import Logs from '../Logs/Logs'
 import useRepo from '../../hooks/useRepo'
 import DeploymentNotification from '../../components/DeploymentNotification'
 import Footer from '../../components/Footer'
+import LoadingSpinner from '../../components/Loading'
 
 const Container = styled.div`
     display: flex;
@@ -37,7 +38,7 @@ const EditorContainer = styled.div`
     padding-top: 42px;
 `
 
-export const Editor = ({ title = 'Manage Environment Config', value, setValue }) => (
+export const Editor = ({ title, value, setValue }) => (
     <div className="ui container">
         <Container>
             <ConfigEditorContainer className="ui form">
@@ -70,7 +71,7 @@ export const Editor = ({ title = 'Manage Environment Config', value, setValue })
     </div>
 )
 
-const EditConfig = () => {
+const EditConfig = ({ title= 'Manage Environment Config' }) => {
     const { owner, repoName, branch = 'master' } = useParams()
     const [value, setValue] = useState('')
     const { loading, ultimaYml } = useGetUltimaYml({ owner, repoName, branch })
@@ -84,7 +85,7 @@ const EditConfig = () => {
 
     return (
         <>
-            <Editor value={value} setValue={setValue} />
+            <Editor title={title} value={value} setValue={setValue} />
             <div className="ui container form repository file editor">
                 <CommitChanges 
                     branch={branch} 
@@ -108,6 +109,31 @@ const EditConfig = () => {
     )
 }
 
+const Integrate = () => {
+    const { owner, repoName } = useParams()
+    const location = useLocation()
+    const { repo, loading } = useRepo({ repoName, owner })
+    const urlParams = new URLSearchParams(location.search)
+    const vcsHost = urlParams.get('vcsHost')
+
+    return (
+        <div className="ui container">
+            <Container>
+                {loading ? <LoadingSpinner /> : (
+                    repo ? (
+                        <EditConfig title="Create Environment Config" />
+                    ) : (
+                        <>
+                            <span>Use Ultima to ship your projects faster</span>
+                            <a className="ui button green" href={`/vcs/${vcsHost.split('.com')[0]}`}>Link with {vcsHost.split('.com')[0]}</a>
+                        </>
+                    )
+                )}
+            </Container>
+        </div>
+    )
+}
+
 const RepoHome = () => {
     const { owner, repoName } = useParams()
     const { repo } = useRepo({ repoName, owner })
@@ -118,11 +144,11 @@ const RepoHome = () => {
                 <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
                     <div className="ui container" >
                         <div className="repo-header"style={{ marginTop: 8, marginBottom: 27 }}>
-                            <div class="ui huge breadcrumb repo-title">
+                            <div className="ui huge breadcrumb repo-title">
                                 <Octicon size={32} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
                                 &nbsp;&nbsp;
-                                <a>{owner}</a>
-                                <div class="divider">&nbsp;/&nbsp;</div>
+                                <Link to="/">{owner}</Link>
+                                <div className="divider">&nbsp;/&nbsp;</div>
                                 <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
                             </div>
                         </div>
@@ -163,7 +189,7 @@ const RepoHome = () => {
                         <Route path="/repo/:owner/:repoName/deployments" component={Deployments}/>
                         <Route path="/repo/:owner/:repoName/logs" component={Logs}/>
                         <Route path="/repo/:owner/:repoName/:branch/config" component={EditConfig}/>
-                        {/* <Route path="/repo/:owner/:repoName/integrate" component={Integrate}/> */}
+                        <Route path="/repo/:owner/:repoName/integrate" component={Integrate}/>
                         <Route path="/repo/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
                     </Switch>
                 </div>

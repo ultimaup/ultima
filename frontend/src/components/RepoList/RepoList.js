@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import Octicon, { MarkGithub, Lock, Repo } from '@primer/octicons-react'
+import { Link } from 'react-router-dom'
 
 import useRepositories from '../../hooks/useRepositories'
 import useLegacyRepositories from '../../hooks/useLegacyRepositories'
-import useGithubAppName from '../../hooks/useGithubAppName'
 
 const StyledRLI = styled.li`
     svg {
@@ -45,16 +45,16 @@ const SmallLogoContainer = styled.div`
     justify-content: flex-end;
 `
 
-const RepoListItem = ({ id, isPrivate, name, onAddRepo, isUltima }) => (
+const RepoListItem = ({ id, isPrivate, name, onAddRepo, isUltima, vcsHost }) => (
     <StyledRLI className={isPrivate ? 'private' : null}>
-        <a href={`/repo/${name}`}>
+        <Link to={isUltima ? `/repo/${name}` : `/repo/${name}/integrate?vcsHost=${vcsHost}`}>
             <Octicon icon={isPrivate ? Lock : Repo} />
             &nbsp;
             <strong className="text truncate item-name">{name}</strong>
             <SmallLogoContainer>
                 {isUltima ? <SmallLogo /> : <Badge onClick={() => onAddRepo(id)}>Add</Badge>}
             </SmallLogoContainer>
-        </a>
+        </Link>
     </StyledRLI>
 )
 
@@ -75,7 +75,6 @@ const RepoListContainer = styled.div`
 
 const GithubRepoList = () => {
     const { loading, repositories } = useRepositories()
-    const { githubAppName } = useGithubAppName()
     const [onlyUltima, setOnlyUltima] = useState(true)
     const displayedRepos = repositories ? repositories.filter(r => onlyUltima ? r.isUltima : true) : []
 
@@ -106,12 +105,12 @@ const GithubRepoList = () => {
                 <div className="ui attached table segment">
                     <ul className="repo-owner-name-list">
                         {loading ? <li>Loading...</li> : (
-                            displayedRepos.map(repo => (<RepoListItem onAddRepo={id => {}} key={repo.id} id={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
+                            displayedRepos.map(repo => (<RepoListItem vcsHost="github.com" onAddRepo={id => {}} key={repo.id} id={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
                         )}
                         {!loading && repositories.length === 0 && (
                             <EmptyState>
                                 <span>Use Ultima to ship your GitHub projects faster</span>
-                                <a className="ui button green" href={`https://github.com/apps/${githubAppName}/installations/new`}>Link with GitHub</a>
+                                <a className="ui button green" href={`/vcs/github`}>Link with GitHub</a>
                             </EmptyState>
                         )}
                     </ul>

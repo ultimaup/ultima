@@ -18,6 +18,7 @@ const {
     GITHUB_CLIENT_ID,
     GITHUB_OAUTH_CLIENT_ID,
     GITEA_COOKIE_NAME,
+    GITHUB_APP_NAME,
 } = process.env
 
 const router = new Router()
@@ -40,6 +41,15 @@ router.get('/auth/github-oauth', async (req, res) => {
         'user:email',
         ...scope,
     ].join('%20')}`)
+})
+
+router.get('/vcs/:vcs', async (req, res) => {
+    const { vcs } = req.params
+    if (vcs === 'github') {
+        return res.redirect(`https://github.com/apps/${GITHUB_APP_NAME}/installations/new`, 302)
+    } else {
+        return res.status(404).send('unknown vcs')
+    }
 })
 
 const loginSessions = {}

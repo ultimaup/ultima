@@ -170,11 +170,6 @@ const typeDefs = gql`
         token: String
     }
 
-    type GithubKey {
-        id: ID
-        key: String
-    }
-
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -188,16 +183,13 @@ const typeDefs = gql`
         getDNSRecords: DNSInfo
         listRepos(vcs: String): [Repo]
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
-        getGithubAppName: String
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
-        #getMyPublicKeys(vcs: String): [GithubKey]
     }
 
     type Mutation {
         createLoginSession: LoginSession
         activateUser(id: ID, activated: Boolean): User
-        #addSSHkey(key: String, title: String) : Boolean
         createRepo(name: String, private: Boolean, template: String, templatePopulatedDirs: [TemplateDirMapping], vcs: String) : Repo
         queryCname(hostname: String): CNameResult
         getMinioToken(bucketName: String): MinioAuth
@@ -265,22 +257,8 @@ const listGithubRepos = async (accessToken, username) => {
 const resolvers = {
     JSON: GraphQLJSON,
     Query: {
-        // getMyPublicKeys: async (parent, { vcs }, context) => {
-        //     if (vcs === 'github') {
-        //         const { githubAccessToken, username } = context.user
-        //         if (!githubAccessToken) {
-        //             throw new Error('unauthorized')
-        //         }
-        //         const keys = await github.getPublicKeys(githubAccessToken, username)
-    
-        //         return keys
-        //     }
-            
-        //     return []
-        // },
         getLoginSession: (parent, { id }) => auth.getLoginSession(id),
-        getGithubAppName: () => GITHUB_APP_NAME,
-        getUltimaYml: async (parent, { owner, repoName, branch, force }, context) => {
+        getUltimaYml: async (parent, { owner, repoName, branch }, context) => {
             const { username } = context.user
             const full_name = [owner, repoName].join('/')
             const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
