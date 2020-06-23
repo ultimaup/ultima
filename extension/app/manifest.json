@@ -14,8 +14,20 @@
       "scripts/background.js"
     ]
   },
-  "permissions": [
-    "tabs",
-    "<all_urls>"
-  ]
+  "options_ui": {
+    "page": "options.html"
+  },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["*://github.com/*"],
+      "css": ["styles/styles.css"],
+      "js": ["scripts/contentScript.js"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "addon@build.onultima.com"
+    }
+  }
 }
