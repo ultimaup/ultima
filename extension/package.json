@@ -1,0 +1,12 @@
+{
+  "name": "ultima",
+  "version": "0.0.1",
+  "description": "No more context-switching! Stop context switching between GitHub and Ultima by adding Ultima tabs to GitHub.",
+  "scripts": {
+    "dev": "webextension-toolbox dev",
+    "build": "webextension-toolbox build"
+  },
+  "devDependencies": {
+    "webextension-toolbox": "latest"
+  }
+}
