@@ -1,21 +1,20 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 import Clipboard from 'react-clipboard.js'
 import Octicon, { Check } from '@primer/octicons-react'
 
-import { LoginBtn } from '../Login/Login'
-import { getToken } from '../../utils/token'
+import { Button } from '../../components/Layout'
 
 const Terminal = styled.div`
-    background: black;
-    color: #008F11;
+    background: ${({ theme: { backgroundColor }}) => backgroundColor};
     font-family: monospace;
     border-radius: 3px;
 
     max-width: 600px;
+    width: 100%;
     margin: auto;
+    color: ${({ theme: { colorPrimary }}) => colorPrimary};
 
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0), 0 22px 70px 4px rgba(0,0,0,0.56), 0 0 0 1px rgba(0, 0, 0, 0.0);
     code {
         overflow: hidden;
     }
@@ -56,7 +55,7 @@ const Body = styled.div`
     i {
         user-select: none;
         margin-right: 8px;
-        color: #003B00;
+        color: ${({ theme: { colorSecondary }}) => colorSecondary};
     }
 
     button {
@@ -67,7 +66,7 @@ const Body = styled.div`
 `
 
 const Chrome = styled.div`
-    border-bottom: 0.5px solid #003B00;
+    border-bottom: 0.5px solid ${({ theme: { colorSecondary }}) => colorSecondary};
     display: flex;
     flex-direction: row;
     padding: 8px 12px;
@@ -76,7 +75,7 @@ const Chrome = styled.div`
         width: 8px;
         height: 8px;
         border-radius: 100%;
-        background: #003B00;
+        background: ${({ theme: { colorSecondary }}) => colorSecondary};
 
         margin-left: 8px;
         :first-child {
@@ -87,7 +86,6 @@ const Chrome = styled.div`
 
 export const TerminalContent = () => {
     const [copySuccess, setCopySuccess] = useState(null)
-    const token = getToken()
     const pkg = "@ultimaup/cli"
 
     return (
@@ -99,12 +97,11 @@ export const TerminalContent = () => {
                     <div />
                 </Chrome>
                 <Body>
-                    {!token && <LoginBtn />}
                     <code><i>$</i>npm i -g {pkg} {'&&'} \</code>
-                    <code><i>$</i>ultima login {token}</code>
+                    <code><i>$</i>ultima login</code>
                 </Body>
             </Terminal>
-            <Clipboard className="ui button green" data-clipboard-text={`npm i -g ${pkg} && ultima login ${token}`} onSuccess={() => {
+            <Clipboard component={Button} data-clipboard-text={`npm i -g ${pkg} && ultima login`} onSuccess={() => {
                 setCopySuccess(true)
                 setTimeout(() => {
                     setCopySuccess(false)

@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import styled, { css } from 'styled-components'
-import Octicon, { Terminal, Plus, TriangleDown, Person, SignOut } from '@primer/octicons-react'
+import styled, { css } from 'styled-components/macro'
+import Octicon, { Plus, TriangleDown, Person, SignOut } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
 import GiteaStyles from './GiteaStyles'
+import { Grid } from './Layout'
 
 import { ReactComponent as Logo } from './LogoWithText.svg'
 import jwtDecode from 'jwt-decode'
@@ -12,17 +13,22 @@ import { getToken, clearToken } from '../utils/token'
 
 const Container = styled.div`
     width: 100%;
-    height: 52px;background: #2e323e;
-    border-bottom: 1px solid #313131;
+    height: 52px;
+    border-bottom: 1px solid #292929;
+
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+    /* identical to box height */
+
+    letter-spacing: -0.035em;
 `
 
-const Grid = styled.div`
-    max-width: 1127px;
-    width: 100%;
-    margin: auto;
-    display: flex;
-    height: 100%;
+const NavGrid = styled(Grid)`
     align-items: center;
+    height: 100%;
 `
 
 const Right = styled.div`
@@ -31,14 +37,37 @@ const Right = styled.div`
     display: flex;
     align-items: center;
 
-    a:not(.cli-link) {
-        color: #9e9e9e!important;
-    }
-
     a:not(:last-child) {
         margin-right: 36px;
     }
 `
+const NavLink = styled.a`
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+    /* identical to box height */
+
+    letter-spacing: -0.035em;
+
+    color: ${({ theme: { offWhite } }) => offWhite}F;
+
+    opacity: 0.9;
+    :hover {
+        color: #fff;
+        opacity: 1;
+    }
+
+    ${({ primary, theme: { colorPrimary } }) => primary && css`
+        color: ${colorPrimary};
+        :hover {
+            color: ${colorPrimary}
+        }
+    `}
+`
+
+const NavLinkLink = styled(NavLink).attrs({ as: Link })``
 
 const Divider = styled.div`
     border-top: 1px solid rgba(34,36,38,.1);
@@ -55,8 +84,8 @@ const Dropdown = styled.div`
     right: 0;
     opacity: 0;
     pointer-events: none;
-    border: 1px solid #434444;
-    background: #2c303a;
+    background: ${({ theme: { backgroundColor } }) => backgroundColor};
+    border: 1px solid #565656;
     margin-top: 8px;
     z-index: 999;
 
@@ -68,7 +97,7 @@ const Dropdown = styled.div`
         padding: .78571429em 1.14285714em!important;
 
         :hover {
-            color: white !important;
+            color: ${({ theme: { offWhite } }) => offWhite} !important;
         }
 
         svg {
@@ -82,19 +111,29 @@ const Dropdown = styled.div`
         pointer-events: auto;
         opacity: 1;
     `}
+
+    ${NavLink} {
+        opacity: 0.8;
+        :hover {
+            opacity: 1;
+        }
+    }
 `
 
 const Avatar = styled.div`
-    width: 24px;
-    height: 24px;
-    border-radius: 3px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid ${({ theme: { offWhite } }) => offWhite}F;
+    box-sizing: border-box;
     background-size: cover;
+    border-radius: 3px;
     ${({ src }) => css`background-image: url('${src}');`}
 `
 
 const UserMenuContainer = styled.div`
     position: relative;
     display: flex;
+    color: ${({ theme: { offWhite } }) => offWhite};
     align-items: center;
     cursor: pointer;
     ${Avatar} {
@@ -103,7 +142,7 @@ const UserMenuContainer = styled.div`
 `
 
 const UserName = styled.span`
-    color: white;
+    color: ${({ theme: { offWhite } }) => offWhite};
     text-transform: uppercase;
     color: #dbdbdb;
     max-width: 300px;
@@ -128,21 +167,56 @@ const UserMenu = () => {
             <Dropdown isActive={isActive}>
                 <UserName>Signed in as {user.username}</UserName>
                 <Divider />
-                <a href={`/${user.username}`}>
+                <NavLinkLink to={`/`}>
                     <Octicon width={12} icon={Person} />
                     Profile
-                </a>
+                </NavLinkLink>
                 <Divider />
-                <a onClick={() => {
+                <NavLink onClick={() => {
                     clearToken()
                     window.location.href = "/auth/logout"
                 }}>
                     <Octicon width={12} icon={SignOut} /> Sign Out
-                </a>
+                </NavLink>
             </Dropdown>
         </div>
     </UserMenuContainer>
 }
+
+const Badge = styled.div`
+    background: #363636;
+    border: 1px solid #565656;
+    box-sizing: border-box;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-family: Inter;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 15px;
+    /* identical to box height */
+
+    padding: 2px 6px;
+    color: ${({ theme: { offWhite } }) => offWhite}F;
+`
+
+const Brand = styled.div`
+    a {
+        color: ${({ theme : { offWhite } }) => offWhite};
+        display: flex;
+        align-items: center;
+
+        div {
+            width: auto;
+            transform: scale(0.8);
+            margin-left: -8px;
+        }
+        
+        :hover {
+            color: ${({ theme : { offWhite } }) => offWhite};
+        }
+    }
+`
 
 const Navbar = () => {
     const [cliModalOpen, setCliModalOpen] = useState(false)
@@ -151,34 +225,25 @@ const Navbar = () => {
         <>
             <GiteaStyles />
             <Container>
-                <Grid>
-                    <div className="item brand">
-                        <Link to="/" style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginLeft: -12,
-                        }}>
-                            <div style={{
-                                width: 'auto',
-                                transform: 'scale(0.8)',
-                                marginTop: 4,
-                            }}>
+                <NavGrid>
+                    <Brand>
+                        <Link to="/">
+                            <div>
                                 <Logo />
                             </div>
-                            <span className="badge" style={{ marginLeft: 1 }}>alpha</span>
+                            <Badge>alpha</Badge>
                         </Link>
-                    </div>
+                    </Brand>
                     <Right>
-                        <a title="CLI Login" className="cli-link" onClick={() => setCliModalOpen(true)}>
-                            <Octicon icon={Terminal} width={24} />
-                        </a>
-                        <Link title="Create new Repository" to="/repo/create">
-                            <Octicon icon={Plus} width={12} />
-                        </Link>
+                        <NavLink href="/docs">
+                            Docs
+                        </NavLink>
+                        <NavLink primary title="CLI Login" onClick={() => setCliModalOpen(true)}>
+                            Install CLI
+                        </NavLink>
                         <UserMenu />
                     </Right>
-                </Grid>
+                </NavGrid>
             </Container>
             <ControlledCLIModal isOpen={cliModalOpen} setIsOpen={setCliModalOpen} />
         </>

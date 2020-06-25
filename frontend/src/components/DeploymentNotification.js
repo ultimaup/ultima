@@ -1,13 +1,12 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 
 import StatusDot from './StatusDot'
 import {useActions} from '../hooks/useActions'
 
 const Container = styled.div`
-    position: absolute;
-    margin-top: 1px;
-    right: 9px;
+    display: inline-block;
+    margin-left: 9px;
 `
 
 const DeploymentNotification = ({ owner, repoName }) => {

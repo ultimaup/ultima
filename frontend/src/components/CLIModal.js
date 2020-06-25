@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 
 import { TerminalContent } from '../routes/CLI/CLI'
 import UltimaModal from './UltimaModal'
+import { Button } from './Layout'
 
 const TerminalContainer = styled.div`
-    .button {
-        display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    ${Button} {
         margin-top: 12px;
     }
 `

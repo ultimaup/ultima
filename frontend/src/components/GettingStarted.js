@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
+import { transparentize } from 'polished'
 
 import Octicon, { Rocket, Heart, Terminal } from '@primer/octicons-react'
 import { ControlledCLIModal } from './CLIModal'
@@ -7,15 +8,21 @@ import { ControlledCLIModal } from './CLIModal'
 const Welcome = styled.div`
     width: 100%;
     /* height: 150px; */
-    background: #353945;
-    border-radius: 8px;
-    border: 1px solid #404552;
+    border-radius: 7px;
+    border: 1px solid #292929;
     padding: 18px;
     text-align: center;
+    color: ${({ theme: { offWhite } }) => transparentize(0.4)(offWhite)};
 
     h2 {
-        color: #F9F9F9;
+        color: ${({ theme: { offWhite } }) => offWhite};
         margin-top: 12px;
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: bold;
+        font-size: 24px;
+        line-height: 28px;
+        text-align: center;
     }
 
     ul {
@@ -33,6 +40,8 @@ const Welcome = styled.div`
             display: flex;
             flex-direction: column;
             align-items: center;
+
+            color: ${({ theme : { colorPrimary } }) => colorPrimary};
 
             padding: 8px 0;
             padding-bottom: 6px;

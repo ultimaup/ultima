@@ -681,7 +681,8 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 		if (!config) {
 			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
-			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} resources to deploy`, completedAt: true })
+			const plural = Object.keys(config).length > 1
+			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} ${plural ? 'resources': 'resource'} to deploy`, completedAt: true })
 		}
 
 		if (hasAPI) {

@@ -15,9 +15,10 @@
     ]
   },
   "options_ui": {
-    "page": "options.html"
+    "page": "options.html",
+    "chrome_style": true
   },
-  "permissions": ["storage"],
+  "permissions": ["*://github.com/*", "storage", "webRequest", "webRequestBlocking"],
   "content_scripts": [
     {
       "matches": ["*://github.com/*"],
@@ -25,6 +26,9 @@
       "js": ["scripts/contentScript.js"]
     }
   ],
+  "externally_connectable": {
+    "matches": ["*://github.com/*"]
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "addon@build.onultima.com"

@@ -1,8 +1,8 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css } from 'styled-components/macro'
 import { Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
-import Octicon, {GitBranch} from '@primer/octicons-react'
+import Octicon, {GitBranch,ChevronRight} from '@primer/octicons-react'
 import { readableColor } from 'polished'
 
 import { useActions, useAction } from '../../hooks/useActions'
@@ -15,8 +15,8 @@ export const ActionContainer = styled.div`
     display: flex;
     padding: 16px 12px;
     border-radius: 4px;
-    color: white;
-    background: rgba(0,0,0,0.2);
+    color: ${({ theme: { offWhite } }) => offWhite};
+    background: #292929;
     border: 1px solid rgba(255,255,255,0.1);
     box-sizing: border-box;
     border-radius: 3px;
@@ -42,9 +42,10 @@ const AddonContainer = styled.div`
     border-bottom-right-radius: 3px;
 `
 
-const ActionLink = styled(ActionContainer).attrs(() => ({ as: Link }))`
+export const ActionLink = styled(ActionContainer).attrs(() => ({ as: Link }))`
+    color: ${({ theme: { offWhite } }) => offWhite};
     :hover {
-        color: white;
+        color: ${({ theme: { offWhite } }) => offWhite};
     }
 `
 
@@ -53,8 +54,27 @@ const ActionsContainer = styled.div`
         margin-top: 16px;
     }
     ${ActionLink} {
-        margin-bottom: 32px;
+        margin-bottom: 18px;
     }
+`
+
+const ProfilePic = styled.div`
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.1);
+    background-image: url('${({ src }) => src}');
+    background-size: cover;
+    border-radius: 3px;
+`
+
+const ShaLabel = styled.span`
+    background: ${({ theme: { backgroundColor } }) => backgroundColor};
+    border-radius: 2px;
+    font-size: 12px;
+    line-height: 15px;
+    font-family: monospace;
+    padding: 3px 12px;
+    color: ${({ theme: { offWhite } }) => offWhite};
 `
 
 const Body = styled.div`
@@ -62,11 +82,12 @@ const Body = styled.div`
     display: flex;
     align-items: center;
 
-    img {
-        width: 32px;
-        height: 32px;
+    ${ProfilePic} {
         margin-right: 8px;
         margin-left: 16px;
+    }
+    ${ShaLabel} {
+        margin-right: 8px;
     }
     a {
         margin-left: 0 !important;
@@ -197,23 +218,24 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
 
         return (
             <ActionLink to={to} onClick={onClick}>
-                <Status>
+                {/* <Status>
                     {completedAt ? (type === 'error' ? <Badge variant="danger">Failed</Badge> : <Badge variant="success">Success</Badge>) : <BadgeSpinner variant="warning">Deploying <Spinner /></BadgeSpinner>}
-                </Status>
+                </Status> */}
+                <StatusDot complete={!!completedAt} status={type} />
                 <Body>
                     <Octicon icon={GitBranch}/>
                     {branch}
-                    <img src={imageUrl} alt="" />
-                    <a className="ui sha label ">
-                        <span className="shortsha">{hash.substring(0,9)}</span>
-                    </a>
-                    {commit && commit.message}
+                    <ProfilePic src={imageUrl} title="pusher profile pic" />
+                    <ShaLabel>
+                        {hash.substring(0,9)}
+                    </ShaLabel>
+                    {commit && commit.message.split('\n')[0]}
                 </Body>
                 <Timings>
                     <span title={completedAt}>{completedAt ? `completed in ${moment(completedAt).diff(createdAt, 'seconds')} seconds` : null}</span>
                     <span title={createdAt}>{moment(createdAt).fromNow()}</span>
                 </Timings>
-                {!noLink && <Chevron><i className="fa fa-chevron-right" /></Chevron>}
+                {!noLink && <Chevron><Octicon icon={ChevronRight} /></Chevron>}
             </ActionLink>
         )
     }

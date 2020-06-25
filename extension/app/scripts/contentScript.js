@@ -38,7 +38,7 @@ const init = () => {
     }
 }
 
-const loadUltimaPage = () => {
+const loadUltimaPage = async () => {
     const selectedNavItem = document.querySelector('nav.js-repo-nav .selected')
     selectedNavItem.classList.remove('js-selected-navigation-item', 'selected')
     selectedNavItem.setAttribute('aria-current', 'false')
@@ -50,31 +50,15 @@ const loadUltimaPage = () => {
     const main = document.querySelector('main')
     const content = document.querySelector('main > div:last-child')
     content.parentNode.removeChild(content)
+    const ultimaServer = await getUltimaServer()
 
     const ultimaPage = `
-        <div class="gutter-condensed gutter-lg d-flex flex-column flex-md-row">
-            <div id="ultima-github-embed"></div>
+        <div class="container-xl clearfix new-discussion-timeline  px-3 px-md-4 px-lg-5">
+            <iframe style="border: none; width: 100%; height: 800px" src="${ultimaServer}/embed/github"></iframe>
         </div>
     `
 
-    const ultimaServer = getUltimaServer()
-
     main.insertAdjacentHTML('beforeend', ultimaPage)
-
-    window.ULTIMA_GRAPHQL_HOST = ultimaServer
-
-    window.__webpack_public_path__ = ultimaServer+'/assets/'
-    fetch(ultimaServer+'/assets/asset-manifest.json')
-        .then(r => r.json())
-        .then(data => {
-            Object.values(data.files)
-                .filter(e => e.endsWith('.js'))
-                .forEach(e => {
-                    const script = document.createElement('script')
-                    script.src = ultimaServer+e
-                    document.head.appendChild(script)
-                })
-        })
 }
 
 window.addEventListener('hashchange', () => {

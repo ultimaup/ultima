@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import styled, { css } from 'styled-components'
+import styled, { css } from 'styled-components/macro'
 
 import { getToken } from '../../utils/token'
 import jwtDecode from 'jwt-decode'

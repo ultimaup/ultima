@@ -2,12 +2,15 @@ const { getUltimaServer, setUltimaServer } = require('./ultimaServer')
 
 function saveOptions(e) {
     e.preventDefault()
-    setUltimaServer(document.querySelector("#ultimaServer").value)
+    const {value} = document.querySelector("#ultimaServer")
+    setUltimaServer(value)
 }
 
 function restoreOptions() {
-    document.querySelector("#ultimaServer").value = getUltimaServer()
+    getUltimaServer().then(ultimaServer => {
+        document.querySelector("#ultimaServer").value = ultimaServer
+    })
 }
 
-document.addEventListener("DOMContentLoaded", restoreOptions);
-document.querySelector("form").addEventListener("submit", saveOptions);
+document.addEventListener("DOMContentLoaded", restoreOptions)
+document.querySelector("form").addEventListener("submit", saveOptions)

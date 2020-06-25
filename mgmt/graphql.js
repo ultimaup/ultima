@@ -21,6 +21,7 @@ const s3 = require('./s3')
 const github = require('./github')
 const auth = require('./auth')
 
+
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
@@ -34,6 +35,7 @@ const {
     PUBLIC_IPV6,
 
     GITHUB_APP_NAME,
+    CHROME_EXT_ID,
 } = process.env
 
 const admins = [
@@ -170,6 +172,14 @@ const typeDefs = gql`
         token: String
     }
 
+    type Extensions {
+        chrome: String
+        firefox: String
+        opera: String
+        edge: String
+        safari: String
+    }
+
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -185,6 +195,7 @@ const typeDefs = gql`
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
+        getExtensionIds: Extensions
     }
 
     type Mutation {
@@ -263,7 +274,7 @@ const resolvers = {
             const full_name = [owner, repoName].join('/')
             const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
             if (githubRepo) {
-                const file = await github.getUltimaYml(repo.installationId, { owner, repo: repoName, branch })
+                const file = await github.getUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch })
                 return file
             }
 
@@ -523,6 +534,15 @@ const resolvers = {
             }
 
             return `pg.${PUBLIC_ROUTE_ROOT}:${port}`
+        },
+        getExtensionIds: () => {
+            return {
+                chrome: CHROME_EXT_ID,
+                firefox: null,
+                opera: null,
+                safari: null,
+                edge: null,
+            }
         },
     },
     Mutation: {

@@ -1,9 +1,10 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 
 import RepoList from '../../components/RepoList'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import { Grid } from '../../components/Layout'
 import GettingStarted from '../../components/GettingStarted'
 import { ActionList } from '../Deployments/Deployments'
 
@@ -17,23 +18,36 @@ const DashboardContainer = styled.div`
     }
 `
 
+const DashboardBody = styled(Grid)`
+    margin-top: 32px;
+`
+
+const Main = styled.div`
+    flex: 2;
+`
+
+const Sidebar = styled.div`
+    flex: 1;
+`
+
+const Divider = styled.div`
+    width: 32px;
+`
+
 const DashboardHome = () => {
     return (
         <DashboardContainer>
             <Navbar />
-            <div className="dashboard feeds">
-                <div className="ui container">
-                    <div className="ui mobile reversed stackable grid">
-                        <div className="ui container ten wide column">
-                            <GettingStarted />
-                            <ActionList style={{ marginTop: 32 }} />
-                        </div>
-                        <div className="six wide column">
-                            <RepoList />
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DashboardBody>
+                <Main>
+                    <GettingStarted />
+                    <ActionList style={{ marginTop: 32 }} />
+                </Main>
+                <Divider />
+                <Sidebar className="six wide column">
+                    <RepoList />
+                </Sidebar>
+            </DashboardBody>
             <Footer />
         </DashboardContainer>
     )

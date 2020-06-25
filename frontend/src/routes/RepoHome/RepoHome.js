@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 import { useParams, Route, Switch, NavLink, Link, useLocation } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
@@ -8,6 +8,8 @@ import { ControlledConfigEditor } from '../../components/ConfigEditor'
 import NavBar from '../../components/Navbar'
 import Environments from '../Environments'
 import Deployments from '../Deployments'
+
+import { Grid } from '../../components/Layout'
 
 import useGetUltimaYml from '../../hooks/useGetUltimaYml'
 import useSetUltimaYml from '../../hooks/useSetUltimaYml'
@@ -134,57 +136,113 @@ const Integrate = () => {
     )
 }
 
+const Header = styled.div`
+    background: #292929;
+    margin-bottom: 23px;
+`
+
+const RepoName = styled.div`
+    font-family: Inter;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+
+    color: ${({ theme: { colorPrimary } }) => colorPrimary};
+
+    span {
+        color: #7B7C7F;
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+
+    a:not(:last-child) {
+        font-weight: 600;
+    }
+
+    svg {
+        margin-right: 6px;
+        opacity: 0.6;
+    }
+`
+
+const HeaderGrid = styled(Grid)`
+    flex-direction: column;
+
+    ${RepoName} {
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+`
+
+const Tabs = styled.div`
+    a {
+        display: inline-block;
+        position: relative;
+        border-radius: 4px;
+        padding: 16px 21px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        color: ${({ theme: { colorPrimary } }) => colorPrimary};
+    }
+
+    a.active {
+        font-weight: bold;
+        background: #181818;
+    }
+`
+
+const Body = styled.div`
+    width: 100%;
+`
+
 const RepoHome = () => {
     const { owner, repoName } = useParams()
     const { repo } = useRepo({ repoName, owner })
     return (
         <>
-            <div className="repository file list" style={{ paddingTop: 0 }}>
-                <NavBar />
-                <div className="header-wrapper" style={{ marginTop: 0, marginBottom: 0 }}>
-                    <div className="ui container" >
-                        <div className="repo-header"style={{ marginTop: 8, marginBottom: 27 }}>
-                            <div className="ui huge breadcrumb repo-title">
-                                <Octicon size={32} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
-                                &nbsp;&nbsp;
-                                <Link to="/">{owner}</Link>
-                                <div className="divider">&nbsp;/&nbsp;</div>
-                                <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="ui tabs container">
-                        <div className="ui tabular stackable menu navbar">
-                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
-                                <Octicon icon={Versions} />&nbsp;
-                                Environments
-                            </NavLink>
-                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
-                                <Octicon icon={Rocket} />&nbsp;
-                                Deployments
-                                <DeploymentNotification repoName={repoName} owner={owner} />
-                            </NavLink>
-                            <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
-                                <Octicon icon={Pulse} />&nbsp;
-                                Logs
-                            </NavLink>
-                            {repo && repo.vcs === 'github' && (
-                                <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
-                                    <Octicon icon={MarkGithub} />&nbsp;
-                                    View on GitHub
-                                </a>
-                            )}
-                            {repo && repo.vcs === 'gitea' && (
-                                <a className="item" target="_blank" href={`/${owner}/${repoName}`}>
-                                    <Octicon icon={LinkExternal} />&nbsp;
-                                    View in Legacy UI
-                                </a>
-                            )}
-
-                        </div>
-                    </div>
-                </div>
-                <div className="ui container" style={{ marginTop: 12, marginBottom: 36 }}>
+            <NavBar />
+            <Header>
+                <HeaderGrid>
+                    <RepoName>
+                        <Octicon size={21} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
+                        <Link to="/">{owner}</Link>
+                        <span>/</span>
+                        <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
+                    </RepoName>
+                    <Tabs>
+                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
+                            <Octicon icon={Versions} />&nbsp;
+                            Environments
+                        </NavLink>
+                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
+                            <Octicon icon={Rocket} />&nbsp;
+                            Deployments
+                            <DeploymentNotification repoName={repoName} owner={owner} />
+                        </NavLink>
+                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
+                            <Octicon icon={Pulse} />&nbsp;
+                            Logs
+                        </NavLink>
+                        {repo && repo.vcs === 'github' && (
+                            <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
+                                <Octicon icon={MarkGithub} />&nbsp;
+                                View on GitHub
+                            </a>
+                        )}
+                        {repo && repo.vcs === 'gitea' && (
+                            <a className="item" target="_blank" href={`/${owner}/${repoName}`}>
+                                <Octicon icon={LinkExternal} />&nbsp;
+                                View in Legacy UI
+                            </a>
+                        )}
+                    </Tabs>
+                </HeaderGrid>
+            </Header>
+            <Grid>
+                <Body>
                     <Switch>
                         <Route path="/repo/:owner/:repoName/deployments" component={Deployments}/>
                         <Route path="/repo/:owner/:repoName/logs" component={Logs}/>
@@ -192,8 +250,8 @@ const RepoHome = () => {
                         <Route path="/repo/:owner/:repoName/integrate" component={Integrate}/>
                         <Route path="/repo/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
                     </Switch>
-                </div>
-            </div>
+                </Body>
+            </Grid>
             <Footer />
         </>
     )
