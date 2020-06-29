@@ -14,7 +14,7 @@ watchUltimaServer(us => {
 function listener(details) {
     for (let i = 0; i < details.responseHeaders.length; i += 1) {
         if (isCSPHeader(details.responseHeaders[i].name.toUpperCase())) {
-            const newCSP = details.responseHeaders[i].value.replace('connect-src', `connect-src ${ultimaServer}`)
+            const newCSP = details.responseHeaders[i].value.replace('connect-src', `connect-src ${ultimaServer}`).replace('frame-src', `frame-src ${ultimaServer}`)
             console.log('changed csp to', newCSP)
             details.responseHeaders[i].value = newCSP
         }

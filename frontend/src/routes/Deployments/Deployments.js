@@ -299,6 +299,7 @@ const ActionDetails = () => {
 
 export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, onClick }) => {
     const { loading, error, actions } = useActions({ owner, repoName })
+    const { re } = useParams()
 
     if (loading) {
         return <Loading />
@@ -316,7 +317,7 @@ export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, o
     return (
         <ActionsContainer style={style}>
             {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
-                <Action key={action.id} {...action} to={`/repo/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
+                <Action key={action.id} {...action} to={`/${re}/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )
@@ -330,8 +331,8 @@ const ActionListRoute = () => {
 const Deployments = () => {
     return (
         <Switch>
-            <Route path="/repo/:owner/:repoName/deployments/:parentId" component={ActionDetails} />
-            <Route path="/repo/:owner/:repoName/deployments" component={ActionListRoute} />
+            <Route path="/:re/:owner/:repoName/deployments/:parentId" component={ActionDetails} />
+            <Route path="/:re/:owner/:repoName/deployments" component={ActionListRoute} />
         </Switch>
     )
 }

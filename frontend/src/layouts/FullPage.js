@@ -6,24 +6,24 @@ import { ResetGlobal } from '../resetcss'
 const GlobalStyles = createGlobalStyle`
     @font-face {
         font-family: 'Steradian';
-        src: url('./fonts/Steradian-Rg.woff2') format('woff2'),
-            url('./fonts/Steradian-Rg.woff') format('woff');
+        src: url('${require('../fonts/Steradian-Rg.woff2')}') format('woff2'),
+            url('${require('../fonts/Steradian-Rg.woff')}') format('woff');
         font-weight: normal;
         font-style: normal;
     }
 
     @font-face {
         font-family: 'Steradian';
-        src: url('./fonts/Steradian-Bd.woff2') format('woff2'),
-            url('./fonts/Steradian-Bd.woff') format('woff');
+        src: url('${require('../fonts/Steradian-Bd.woff2')}') format('woff2'),
+            url('${require('../fonts/Steradian-Bd.woff')}') format('woff');
         font-weight: bold;
         font-style: normal;
     }
 
     @font-face {
         font-family: 'Steradian';
-        src: url('./fonts/Steradian-Lt.woff2') format('woff2'),
-            url('./fonts/Steradian-Lt.woff') format('woff');
+        src: url('${require('../fonts/Steradian-Lt.woff2')}') format('woff2'),
+            url('${require('../fonts/Steradian-Lt.woff')}') format('woff');
         font-weight: 300;
         font-style: normal;
     }

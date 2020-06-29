@@ -51,11 +51,10 @@ const loadUltimaPage = async () => {
     const content = document.querySelector('main > div:last-child')
     content.parentNode.removeChild(content)
     const ultimaServer = await getUltimaServer()
+    const [_,owner, repoName] = window.location.pathname.split('/')
 
     const ultimaPage = `
-        <div class="container-xl clearfix new-discussion-timeline  px-3 px-md-4 px-lg-5">
-            <iframe style="border: none; width: 100%; height: 800px" src="${ultimaServer}/embed/github"></iframe>
-        </div>
+        <iframe style="border: none; width: 100%; height: 800px; margin-top: -32px;" src="${ultimaServer}/embed/${owner}/${repoName}"></iframe>
     `
 
     main.insertAdjacentHTML('beforeend', ultimaPage)

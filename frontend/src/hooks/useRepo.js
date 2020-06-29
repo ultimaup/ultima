@@ -8,6 +8,7 @@ const GET_REPO = gql`
             full_name
             private
             vcs
+            isUltima
         }
     }
 `

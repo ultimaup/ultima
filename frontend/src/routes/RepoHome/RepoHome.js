@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import styled from 'styled-components/macro'
-import { useParams, Route, Switch, NavLink, Link, useLocation } from 'react-router-dom'
+import styled, { createGlobalStyle } from 'styled-components/macro'
+import { useParams, Route, Switch, NavLink, Link, useLocation, Redirect } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
 import ReactResizeDetector from 'react-resize-detector'
@@ -215,9 +215,55 @@ const Body = styled.div`
     margin-bottom: 16px;
 `
 
+const EmbeddedRepoHome = ({ owner, repoName }) => (
+    <>
+        <RepoHeader>
+            <HeaderGrid>
+                <Tabs>
+                    <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/`} exact>
+                        <Octicon icon={Versions} />&nbsp;
+                        Environments
+                    </NavLink>
+                    <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/deployments`}>
+                        <Octicon icon={Rocket} />&nbsp;
+                        Deployments
+                        <DeploymentNotification repoName={repoName} owner={owner} />
+                    </NavLink>
+                    <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/logs`}>
+                        <Octicon icon={Pulse} />&nbsp;
+                        Logs
+                    </NavLink>
+                </Tabs>
+            </HeaderGrid>
+        </RepoHeader>
+        <Grid>
+            <Body>
+                <Switch>
+                    <Route path="/embed/:owner/:repoName/deployments" component={Deployments}/>
+                    <Route path="/embed/:owner/:repoName/logs" component={Logs}/>
+                    <Route path="/embed/:owner/:repoName/:branch/config" component={EditConfig}/>
+                    <Route path="/embed/:owner/:repoName/integrate" component={Integrate}/>
+                    <Route path="/embed/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
+                </Switch>
+            </Body>
+        </Grid>
+    </>
+)
+
 const RepoHome = () => {
     const { owner, repoName } = useParams()
+    const { pathname } = useLocation()
     const { repo } = useRepo({ repoName, owner })
+    
+    const embedded = pathname.startsWith('/embed')
+
+    if (embedded) {
+        if (repo && !repo.isUltima && !pathname.endsWith('integrate')) {
+            return <Redirect to={`/embed/${owner}/${repoName}/integrate`} />
+        }
+        return <EmbeddedRepoHome owner={owner} repoName={repoName} />
+    }
+
     return (
         <>
             <NavBar />

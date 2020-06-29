@@ -19,7 +19,6 @@ const RepoHome = React.lazy(() => import('./routes/RepoHome'))
 const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
 const CLI = React.lazy(() => import('./routes/CLI'))
 const ConfigGenerator = React.lazy(() => import('./routes/ConfigGenerator'))
-const GithubEmbed = React.lazy(() => import('./routes/GithubEmbed'))
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
@@ -58,7 +57,7 @@ const App = () => (
                             <Route path="/dev-bucket/:bucketName" component={DevBucketRedirect} />
                             <Route path="/config-generator" component={ConfigGenerator} />
                             <Route path="/repo/:owner/:repoName/:branch?" component={RepoHome} />
-                            <Route path="/embed/github" component={GithubEmbed} />
+                            <Route path="/embed/:owner/:repoName/:branch?" component={RepoHome} />
                             <Route path="/" component={() => {
                                 return getToken() ? <DashboardHome/> : <Home />
                             }} />
