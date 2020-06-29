@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components/macro'
-
-import { getToken } from '../../utils/token'
 import jwtDecode from 'jwt-decode'
 import Octicon, { GitCommit, GitBranch } from '@primer/octicons-react'
+
+import { getToken } from '../../utils/token'
+import { Button, Form, RadioInput } from '../../components/Layout'
 
 const ProfilePic = styled.div`
     width: 48px;
@@ -13,11 +14,72 @@ const ProfilePic = styled.div`
     ${({ src }) => css`background-image: url('${src}');`}
 `
 
-const Container = styled.form`
-    margin-top: 12px;
+const Container = styled(Form)`
+    display: flex;
+    flex-direction: row;
+    margin-left: 32px;
+
+    ${ProfilePic} {
+        margin-right: 21px;
+    }
+
+    input:not([type="radio"]), textarea {
+        width: 100%;
+    }
+
+    input {
+        margin-bottom: 10px;
+    }
 `
 
-const CommitChanges = ({ fileContentsChanged, onSubmit, branch, placeholder }) => {
+const SpeechBubble = styled.div`
+    border-radius: 6px;
+    padding: 16px;
+    border: 1px solid #292929;
+    position: relative;
+
+    margin-bottom: 8px;
+
+    :after, :before {
+        position: absolute;
+        top: 11px;
+        right: 100%;
+        left: -16px;
+        display: block;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        content: " ";
+        border-color: transparent;
+        border-style: solid solid outset;
+    }
+
+    :before {
+        border-width: 8px;
+        border-right-color: #292929;
+    }
+    :after {
+        margin-top: 1px;
+        margin-left: 2px;
+        border-width: 7px;
+        border-right-color: ${({ theme: { backgroundColor }}) => backgroundColor};
+    }
+
+    svg {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+`
+
+const SpeechBubbleContainer = styled.div`
+    flex: 1;
+
+    button {
+        margin-right: 8px;
+    }
+`
+
+const CommitChanges = ({ fileContentsChanged, onSubmit, branch, placeholder, style }) => {
     const user = jwtDecode(getToken())
     const [newBranch, setNewBranch] = useState(false)
 
@@ -27,7 +89,7 @@ const CommitChanges = ({ fileContentsChanged, onSubmit, branch, placeholder }) =
     const placeholderCommitMessage = placeholder || "Update '.ultima.yml'"
 
     return (
-        <Container className="commit-form-wrapper" onSubmit={e => {
+        <Container style={style} onSubmit={e => {
             e.preventDefault()
 
             onSubmit({
@@ -38,48 +100,45 @@ const CommitChanges = ({ fileContentsChanged, onSubmit, branch, placeholder }) =
 
             return false
         }}>
-            <ProfilePic src={user.imageUrl} className="commit-avatar" />
-            <div className="commit-form">
-                <h3>Commit Changes</h3>
-                <div className="field">
-                    <input name="commit_summary" placeholder={placeholderCommitMessage} value={commitMessage} onChange={e => setCommitMessage(e.target.value)} />
-                </div>
-                <div className="field">
-                    <textarea name="commit_message" placeholder="Add an optional extended description…" rows="5" value={description} onChange={e => setDescription(e.target.value)} />
-                </div>
-                <div className="quick-pull-choice js-quick-pull-choice">
-                    <div className="field">
-                        <div className={`ui radio checkbox ${newBranch ? '' : 'checked'}`} onClick={() => setNewBranch(false)}>
-                            <input type="radio" class="js-quick-pull-choice-option hidden" name="commit_choice" checked={!newBranch} tabindex="0" />
+            <ProfilePic src={user.imageUrl} />
+            <SpeechBubbleContainer>
+                <SpeechBubble>
+                    <h3>Commit Changes</h3>
+                    <div>
+                        <input placeholder={placeholderCommitMessage} value={commitMessage} onChange={e => setCommitMessage(e.target.value)} />
+                    </div>
+                    <div>
+                        <textarea name="commit_message" placeholder="Add an optional extended description…" rows="5" value={description} onChange={e => setDescription(e.target.value)} />
+                    </div>
+                    <div>
+                        <div style={{ marginTop: 8 }}  onClick={() => setNewBranch(false)}>
+                            <RadioInput type="radio" checked={!newBranch} tabindex="0" />
                             <label>
-                                <Octicon icon={GitCommit} width={16} />&nbsp;
-                                Commit directly to the <strong className="branch-name">{branch}</strong> branch. 
+                                <Octicon icon={GitCommit} width={16} />
+                                Commit directly to the <strong>{branch}</strong> branch. 
                             </label>
                         </div>
-                    </div>
-                    <div className="field">
-                        <div className={`ui radio checkbox ${newBranch ? 'checked' : ''}`} onClick={() => setNewBranch(true)}>
-                            <input type="radio" class="js-quick-pull-choice-option hidden" name="commit_choice" checked={newBranch} tabindex="1" />
+                        <div style={{ marginTop: 8 }} onClick={() => setNewBranch(true)}>
+                            <RadioInput type="radio" checked={newBranch} tabindex="1" />
                             <label>
-                                <Octicon icon={GitBranch} width={14} />&nbsp;
+                                <Octicon icon={GitBranch} width={14} />
                                 Create a <strong>new branch</strong> for this commit and start a pull request.
                             </label>
                         </div>
-                    </div>
-                    {newBranch && (
-                        <div className="quick-pull-branch-name">
-                            <div className="new-branch-name-input field ">
-                                <div style={{ position: 'absolute', top: 10, left: 12 }}>
+                        {newBranch && (
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: 16, left: 2 }}>
                                     <Octicon icon={GitBranch} width={10} />
                                 </div>
-                                <input type="text" name="new_branch_name" value={branchName} className="input-contrast mr-2 js-quick-pull-new-branch-name" placeholder="New branch name…" required="" onChange={e => setBranchName(e.target.value)}></input>
+                                <input style={{ paddingLeft: 26, marginTop: 8 }} value={branchName} placeholder="New branch name…" required onChange={e => setBranchName(e.target.value)}></input>
                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-            <button id="commit-button" type="submit" class="ui green button" disabled={!fileContentsChanged}>Commit Changes</button>
-            <a class="ui button red" href="/">Cancel</a>
+                        )}
+                    </div>
+                </SpeechBubble>
+
+                <Button disabled={!fileContentsChanged}>Commit Changes</Button>
+                <a href="/">Cancel</a>
+            </SpeechBubbleContainer>
         </Container>
     )
 }

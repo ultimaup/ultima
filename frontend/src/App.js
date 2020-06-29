@@ -40,7 +40,7 @@ const App = () => (
         colorPrimary: '#93c9f7',
         colorSecondary: '#4d87c4',
         colorTertiary: '#b8dafd',
-        offWhite: '#daf5fc',
+        offWhite: '#edfbff',
         backgroundColor: '#181818',
     }}>
         <ApolloProvider client={client}>

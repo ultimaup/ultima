@@ -4797,18 +4797,6 @@ follow-redirects@^1.0.0:
   dependencies:
     debug "^3.0.0"
 
-fomantic-ui-css@^2.8.5:
-  version "2.8.5"
-  resolved "https://registry.yarnpkg.com/fomantic-ui-css/-/fomantic-ui-css-2.8.5.tgz#b96b8d8a66e852ccaf073e0714f4afbe435cba55"
-  integrity sha512-LtbcPw1WRtqDSeVfq6KZpI092a6JuDOXYZtlKOlA+rCUvVKV0XSgUN9a2AfQ2YxqqfUCAi//U/oerJkYdNz5Fw==
-  dependencies:
-    jquery "^3.4.0"
-
-fontawesome@^5.6.3:
-  version "5.6.3"
-  resolved "https://registry.yarnpkg.com/fontawesome/-/fontawesome-5.6.3.tgz#73f0b865fa2b0b384e69d531c05a02c643b72f95"
-  integrity sha512-FCc+CawwsJWWprVEg9X14yI7zI+l9YVAyhzgu70qwGeDn0tLLDH/dVfqgij72g4BBGgLGfK2qnvFGAmYUkhaWg==
-
 for-in@^0.1.3:
   version "0.1.8"
   resolved "https://registry.yarnpkg.com/for-in/-/for-in-0.1.8.tgz#d8773908e31256109952b1fdb9b3fa867d2775e1"
@@ -6434,11 +6422,6 @@ jest@24.9.0:
   dependencies:
     import-local "^2.0.0"
     jest-cli "^24.9.0"
-
-jquery@^3.4.0:
-  version "3.5.1"
-  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
-  integrity sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==
 
 "js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
@@ -8751,11 +8734,6 @@ process@^0.11.10:
   version "0.11.10"
   resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
   integrity sha1-czIwDoQBYb2j5podHZGn1LwW8YI=
-
-programming-languages-logos@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/programming-languages-logos/-/programming-languages-logos-0.0.3.tgz#17e073244d7886a2dc86d20ee6b3332ba765c5f4"
-  integrity sha512-58WiFkwCoEEwC86WUnRVSBM1vuNqxK4izjwR7uia/uAMw3zdFoVBa+JER1xIuyJxQrxf1T6+eZvoCnsnwXRfRg==
 
 progress@^2.0.0:
   version "2.0.3"

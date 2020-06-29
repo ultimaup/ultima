@@ -9,7 +9,8 @@ import NavBar from '../../components/Navbar'
 import Environments from '../Environments'
 import Deployments from '../Deployments'
 
-import { Grid } from '../../components/Layout'
+import { Grid, Button } from '../../components/Layout'
+import { Header } from '../../components/RepoList/RepoList'
 
 import useGetUltimaYml from '../../hooks/useGetUltimaYml'
 import useSetUltimaYml from '../../hooks/useSetUltimaYml'
@@ -23,8 +24,11 @@ import LoadingSpinner from '../../components/Loading'
 
 const Container = styled.div`
     display: flex;
+    flex-direction: column;
     position: relative;
+    width: 100%;
     margin-top: 16px;
+    border: 1px solid #292929;
 
     p { 
         font-size: 100% !important;
@@ -37,31 +41,28 @@ const ConfigEditorContainer = styled.div`
 `
 
 const EditorContainer = styled.div`
-    padding-top: 42px;
+    background-color: #1e1e1e;
+`
+
+const Columns = styled.div`
+    display: flex;
+    flex-direction: row;
 `
 
 export const Editor = ({ title, value, setValue }) => (
-    <div className="ui container">
-        <Container>
-            <ConfigEditorContainer className="ui form">
-                <h3 className="ui top attached header" style={{
-                    position: 'absolute',
-                    width: '100%',
-                    zIndex: 10,
-                    top: 0,
-                }}>
-                    {title}
-                </h3>
-
-                <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
-                    <ControlledConfigEditor value={value} setValue={setValue} />
-                </div>
+    <Container>
+        <Header>
+            {title}
+        </Header>
+        <Columns>
+            <ConfigEditorContainer>
+                <ControlledConfigEditor value={value} setValue={setValue} />
             </ConfigEditorContainer>
             <EditorContainer>
                 <ControlledEditor
-                    height="90vh"
+                    height="100%"
                     language="yaml"
-                    width="600px"
+                    width="500px"
                     value={value}
                     theme="vs-dark"
                     onChange={(ev, value) => {
@@ -69,8 +70,9 @@ export const Editor = ({ title, value, setValue }) => (
                     }}
                 />
             </EditorContainer>
-        </Container>
-    </div>
+        </Columns>
+        
+    </Container>
 )
 
 const EditConfig = ({ title= 'Manage Environment Config' }) => {
@@ -88,25 +90,26 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
     return (
         <>
             <Editor title={title} value={value} setValue={setValue} />
-            <div className="ui container form repository file editor">
-                <CommitChanges 
-                    branch={branch} 
-                    fileContentsChanged={!!value} 
-                    onSubmit={({ commitMessage, description, branchName }) => {
-                        setUltimaYml({
-                            commitMessage, 
-                            commitDescription:description,
-                            branch: branchName || branch,
-                            value,
-                            sha: ultimaYml.sha,
-                        }).then(() => {
-                            window.location.href = `/repo/${owner}/${repoName}/${branchName || branch}`
-                        }).catch(e => {
-                            console.error(e)
-                        })
-                    }}
-                />
-            </div>
+            <CommitChanges 
+                branch={branch} 
+                fileContentsChanged={!!value} 
+                style={{
+                    marginTop: 16,
+                }}
+                onSubmit={({ commitMessage, description, branchName }) => {
+                    setUltimaYml({
+                        commitMessage, 
+                        commitDescription:description,
+                        branch: branchName || branch,
+                        value,
+                        sha: ultimaYml.sha,
+                    }).then(() => {
+                        window.location.href = `/repo/${owner}/${repoName}/${branchName || branch}`
+                    }).catch(e => {
+                        console.error(e)
+                    })
+                }}
+            />
         </>
     )
 }
@@ -119,7 +122,7 @@ const Integrate = () => {
     const vcsHost = urlParams.get('vcsHost')
 
     return (
-        <div className="ui container">
+        <Grid>
             <Container>
                 {loading ? <LoadingSpinner /> : (
                     repo ? (
@@ -127,16 +130,16 @@ const Integrate = () => {
                     ) : (
                         <>
                             <span>Use Ultima to ship your projects faster</span>
-                            <a className="ui button green" href={`/vcs/${vcsHost.split('.com')[0]}`}>Link with {vcsHost.split('.com')[0]}</a>
+                            <Button href={`/vcs/${vcsHost.split('.com')[0]}`}>Link with {vcsHost.split('.com')[0]}</Button>
                         </>
                     )
                 )}
             </Container>
-        </div>
+        </Grid>
     )
 }
 
-const Header = styled.div`
+const RepoHeader = styled.div`
     background: #292929;
     margin-bottom: 23px;
 `
@@ -196,6 +199,7 @@ const Tabs = styled.div`
 
 const Body = styled.div`
     width: 100%;
+    margin-bottom: 16px;
 `
 
 const RepoHome = () => {
@@ -204,43 +208,43 @@ const RepoHome = () => {
     return (
         <>
             <NavBar />
-            <Header>
+            <RepoHeader>
                 <HeaderGrid>
                     <RepoName>
-                        <Octicon size={21} icon={(repo && repo.private) ? Lock : Repo} className="svg" />
+                        <Octicon size={21} icon={(repo && repo.private) ? Lock : Repo} />
                         <Link to="/">{owner}</Link>
                         <span>/</span>
                         <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
                     </RepoName>
                     <Tabs>
-                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
+                        <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
                             <Octicon icon={Versions} />&nbsp;
                             Environments
                         </NavLink>
-                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
+                        <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
                             <Octicon icon={Rocket} />&nbsp;
                             Deployments
                             <DeploymentNotification repoName={repoName} owner={owner} />
                         </NavLink>
-                        <NavLink className="item" activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
+                        <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
                             <Octicon icon={Pulse} />&nbsp;
                             Logs
                         </NavLink>
                         {repo && repo.vcs === 'github' && (
-                            <a className="item" target="_blank" href={`https://github.com/${owner}/${repoName}`}>
+                            <a target="_blank" href={`https://github.com/${owner}/${repoName}`}>
                                 <Octicon icon={MarkGithub} />&nbsp;
                                 View on GitHub
                             </a>
                         )}
                         {repo && repo.vcs === 'gitea' && (
-                            <a className="item" target="_blank" href={`/${owner}/${repoName}`}>
+                            <a target="_blank" href={`/${owner}/${repoName}`}>
                                 <Octicon icon={LinkExternal} />&nbsp;
                                 View in Legacy UI
                             </a>
                         )}
                     </Tabs>
                 </HeaderGrid>
-            </Header>
+            </RepoHeader>
             <Grid>
                 <Body>
                     <Switch>

@@ -117,6 +117,7 @@ const RepoListContainer = styled.div`
 export const Header = styled.h4`
     display: flex;
     justify-content: space-between;
+    align-items: center;
     
     border-radius: 3px;
     padding: 12px 16px;

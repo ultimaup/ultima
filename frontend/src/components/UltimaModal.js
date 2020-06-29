@@ -1,7 +1,8 @@
 import Modal from 'react-modal'
 import React from 'react'
 import styled, { useTheme } from 'styled-components'
-import Octicon, { X } from '@primer/octicons-react'
+
+import { CloseButton } from './Layout'
 
 const Title = styled.h3`
     font-family: Inter;
@@ -15,23 +16,12 @@ const Title = styled.h3`
     justify-content: space-between;
 `
 
-const Close = styled.div`
-    background: #D8D8D8;
-    color: ${({ theme: { backgroundColor }}) => backgroundColor};
-    border-radius: 100%;
-    padding: 3px 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-`
-
 const Body = styled.div`
     margin-top: 28px;
 `
 
 const UltimaModal = ({ isOpen, onRequestClose, title, children }) => {
-    const { backgroundColor, colorPrimary, offWhite } = useTheme()
+    const { offWhite } = useTheme()
 
     return (
         <Modal
@@ -62,9 +52,7 @@ const UltimaModal = ({ isOpen, onRequestClose, title, children }) => {
         >
             <Title>
                 {title}
-                <Close onClick={onRequestClose}>
-                    <Octicon icon={X} size={12} />
-                </Close>
+                <CloseButton onClick={onRequestClose} />
             </Title>
             <Body>
                 {children}

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components/macro'
 
 import useQueryCName from '../hooks/useQueryCName'
+import { Form, Button } from './Layout'
 
 const RecordType = styled.div`
     display: inline-block;
@@ -36,6 +37,12 @@ const Results = ({ ipv4, ipv6, cname }) => {
     )
 }
 
+const CNameForm = styled(Form)`
+    input {
+        flex: 1;
+    }
+`
+
 const CNameDebugger = ({ dnsInfo }) => {
     const { queryCName, results } = useQueryCName()
     const [value, setValue] = useState('')
@@ -44,7 +51,7 @@ const CNameDebugger = ({ dnsInfo }) => {
         <>
             <p>Enter a domain to check the DNS records are correct.</p>
             <p>To use a custom domain with Ultima add a CNAME to {dnsInfo && dnsInfo.cname} or A record to {dnsInfo && dnsInfo.ipv4} & an AAAA record to {dnsInfo && dnsInfo.ipv6}</p>
-            <form className="ui form" onSubmit={e => {
+            <CNameForm onSubmit={e => {
                 e.preventDefault()
                 if (value.startsWith('http')) {
                     queryCName(value.split('//')[1].split('/')[0])
@@ -53,8 +60,8 @@ const CNameDebugger = ({ dnsInfo }) => {
                 }
             }} style={{ display: 'flex' }}>
                 <input placeholder="domain.com" value={value} onChange={e => setValue(e.target.value)} />
-                <button className="ui button green" disabled={!value}>Debug</button>
-            </form>
+                <Button disabled={!value}>Debug</Button>
+            </CNameForm>
             {results && (
                 <>
                     <h4>Results for {results.id}:</h4>

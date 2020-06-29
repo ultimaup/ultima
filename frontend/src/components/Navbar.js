@@ -4,7 +4,6 @@ import Octicon, { Plus, TriangleDown, Person, SignOut } from '@primer/octicons-r
 import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
-import GiteaStyles from './GiteaStyles'
 import { Grid } from './Layout'
 
 import { ReactComponent as Logo } from './LogoWithText.svg'
@@ -223,7 +222,6 @@ const Navbar = () => {
 
     return (
         <>
-            <GiteaStyles />
             <Container>
                 <NavGrid>
                     <Brand>

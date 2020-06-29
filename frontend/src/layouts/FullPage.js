@@ -32,6 +32,19 @@ const GlobalStyles = createGlobalStyle`
         background: ${({ theme: { backgroundColor } }) => backgroundColor} !important;
         font-family: Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
     }
+
+    * {
+        box-sizing: border-box;   
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    body {
+        font-size: 14px;
+        line-height: 1.4285em;
+    }
 `
 
 const FullPage = ({ children }) => (

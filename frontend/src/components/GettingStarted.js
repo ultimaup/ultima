@@ -16,13 +16,14 @@ const Welcome = styled.div`
 
     h2 {
         color: ${({ theme: { offWhite } }) => offWhite};
-        margin-top: 12px;
+        margin-bottom: 8px;
         font-family: Roboto;
         font-style: normal;
         font-weight: bold;
         font-size: 24px;
         line-height: 28px;
         text-align: center;
+
     }
 
     ul {

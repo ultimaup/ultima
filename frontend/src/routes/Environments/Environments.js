@@ -59,7 +59,7 @@ const Env = styled.div`
     background: #292929;
     box-sizing: border-box;
     align-items: center;
-    flex: 1;
+    width: 100%;
     padding-left: 16px;
     padding-right: 16px;
 
@@ -109,7 +109,7 @@ const Environment = ({ id, stage, type, name, route, deploymentId, setDbConnecti
                 </EnvBody>
                 <Button onClick={() => {
                     setDbConnectionInstructions(name)
-                }}>Click for Connection Instructions</Button>
+                }}>View Connection Instructions</Button>
             </Env>
         )
     }
@@ -130,7 +130,7 @@ const Environment = ({ id, stage, type, name, route, deploymentId, setDbConnecti
                         window.localStorage.setItem('token', token)
                         window.open(`/minio/${deploymentId}`)
                     })
-                }}>Click to Explore</Button>
+                }}>Explore</Button>
             </Env>
         )
     }
@@ -236,7 +236,6 @@ const DBInstructionsModal = ({ dbConnectionInstructions, setDbConnectionInstruct
         <p>Run <code>ultima db</code></p>
         <p>Choose <code>{dbConnectionInstructions}</code></p>
         <p>Use the connection info provided to connect to your database</p>
-        <button className="ui button green" onClick={() => setDbConnectionInstructions(false)}>OK</button>
     </UltimaModal>
 )
 
