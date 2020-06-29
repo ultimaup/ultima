@@ -3,6 +3,7 @@ import styled from 'styled-components/macro'
 import { useParams, Route, Switch, NavLink, Link, useLocation } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
+import ReactResizeDetector from 'react-resize-detector'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
 import NavBar from '../../components/Navbar'
@@ -49,31 +50,43 @@ const Columns = styled.div`
     flex-direction: row;
 `
 
-export const Editor = ({ title, value, setValue }) => (
-    <Container>
-        <Header>
-            {title}
-        </Header>
-        <Columns>
-            <ConfigEditorContainer>
-                <ControlledConfigEditor value={value} setValue={setValue} />
-            </ConfigEditorContainer>
-            <EditorContainer>
-                <ControlledEditor
-                    height="100%"
-                    language="yaml"
-                    width="500px"
-                    value={value}
-                    theme="vs-dark"
-                    onChange={(ev, value) => {
-                        setValue(value)
-                    }}
-                />
-            </EditorContainer>
-        </Columns>
-        
-    </Container>
-)
+export const Editor = ({ title, value, setValue }) => {
+    const [height, setHeight] = useState('1000px')
+    return (
+        <Container>
+            <Header>
+                {title}
+            </Header>
+            <Columns>
+                <ConfigEditorContainer>
+                    <ControlledConfigEditor value={value} setValue={setValue} />
+                    <ReactResizeDetector
+                        handleHeight
+                        onResize={(width, height) => {
+                            setHeight(height + 'px')
+                        }}
+                        refreshMode="debounce"
+                        refreshRate={100} />
+                </ConfigEditorContainer>
+                <EditorContainer>
+                    <ControlledEditor
+                        height={height}
+                        language="yaml"
+                        width="500px"
+                        value={value}
+                        theme="vs-dark"
+                        options={{
+                            automaticLayout: true,
+                        }}
+                        onChange={(ev, value) => {
+                            setValue(value)
+                        }}
+                    />
+                </EditorContainer>
+            </Columns>
+        </Container>
+    )
+}
 
 const EditConfig = ({ title= 'Manage Environment Config' }) => {
     const { owner, repoName, branch = 'master' } = useParams()

@@ -9,12 +9,26 @@ import { Header } from './RepoList/RepoList'
 import Octicon, { ChevronUp, ChevronDown, Plus } from '@primer/octicons-react'
 
 import useDNSInfo from '../hooks/useDNSInfo'
+import useTemplates from '../hooks/useTemplates'
 import langs from '../utils/langs'
 
 const BranchDomains = styled.div`
     h3 {
         display: flex;
         justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    p {
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        line-height: 17px;
+        /* identical to box height */
+
+        letter-spacing: 0.1px;
+
+        color: #9E9E9E;
+        margin-bottom: 12px;
     }
 `
 
@@ -32,6 +46,15 @@ const Module = styled(FormDiv)`
 
     :not(:first-child) {
         margin-top: 12px;
+    }
+
+    h3 {
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 19px;
+        letter-spacing: 0.1px;
+
+        color: #9E9E9E;
     }
 `
 
@@ -194,6 +217,7 @@ const ModuleName = styled.div`
 
 const ConfigModule = ({ moduleKey, module, setValue, value }) => {
     const [expanded, setExpanded] = useState(true)
+    const { loading, templates } = useTemplates()
 
     return (
         <Module>
@@ -429,9 +453,11 @@ const AddModuleContainer = styled(Module)`
 `
 
 const AddModule = ({ value, setValue }) => {
+    const { loading, templates } = useTemplates()
     const [newResourceType, setNewResourceType] = useState('api')
     const [expanded, setExpanded] = useState(false)
     const [resourceName, setResourceName] = useState('')
+    const [templateId, setTemplateId] = useState(null)
 
     return (
         <AddModuleContainer>
@@ -460,6 +486,9 @@ const AddModule = ({ value, setValue }) => {
                                 [resourceName]: {
                                     type: 'api',
                                     runtime: 'node',
+                                    ...(templateId ? templates.find(({ id }) => templateId === id).template : {}),
+                                    id: undefined,
+                                    name: undefined,
                                 },
                             })
                         } else if (newResourceType === 'web') {
@@ -497,6 +526,17 @@ const AddModule = ({ value, setValue }) => {
                             <label>Resource Name</label>
                             <input onChange={e => setResourceName(e.target.value)} value={resourceName} />
                         </InputGroup>
+                        {newResourceType === 'api' && (
+                            <InputGroup>
+                                <label>Template</label>
+                                <select onChange={e => setTemplateId(e.target.value)} value={templateId}>
+                                    <option value="">No Template</option>
+                                    {templates && templates.map(({ id, name }) => (
+                                        <option key={id} value={id}>{name[0].toUpperCase()}{name.substring(1)}</option>
+                                    ))}
+                                </select>
+                            </InputGroup>
+                        )}
                         <InputGroup>
                             <label />
                             <Button disabled={!resourceName}>
@@ -525,7 +565,7 @@ const ModulesContainer = styled.div`
 `
 
 export const ControlledConfigEditor = ({ value, setValue }) => {
-    const [data, setD] = useState({}) 
+    const [data, setD] = useState({})
     
     useEffect(() => {
         setD(value ? YAML.parse(value) : {})
