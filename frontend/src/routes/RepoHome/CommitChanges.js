@@ -30,6 +30,11 @@ const Container = styled(Form)`
     input {
         margin-bottom: 10px;
     }
+
+    h3 {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
 `
 
 const SpeechBubble = styled.div`

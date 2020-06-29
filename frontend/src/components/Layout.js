@@ -120,8 +120,8 @@ const RadioContainer = styled.div`
 
     :after {
         position: absolute;
-        width: 10px;
-        height: 10px;
+        width: 8px;
+        height: 8px;
         top: 2px;
         left: 2px;
         background: #B6B7BA;
@@ -163,13 +163,7 @@ export const Form = styled.form`
     }
 
     input[type="radio"] {
-        
-        ::before {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            
-        }
+        margin: 0;
     }
 
     option:hover {
