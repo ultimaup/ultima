@@ -7,7 +7,6 @@ import { ControlledCLIModal } from './CLIModal'
 
 const Welcome = styled.div`
     width: 100%;
-    /* height: 150px; */
     border-radius: 7px;
     border: 1px solid #292929;
     padding: 18px;
@@ -23,7 +22,6 @@ const Welcome = styled.div`
         font-size: 24px;
         line-height: 28px;
         text-align: center;
-
     }
 
     ul {
@@ -32,6 +30,7 @@ const Welcome = styled.div`
         list-style: none;
         padding: 0;
         margin: 0;
+        margin-top: 8px;
 
         li, li a {
             text-align: center;
