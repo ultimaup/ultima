@@ -1,6 +1,5 @@
 const { ApolloServer, gql } = require('apollo-server-express')
 const { GraphQLJSON } = require('graphql-type-json')
-const uuid = require('uuid').v4
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
@@ -11,7 +10,7 @@ const Repository = require('./db/Repository')
 const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, getUserRepos } = require('./gitea')
+const { getUserRepos } = require('./gitea')
 const gitea = require('./gitea')
 const { genBucketPass } = require('./ci')
 const templates = require('./templates')
@@ -568,76 +567,6 @@ const resolvers = {
 
             await User.query().update({ activated }).where('id', id)
             return await User.query().findById(id)
-        },
-        // addSSHkey: async (parent, { key, title }, context) => {
-        //     if (!context.user) {
-        //         throw new Error('unauthorized')
-        //     }
-
-        //     try {
-        //         await addSshKey(context.user.username, { key, title })
-        //     } catch (e) {
-        //         if (e.response) {
-        //             throw new Error(e.response.body)
-        //         }
-        //         throw e
-        //     }
-
-        //     return true
-        // },
-        createRepo: async (parent, { name, private = true, template, templatePopulatedDirs, vcs }, context) => {
-            if (!context.user) {
-                throw new Error('unauthorized')
-            }
-
-            const { githubOauthAccessToken } = context.user
-
-            if (vcs === 'github' && !githubOauthAccessToken) {
-                throw new Error('unauthorized')
-            }
-            
-            // create blank repo
-            // get tree for template populated dirs [{ templateName, dir }]
-            // add template .ultima.yml to tree
-            // commit tree to repo
-
-            let repo
-
-            if (vcs === 'github') {
-                repo = await github.createEmptyRepo(githubOauthAccessToken, { name, private })
-            }
-
-            let tree = await Promise.all(
-                templatePopulatedDirs
-                    .map(async ({ templateName, dir }) => {
-                        const t = await templates.getTree(templateName)
-                        return t.map(f => {
-                            return {
-                                ...f,
-                                path: [dir, f.path].join('/'),
-                            }
-                        })
-                    })
-            )
-
-            tree = tree.flat()
-            tree.push({
-                path: '.ultima.yml',
-                type: 'blob',
-                mode: '100644',
-                content: template,
-            })
-
-            if (vcs === 'github') {
-                try {
-                    await github.commitTreeToRepo(githubOauthAccessToken, { owner: repo.owner.login, repo: repo.name, tree, message: 'Initial commit from Ultima' })
-                } catch (e) {
-                    console.error(e.request)
-                    throw e
-                }
-            }
-
-            return repo
         },
         setUltimaYml: async (parent, { owner, repoName, branch, value, commitMessage, commitDescription, sha }, context) => {
             const { username } = context.user

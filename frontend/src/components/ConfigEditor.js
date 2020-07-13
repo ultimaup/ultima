@@ -174,7 +174,7 @@ const MultiList = ({ value, onChange, placeholder, ...props }) => (
         {value.map((val, i) => (
             <InputGroup>
                 <label />
-                <input autoFocus key={i} {...props} value={val} placeholder={placeholder} onChange={e => {
+                <input key={i} {...props} value={val} placeholder={placeholder} onChange={e => {
                     const newValue = [...value]
                     newValue[i] = e.target.value
                     onChange({
@@ -255,7 +255,7 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                 {(module.type === 'web' || moduleKey === 'web') && (
                     <InputGroup>
                         <label>Website built output location</label>
-                        <input autoFocus required value={value[moduleKey].buildLocation} onChange={e => {
+                        <input required value={value[moduleKey].buildLocation} onChange={e => {
                             setValue({
                                 ...value,
                                 [moduleKey]: {
