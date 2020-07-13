@@ -113,8 +113,6 @@ services:
 
       GITHUB_APP_KEY_LOCATION: /github-app.pem
 
-      CHROME_EXT_ID: fipcokpepeolmgaholhadaaegcjkoknb
-
   dind:
     image: docker:dind
     privileged: true

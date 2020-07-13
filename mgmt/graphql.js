@@ -172,14 +172,6 @@ const typeDefs = gql`
         token: String
     }
 
-    type Extensions {
-        chrome: String
-        firefox: String
-        opera: String
-        edge: String
-        safari: String
-    }
-
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
@@ -195,7 +187,6 @@ const typeDefs = gql`
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
-        getExtensionIds: Extensions
     }
 
     type Mutation {
@@ -534,15 +525,6 @@ const resolvers = {
             }
 
             return `pg.${PUBLIC_ROUTE_ROOT}:${port}`
-        },
-        getExtensionIds: () => {
-            return {
-                chrome: CHROME_EXT_ID,
-                firefox: null,
-                opera: null,
-                safari: null,
-                edge: null,
-            }
         },
     },
     Mutation: {
