@@ -271,6 +271,14 @@ const feedbackDeploymentStatus = async (actionId) => {
 	})
 }
 
+const removeInstallation = async installationId => {
+	await GithubRepository.query().where({ installationId }).delete() 
+}
+
+const addInstallation = async installationId => {
+	
+}
+
 module.exports = {
     githubGet,
 	githubCodeToAuth,
@@ -282,4 +290,6 @@ module.exports = {
 	commitTreeToRepo,
 	getPublicKeys,
 	feedbackDeploymentStatus,
+	removeInstallation,
+	addInstallation,
 }

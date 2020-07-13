@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components/macro'
 import Clipboard from 'react-clipboard.js'
-import Octicon, { Check } from '@primer/octicons-react'
+import Octicon, { CheckIcon } from '@primer/octicons-react'
 
 import { Button } from '../../components/Layout'
 
@@ -116,7 +116,7 @@ export const TerminalContent = () => {
 const CLI = () => {
     return (
         <Container>
-            <Octicon icon={Check} size={56} />
+            <Octicon icon={CheckIcon} size={56} />
             <h2>Login Complete</h2>
             <p>Now head back to the CLI</p>
         </Container>

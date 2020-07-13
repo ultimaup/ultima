@@ -6,7 +6,7 @@ import UltimaModal from './UltimaModal'
 import CNameDebugger from './CNameDebugger'
 import { Button, Form, FormDiv, InputGroup, Divider, CloseButton, CircleButton, Hint, MultiListLabel } from './Layout'
 import { Header } from './RepoList/RepoList'
-import Octicon, { ChevronUp, ChevronDown, Plus } from '@primer/octicons-react'
+import Octicon, { ChevronUpIcon, ChevronDownIcon, PlusIcon } from '@primer/octicons-react'
 
 import useDNSInfo from '../hooks/useDNSInfo'
 import useTemplates from '../hooks/useTemplates'
@@ -146,7 +146,7 @@ const BranchDomainMap = ({ value, onChange }) => {
                         [`branch${a ? a+1 : ''}`]: 'domain.com',
                     })
                 }}>
-                    <Octicon icon={Plus} />
+                    <Octicon icon={PlusIcon} />
                 </CircleButton>
             )}
         </BranchDomains>
@@ -225,7 +225,7 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                 cursor: 'pointer',
             }}>
                 <CircleButton>
-                    <Octicon icon={expanded ? ChevronUp : ChevronDown} />
+                    <Octicon icon={expanded ? ChevronUpIcon : ChevronDownIcon} />
                 </CircleButton>
                 <ModuleName>
                     {moduleKey || 'New Resource'}
@@ -465,7 +465,7 @@ const AddModule = ({ value, setValue }) => {
                 cursor: 'pointer',
             }}>
                 <CircleButton>
-                    <Octicon icon={Plus} />
+                    <Octicon icon={PlusIcon} />
                 </CircleButton>
                 <ModuleName>
                     Add New Resource

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components/macro'
 import jwtDecode from 'jwt-decode'
-import Octicon, { GitCommit, GitBranch } from '@primer/octicons-react'
+import Octicon, { GitCommitIcon, GitBranchIcon } from '@primer/octicons-react'
 
 import { getToken } from '../../utils/token'
 import { Button, Form, RadioInput } from '../../components/Layout'
@@ -43,7 +43,7 @@ const SpeechBubble = styled.div`
     border: 1px solid #292929;
     position: relative;
 
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 
     :after, :before {
         position: absolute;
@@ -119,21 +119,21 @@ const CommitChanges = ({ fileContentsChanged, onSubmit, branch, placeholder, sty
                         <div style={{ marginTop: 8 }}  onClick={() => setNewBranch(false)}>
                             <RadioInput type="radio" checked={!newBranch} tabindex="0" />
                             <label>
-                                <Octicon icon={GitCommit} width={16} />
+                                <Octicon icon={GitCommitIcon} width={16} />
                                 Commit directly to the <strong>{branch}</strong> branch. 
                             </label>
                         </div>
                         <div style={{ marginTop: 8 }} onClick={() => setNewBranch(true)}>
                             <RadioInput type="radio" checked={newBranch} tabindex="1" />
                             <label>
-                                <Octicon icon={GitBranch} width={14} />
+                                <Octicon icon={GitBranchIcon} width={14} />
                                 Create a <strong>new branch</strong> for this commit and start a pull request.
                             </label>
                         </div>
                         {newBranch && (
                             <div style={{ position: 'relative' }}>
                                 <div style={{ position: 'absolute', top: 16, left: 2 }}>
-                                    <Octicon icon={GitBranch} width={10} />
+                                    <Octicon icon={GitBranchIcon} width={10} />
                                 </div>
                                 <input style={{ paddingLeft: 26, marginTop: 8 }} value={branchName} placeholder="New branch name…" required onChange={e => setBranchName(e.target.value)}></input>
                             </div>

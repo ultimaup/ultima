@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components/macro'
 import { transparentize } from 'polished'
 
-import Octicon, { Rocket, Heart, Terminal } from '@primer/octicons-react'
+import Octicon, { RocketIcon, HeartIcon, TerminalIcon } from '@primer/octicons-react'
 import { ControlledCLIModal } from './CLIModal'
 
 const Welcome = styled.div`
@@ -65,16 +65,16 @@ const GettingStarted = () => {
                     <li>
                         
                         <a target="_blank" rel="noopener noreferrer" href="/docs">
-                            <Octicon icon={Rocket} size={32} />
+                            <Octicon icon={RocketIcon} size={32} />
                             <span>Ultima Getting Started</span>
                         </a>
                     </li>
                     <li>
-                        <a onClick={() => setIsOpen(true)}><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
+                        <a onClick={() => setIsOpen(true)}><Octicon icon={TerminalIcon} size={32}/><span>CLI Login</span></a>
                     </li>
                     <li>
                         
-                        <a target="_blank" href="/community"><Octicon icon={Heart} size={32} />
+                        <a target="_blank" href="/community"><Octicon icon={HeartIcon} size={32} />
                         <span>Live Support</span></a>
                     </li>
                 </ul>

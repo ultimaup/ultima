@@ -2,7 +2,7 @@ import React from 'react'
 import styled from 'styled-components/macro'
 import { Link } from 'react-router-dom'
 import { transparentize, darken } from 'polished'
-import Octicon, { X } from '@primer/octicons-react'
+import Octicon, { XIcon } from '@primer/octicons-react'
 
 export const Grid = styled.div`
     display: flex;
@@ -82,7 +82,7 @@ export const CircleButton = styled.button`
 
 export const CloseButton = (props) => (
     <CircleButton {...props}>
-        <Octicon icon={X} size={14} />
+        <Octicon icon={XIcon} size={14} />
     </CircleButton>
 )
 

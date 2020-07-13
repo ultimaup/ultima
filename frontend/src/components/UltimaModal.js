@@ -1,6 +1,6 @@
 import Modal from 'react-modal'
 import React from 'react'
-import styled, { useTheme } from 'styled-components'
+import styled, { useTheme } from 'styled-components/macro'
 
 import { CloseButton } from './Layout'
 
@@ -20,7 +20,7 @@ const Body = styled.div`
     margin-top: 28px;
 `
 
-const UltimaModal = ({ isOpen, onRequestClose, title, children }) => {
+const UltimaModal = ({ isOpen, onRequestClose, title, bodyStyle, children }) => {
     const { offWhite } = useTheme()
 
     return (
@@ -42,6 +42,7 @@ const UltimaModal = ({ isOpen, onRequestClose, title, children }) => {
                     padding: '22px 20px',
                     overflow: 'hidden',
                     width: 498,
+                    maxHeight: '75vh',
                     color: offWhite,
                 },
                 overlay: {
@@ -54,7 +55,7 @@ const UltimaModal = ({ isOpen, onRequestClose, title, children }) => {
                 {title}
                 <CloseButton onClick={onRequestClose} />
             </Title>
-            <Body>
+            <Body style={bodyStyle}>
                 {children}
             </Body>
         </Modal>

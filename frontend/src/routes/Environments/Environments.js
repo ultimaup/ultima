@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components/macro'
 import { Link, useParams } from 'react-router-dom'
 import moment from 'moment'
-import Octicon, { GitBranch, Versions } from '@primer/octicons-react'
+import Octicon, { GitBranchIcon, VersionsIcon } from '@primer/octicons-react'
 
 import useResources from '../../hooks/useResources'
 import useGetMinioToken from '../../hooks/useGetMinioToken'
@@ -89,7 +89,7 @@ const Env = styled.div`
 let nf
 const ensureNF = () => {
     if (!nf) {
-        nf = import('../../nf.css')
+        nf = import('nerdfonts-web')
     }
 }
 
@@ -265,7 +265,7 @@ const EmptyState = () => {
     const { owner, repoName } = useParams()
     return (
         <EmptyStateContainer>
-            <Octicon icon={Versions} size={128} />
+            <Octicon icon={VersionsIcon} size={128} />
             <h3>To get started with Ultima, first configure your environment:</h3>
             <Button to={`/repo/${owner}/${repoName}/integrate`}>Configure Environment</Button>
         </EmptyStateContainer>
@@ -304,7 +304,7 @@ const Environments = ({ owner, repoName }) => {
                     <EnvironmentsContainer key={id}>
                         <EnvironmentHeader>
                             <Link to={`/repo/${owner}/${repoName}/${name}`}>
-                                <Octicon icon={GitBranch} size={21} />
+                                <Octicon icon={GitBranchIcon} size={21} />
                                 {name}
                             </Link>
                             <Button to={`/repo/${owner}/${repoName}/${name}/config`}>Edit Environment Config</Button>

@@ -10,6 +10,7 @@ import { ApolloProvider } from '@apollo/client'
 import { getToken } from './utils/token'
 import client from './graphql'
 import 'typeface-roboto'
+import './index.css'
 
 const Login = React.lazy(() => import('./routes/Login'))
 const Legals = React.lazy(() => import('./routes/Legals'))

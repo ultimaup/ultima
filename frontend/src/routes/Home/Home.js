@@ -1,5 +1,5 @@
 import React from 'react'
-import Octicon, { MarkGithub } from '@primer/octicons-react'
+import Octicon, { MarkGithubIcon } from '@primer/octicons-react'
 import './Home.css'
 
 const Home = () => (
@@ -65,7 +65,7 @@ const Home = () => (
             <a href="#" className="disabled">Documentation</a>
             <a href="https://status.onultima.com/">Service Status</a>
             <a id="login" href="/auth/github">
-              <Octicon icon={MarkGithub} />
+              <Octicon icon={MarkGithubIcon} />
               &nbsp;&nbsp;Log in
             </a>
         </div>

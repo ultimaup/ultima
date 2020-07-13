@@ -67,8 +67,8 @@ const SpinnerContainer = styled.div`
     }
 `
 
-const LoadingSpinner = () => (
-    <SpinnerContainer>
+const LoadingSpinner = (props) => (
+    <SpinnerContainer {...props}>
         <Spinner>
             <div />
             <div />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import styled, { createGlobalStyle } from 'styled-components/macro'
+import styled from 'styled-components/macro'
 import { useParams, Route, Switch, NavLink, Link, useLocation, Redirect } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
-import Octicon, { Versions, Rocket, Pulse, MarkGithub, LinkExternal, Repo, Lock } from '@primer/octicons-react'
+import Octicon, { VersionsIcon, RocketIcon, PulseIcon, MarkGithubIcon, LinkExternalIcon, RepoIcon, LockIcon } from '@primer/octicons-react'
 import ReactResizeDetector from 'react-resize-detector'
 
 import { ControlledConfigEditor } from '../../components/ConfigEditor'
@@ -100,6 +100,10 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
         }
     }, [ultimaYml])
 
+    if (loading) {
+        return <LoadingSpinner style={{ marginBottom: 32 }} />
+    }
+
     return (
         <>
             <Editor title={title} value={value} setValue={setValue} />
@@ -109,6 +113,7 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
                 style={{
                     marginTop: 16,
                     marginBottom: 16,
+                    marginRight: 16,
                 }}
                 onSubmit={({ commitMessage, description, branchName }) => {
                     setUltimaYml({
@@ -128,6 +133,12 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
     )
 }
 
+const Explanation = () => (
+    <Grid>
+        <p>To add a repository to Ultima you commit a configuration file which defines your environment.</p>
+    </Grid>
+)
+
 const Integrate = () => {
     const { owner, repoName } = useParams()
     const location = useLocation()
@@ -136,20 +147,23 @@ const Integrate = () => {
     const vcsHost = urlParams.get('vcsHost')
 
     return (
-        <Grid>
-            <Container>
-                {loading ? <LoadingSpinner /> : (
-                    repo ? (
-                        <EditConfig title="Create Environment Config" />
-                    ) : (
-                        <>
-                            <span>Use Ultima to ship your projects faster</span>
-                            <Button href={`/vcs/${vcsHost.split('.com')[0]}`}>Link with {vcsHost.split('.com')[0]}</Button>
-                        </>
-                    )
-                )}
-            </Container>
-        </Grid>
+        <>
+            <Explanation />
+            <Grid>
+                <Container>
+                    {loading ? <LoadingSpinner /> : (
+                        repo ? (
+                            <EditConfig title="Create Environment Config" />
+                        ) : (
+                            <>
+                                <span>Use Ultima to ship your projects faster</span>
+                                <Button href={`/vcs/${vcsHost.split('.com')[0]}`}>Link with {vcsHost.split('.com')[0]}</Button>
+                            </>
+                        )
+                    )}
+                </Container>
+            </Grid>
+        </>
     )
 }
 
@@ -222,16 +236,16 @@ const EmbeddedRepoHome = ({ owner, repoName }) => (
             <HeaderGrid>
                 <Tabs>
                     <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/`} exact>
-                        <Octicon icon={Versions} />&nbsp;
+                        <Octicon icon={VersionsIcon} />&nbsp;
                         Environments
                     </NavLink>
                     <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/deployments`}>
-                        <Octicon icon={Rocket} />&nbsp;
+                        <Octicon icon={RocketIcon} />&nbsp;
                         Deployments
                         <DeploymentNotification repoName={repoName} owner={owner} />
                     </NavLink>
                     <NavLink activeClassName="active" to={`/embed/${owner}/${repoName}/logs`}>
-                        <Octicon icon={Pulse} />&nbsp;
+                        <Octicon icon={PulseIcon} />&nbsp;
                         Logs
                     </NavLink>
                 </Tabs>
@@ -271,34 +285,34 @@ const RepoHome = () => {
             <RepoHeader>
                 <HeaderGrid>
                     <RepoName>
-                        <Octicon size={21} icon={(repo && repo.private) ? Lock : Repo} />
+                        <Octicon size={21} icon={(repo && repo.private) ? LockIcon : RepoIcon} />
                         <Link to="/">{owner}</Link>
                         <span>/</span>
                         <Link to={`/repo/${owner}/${repoName}`}>{repoName}</Link>
                     </RepoName>
                     <Tabs>
                         <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/`} exact>
-                            <Octicon icon={Versions} />&nbsp;
+                            <Octicon icon={VersionsIcon} />&nbsp;
                             Environments
                         </NavLink>
                         <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/deployments`}>
-                            <Octicon icon={Rocket} />&nbsp;
+                            <Octicon icon={RocketIcon} />&nbsp;
                             Deployments
                             <DeploymentNotification repoName={repoName} owner={owner} />
                         </NavLink>
                         <NavLink activeClassName="active" to={`/repo/${owner}/${repoName}/logs`}>
-                            <Octicon icon={Pulse} />&nbsp;
+                            <Octicon icon={PulseIcon} />&nbsp;
                             Logs
                         </NavLink>
                         {repo && repo.vcs === 'github' && (
                             <a target="_blank" href={`https://github.com/${owner}/${repoName}`}>
-                                <Octicon icon={MarkGithub} />&nbsp;
+                                <Octicon icon={MarkGithubIcon} />&nbsp;
                                 View on GitHub
                             </a>
                         )}
                         {repo && repo.vcs === 'gitea' && (
                             <a target="_blank" href={`/${owner}/${repoName}`}>
-                                <Octicon icon={LinkExternal} />&nbsp;
+                                <Octicon icon={LinkExternalIcon} />&nbsp;
                                 View in Legacy UI
                             </a>
                         )}

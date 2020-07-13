@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components/macro'
-import Octicon, { Plus, TriangleDown, Person, SignOut } from '@primer/octicons-react'
+import Octicon, { PlusIcon, TriangleDownIcon, PersonIcon, SignOutIcon } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
@@ -165,12 +165,12 @@ const UserMenu = () => {
     return <UserMenuContainer onClick={() => setIsActive(!isActive)}>
         <Avatar src={user.imageUrl} />
         <div>
-            <Octicon icon={TriangleDown} />
+            <Octicon icon={TriangleDownIcon} />
             <Dropdown isActive={isActive}>
                 <UserName>Signed in as {user.username}</UserName>
                 <Divider />
                 <NavLinkLink to={`/`}>
-                    <Octicon width={12} icon={Person} />
+                    <Octicon width={12} icon={PersonIcon} />
                     Profile
                 </NavLinkLink>
                 <Divider />
@@ -178,7 +178,7 @@ const UserMenu = () => {
                     clearToken()
                     window.location.href = "/auth/logout"
                 }}>
-                    <Octicon width={12} icon={SignOut} /> Sign Out
+                    <Octicon width={12} icon={SignOutIcon} /> Sign Out
                 </NavLink>
             </Dropdown>
         </div>

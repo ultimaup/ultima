@@ -2,7 +2,7 @@ import React from 'react'
 import styled, { css } from 'styled-components/macro'
 import { Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
-import Octicon, {GitBranch,ChevronRight} from '@primer/octicons-react'
+import Octicon, {GitBranchIcon,ChevronRightIcon, RocketIcon } from '@primer/octicons-react'
 import { readableColor } from 'polished'
 
 import { useActions, useAction } from '../../hooks/useActions'
@@ -105,54 +105,6 @@ const Timings = styled.div`
     text-align: right;
 `
 
-const Status = styled.div`
-    width: 125px;
-    display: flex;
-    justify-content: center;
-`
-
-const Spinner = styled.div`
-    &,
-    &:after {
-        border-radius: 50%;
-        width: 10em;
-        height: 10em;
-    }
-
-    font-size: 1px;
-    position: relative;
-    text-indent: -9999em;
-    display: inline-block;
-    
-    border-top: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-right: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-bottom: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-left: 1.1em solid #ffffff;
-    
-    
-    transform: translateZ(0);
-    
-    animation: load8 1.1s infinite linear;
-    
-    @keyframes load8 {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-`
-
-const BadgeSpinner = styled(Badge)`
-    display: flex;
-    align-items: center;
-
-    ${Spinner} {
-        margin-left: 4px;
-    }
-`
-
 const Logs = styled(LogFrame)`
     width: 100%;
     min-height: 450px;
@@ -223,7 +175,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                 </Status> */}
                 <StatusDot complete={!!completedAt} status={type} />
                 <Body>
-                    <Octicon icon={GitBranch}/>
+                    <Octicon icon={GitBranchIcon}/>
                     {branch}
                     <ProfilePic src={imageUrl} title="pusher profile pic" />
                     <ShaLabel>
@@ -235,7 +187,7 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                     <span title={completedAt}>{completedAt ? `completed in ${moment(completedAt).diff(createdAt, 'seconds')} seconds` : null}</span>
                     <span title={createdAt}>{moment(createdAt).fromNow()}</span>
                 </Timings>
-                {!noLink && <Chevron><Octicon icon={ChevronRight} /></Chevron>}
+                {!noLink && <Chevron><Octicon icon={ChevronRightIcon} /></Chevron>}
             </ActionLink>
         )
     }
@@ -269,6 +221,28 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
     )
 }
 
+const EmptyStateContainer = styled.div`
+    opacity: 0.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding-top: 42px;
+    padding-bottom: 42px;
+
+    h3 {
+        margin-top: 21px;
+        font-size: 18px;
+    }
+`
+
+const EmptyState = () => (
+    <EmptyStateContainer>
+        <Octicon icon={RocketIcon} size={42} />
+        <h3>Deployments will show up here</h3>
+    </EmptyStateContainer>
+)
+
 const ActionDetails = () => {
     const { parentId, owner } = useParams()
     const { action } = useAction(parentId)
@@ -284,7 +258,7 @@ const ActionDetails = () => {
     }
 
     if (!actions.length) {
-        return <p>nothing yet</p>
+        return <EmptyState />
     }
 
     return (
@@ -310,7 +284,7 @@ export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, o
     }
 
     if (!actions.length) {
-        return <p>nothing yet</p>
+        return <EmptyState />
     }
 
     return (
