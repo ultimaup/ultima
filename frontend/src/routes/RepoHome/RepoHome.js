@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components/macro'
-import { useParams, Route, Switch, NavLink, Link, useLocation, Redirect } from 'react-router-dom'
+import { useParams, Route, Switch, NavLink, Link, useLocation, useHistory, Redirect } from 'react-router-dom'
 import { ControlledEditor } from '@monaco-editor/react'
 import Octicon, { VersionsIcon, RocketIcon, PulseIcon, MarkGithubIcon, LinkExternalIcon, RepoIcon, LockIcon } from '@primer/octicons-react'
 import ReactResizeDetector from 'react-resize-detector'
@@ -93,6 +93,7 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
     const [value, setValue] = useState('')
     const { loading, ultimaYml } = useGetUltimaYml({ owner, repoName, branch })
     const { setUltimaYml } = useSetUltimaYml({ owner, repoName })
+    const history = useHistory()
 
     useEffect(() => {
         if (!value && ultimaYml && ultimaYml.content) {
@@ -121,9 +122,9 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
                         commitDescription:description,
                         branch: branchName || branch,
                         value,
-                        sha: ultimaYml.sha,
+                        sha: ultimaYml ? ultimaYml.sha : undefined,
                     }).then(() => {
-                        window.location.href = `/repo/${owner}/${repoName}/${branchName || branch}`
+                        history.push(`/repo/${owner}/${repoName}/${branchName || branch}`)
                     }).catch(e => {
                         console.error(e)
                     })

@@ -254,15 +254,18 @@ const feedbackDeploymentStatus = async (actionId) => {
 		deploymentId = data.id
 	}
 
-	const state = parentAction.type === 'error' ? 'error' : (parentAction.completedAt ? 'success' : 'in_progress') /* error, failure, inactive, in_progress, queued pending, or success */
+	const state = parentAction.type === 'error' ? 'error' : (parentAction.completedAt ? 'success' : 'pending') /* error, failure, inactive, in_progress, queued pending, or success */
+
+	const logUrl = `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/deployments/${parentAction.id}`
+	const envUrl = `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/${branch}`
 
 	await request('POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses', {
 		owner, repo: repoName,
 		deployment_id: deploymentId,
-		log_url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/deployments/${parentAction.id}`, 
+		log_url: logUrl, 
 		description: title,
 		state,
-		environment_url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/${branch}`, 
+		environment_url: logUrl, 
 		environment: branch,
 		headers: {
 			'content-type': 'application/vnd.github.ant-man-preview+json',

@@ -1,8 +1,8 @@
 import { gql, useQuery } from '@apollo/client'
 
 const LIST_REPOS = gql`
-    query listGithubRepos {
-        listRepos(vcs:"github") {
+    query listGithubRepos($force: Boolean) {
+        listRepos(vcs:"github", force: $force) {
             id
             name
             full_name
@@ -12,8 +12,8 @@ const LIST_REPOS = gql`
     }
 `
 
-const useRepositories = () => {
-    const { loading, error, data } = useQuery(LIST_REPOS)
+const useRepositories = (force) => {
+    const { loading, error, data } = useQuery(LIST_REPOS, { variables: { force } })
 
     return {
         loading,

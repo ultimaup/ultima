@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled, { css } from 'styled-components/macro'
-import Octicon, { MarkGithubIcon, LockIcon, RepoIcon, HeartIcon, PlusIcon } from '@primer/octicons-react'
+import Octicon, { MarkGithubIcon, LockIcon, RepoIcon, HeartIcon, PlusIcon, SyncIcon } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 
 import UltimaModal from '../UltimaModal'
@@ -235,8 +235,18 @@ const Loading = () => (
     </SmallLoading>
 )
 
+const ResyncReposButton = styled.div`
+    cursor: pointer;
+    display: inline-block;
+    margin-left: 8px;
+    ${({ theme: { colorPrimary }}) => css`
+        color: ${colorPrimary};
+    `}
+`
+
 const GithubRepoList = () => {
-    const { repositories, loading } = useRepositories()
+    const [forceReload, setForceReload] = useState(false)
+    const { repositories, loading } = useRepositories(forceReload)
     const [modalOpen, setModalOpen] = useState(false)
     const [onboardingModal, setOnboardingModal] = useState(false)
     const [step2, setStep2] = useState(false)
@@ -258,8 +268,12 @@ const GithubRepoList = () => {
                 <Header>
                     <div>
                         <Octicon icon={MarkGithubIcon} /> &nbsp;
-                        GitHub Repositories 
-                        <Badge color="grey">{displayedRepos ? displayedRepos.length : ''}</Badge> 
+                        GitHub Repositories
+                        <ResyncReposButton onClick={() => {
+                            setForceReload(true)
+                        }}>
+                            <Octicon icon={SyncIcon}/>
+                        </ResyncReposButton>
                     </div>
                     <div>
                         <Action onClick={() => {

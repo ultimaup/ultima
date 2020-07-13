@@ -573,8 +573,6 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 	let config = {}
 	let shouldDie = false
 
-	let legacyInstaller = null
-	let legacyPackage = null
 	let hasConfig = false
 
 	try {
@@ -609,28 +607,6 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 						)
 					}
 
-					if (realPath === 'package.json') {
-						legacyInstaller = 'npm install'
-						promises.push(
-							streamToBuf(entry)
-								.then(buf => {
-									return buf.toString('utf8')
-								})
-								.then(text => JSON.parse(text))
-								.then(pkgJson => {
-									legacyPackage = pkgJson
-								})
-								.catch(e => {
-									logAction(parentActionId, { type: 'error', title: 'failed to parse package.json', data: { error: e } })
-									shouldDie = 'failed to parse package.json'
-									console.error('failed to parse package.json', e)
-								})
-						)
-					}
-					if (realPath === 'yarn.lock') {
-						legacyInstaller = 'yarn'
-					}
-
 					if (path === '.env.example') {
 						// send to env handler
 						return
@@ -647,32 +623,6 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 
 		if (config.hasAPI) {
 			delete config.hasAPI
-		}
-
-		if (!hasConfig || (!config.api && legacyPackage)) {
-			config.api = {
-				runtime: 'node',
-				type: 'api',
-				start: 'npm run start',
-				install: {
-					command: legacyInstaller == 'yarn' ? 'yarn --mutex file --frozen-lockfile' : 'npm install',
-					watch: [
-						legacyInstaller === 'yarn' ? 'yarn.lock' : 'package-lock.json',
-					]
-				},
-				dev: {
-					command: (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.dev && 'npm run dev') || 'npm run start',
-					watch: [
-						'*.js',
-					],
-				},
-			}
-			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.build) {
-				config.api.build = 'npm run build'
-			}
-			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.test) {
-				config.api.test = 'npm run test'
-			}
 		}
 
 		if (shouldDie) {

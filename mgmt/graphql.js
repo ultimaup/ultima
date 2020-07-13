@@ -182,7 +182,7 @@ const typeDefs = gql`
         getEnvironments(owner: String, repoName: String): [Environment]
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
-        listRepos(vcs: String): [Repo]
+        listRepos(vcs: String, force: Boolean): [Repo]
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
@@ -209,7 +209,7 @@ const listGithubRepos = async (accessToken, username) => {
     const repos = await github.listRepos({ accessToken })
     const repoIds = repos.map(r => r.id)
 
-    const existing = await GithubRepository.query().whereIn('id', repos.map(r => r.id))
+    const existing = await GithubRepository.query().where({ username })
     const existingIds = existing.map(r => r.id)
     const newRepos = repos.filter(r => !existingIds.includes(r.id))
 
@@ -239,7 +239,6 @@ const listGithubRepos = async (accessToken, username) => {
     if (existing.length) {
         await Promise.all(
             existing.map(({ id, created_at, pushed_at, name, full_name, private, installationId }) => GithubRepository.query().update({
-                id,
                 createdAt: created_at,
                 pushedAt: pushed_at,
                 username,
@@ -573,14 +572,13 @@ const resolvers = {
             const full_name = [owner, repoName].join('/')
             const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
             if (githubRepo) { 
-                await github.setUltimaYml(repo.installationId, { owner, repo: repoName, branch }, {
+                await github.setUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch }, {
                     message: commitMessage,
                     description: commitDescription,
                     sha,
                 }, value)
-                
 
-                return await github.getUltimaYml(repo.installationId, { owner, repo, branch })
+                return await github.getUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch })
             }
 
             const giteaRepos = await getUserRepos({ username })
