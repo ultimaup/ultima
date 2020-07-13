@@ -4,7 +4,7 @@ const uuid = require('uuid').v4
 
 const Repository = require('../db/Repository')
 const { runTests } = require('../ci')
-const { getInstallationToken, getUltimaYml } = require('../github')
+const { getInstallationToken, getUltimaYml, feedbackDeploymentStatus } = require('../github')
 
 const {
 	GITHUB_WEBHOOK_SECRET,
@@ -16,62 +16,66 @@ const webhooks = new Webhooks({
 })
 
 webhooks.on("*", async ({ id, name, payload }) => {
-	console.log(name, "event received")
-	if (name === 'push') {
-		const { installation, repository, ref } = payload
-		const installationId = installation.id
+	try {
+		console.log(name, "event received")
+		if (name === 'push') {
+			const { installation, repository, ref } = payload
+			const installationId = installation.id
 
-		const exists = await Repository.query().where({
-			fullName: repository.full_name,
-			vcs: 'github',
-		}).first()
+			const exists = await Repository.query().where({
+				fullName: repository.full_name,
+				vcs: 'github',
+			}).first()
 
-		const branch = ref.split('refs/heads/')[1]
-		const [owner, repo] = repository.full_name.split('/')
-		const { content } = await getUltimaYml(installationId, { owner, repo, branch })
+			const branch = ref.split('refs/heads/')[1]
+			const [owner, repo] = repository.full_name.split('/')
+			const { content } = await getUltimaYml(installationId, { owner, repo, branch })
 
-		const hasUltimaYml = !!content
-		
-		if (exists || hasUltimaYml) {
-			if (!exists) {
-				// start tracking
-				await Repository.query().insert({
-					id: uuid(),
-					fullName: repository.full_name,
-					vcs: 'github',
+			const hasUltimaYml = !!content
+			
+			if (exists || hasUltimaYml) {
+				if (!exists) {
+					// start tracking
+					await Repository.query().insert({
+						id: uuid(),
+						fullName: repository.full_name,
+						vcs: 'github',
+					})
+				}
+
+				const codeZipUrl = async () => {
+					const token = await getInstallationToken(installationId)
+					const url = `https://api.github.com/repos/${repository.full_name}/zipball`
+					return got.stream(url, {
+						headers: {
+							Accept: '*/*',
+							'Content-Type': 'application/vnd.github.machine-man-preview+json',
+							Authorization: `Bearer ${token}`,
+						},
+					})
+				}
+
+				const codeTarUrl = async () => {
+					const token = await getInstallationToken(installationId)
+					const url = `https://api.github.com/repos/${repository.full_name}/tarball`
+					return got.stream(url, {
+						headers: {
+							Accept: '*/*',
+							'Content-Type': 'application/vnd.github.machine-man-preview+json',
+							Authorization: `Bearer ${token}`,
+						},
+					})
+				}
+
+				await runTests({
+					...payload,
+					codeZipUrl,
+					codeTarUrl,
 				})
 			}
-
-			const codeZipUrl = async () => {
-				const token = await getInstallationToken(installationId)
-				const url = `https://api.github.com/repos/${repository.full_name}/zipball`
-				return got.stream(url, {
-					headers: {
-						Accept: '*/*',
-						'Content-Type': 'application/vnd.github.machine-man-preview+json',
-						Authorization: `Bearer ${token}`,
-					},
-				})
-			}
-
-			const codeTarUrl = async () => {
-				const token = await getInstallationToken(installationId)
-				const url = `https://api.github.com/repos/${repository.full_name}/tarball`
-				return got.stream(url, {
-					headers: {
-						Accept: '*/*',
-						'Content-Type': 'application/vnd.github.machine-man-preview+json',
-						Authorization: `Bearer ${token}`,
-					},
-				})
-			}
-
-			runTests({
-				...payload,
-				codeZipUrl,
-				codeTarUrl,
-			})
 		}
+	} catch (e) {
+		console.error('error handling event',{ id, name,payload}, e)
 	}
 })
 

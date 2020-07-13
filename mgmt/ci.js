@@ -21,12 +21,9 @@ const Resource = require('./db/Resource')
 const route = require('./route')
 
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
-
-const { giteaStream } = require('./gitea')
+const feedbackDeploymentStatus = require('./feedbackDeploymentStatus')
 
 const {
-	GITEA_URL,
-
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
@@ -97,10 +94,12 @@ const createParentAction = async ({ owner, repoName, branch, hash, triggeredBy, 
 		metadata: JSON.stringify({ ...data, triggeredBy }),
 	})
 
+	feedbackDeploymentStatus(id).catch(console.error)
+
 	return id
 }
 
-const markActionComplete = async (id, updates = {}) => {
+const markActionComplete =  async (id, updates = {}) => {
 	const u = updates
 	if (u.data) {
 		u.metadata = JSON.stringify(u.data)
@@ -110,6 +109,8 @@ const markActionComplete = async (id, updates = {}) => {
 		completedAt: new Date(),
 		...updates,
 	}).skipUndefined()
+
+	feedbackDeploymentStatus(id).catch(console.error)
 }
 
 const checkAliasUse = async ({ alias, subdomain }) => {
@@ -160,7 +161,7 @@ const removeOrphans = async ({
 	}))
 }
 
-const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo  }) => {
+const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
 	if (!config[resourceName].build && !config[resourceName].install && !config[resourceName].test && config[resourceName].type === 'web') {
@@ -564,6 +565,7 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 		description: commitMessage,
 		triggeredBy: pusher.login,
 		data: actionData,
+		feedbackDeploymentStatus,
 	})
 
 	const invocationId = parentActionId

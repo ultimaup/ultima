@@ -159,6 +159,9 @@ const UserMenu = () => {
     const [isActive, setIsActive] = useState(false)
     const token = getToken()
     const user = token ? jwtDecode(token) : {}
+    if (!token) {
+        return <NavLink href="/auth/github">Sign in</NavLink>
+    }
     return <UserMenuContainer onClick={() => setIsActive(!isActive)}>
         <Avatar src={user.imageUrl} />
         <div>

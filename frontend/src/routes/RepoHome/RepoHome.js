@@ -311,7 +311,7 @@ const RepoHome = () => {
                         <Route path="/repo/:owner/:repoName/logs" component={Logs}/>
                         <Route path="/repo/:owner/:repoName/:branch/config" component={EditConfig}/>
                         <Route path="/repo/:owner/:repoName/integrate" component={Integrate}/>
-                        <Route path="/repo/:owner/:repoName/" component={() => <Environments owner={owner} repoName={repoName} />}/>
+                        <Route path="/repo/:owner/:repoName/:branch?" component={() => <Environments owner={owner} repoName={repoName} />}/>
                     </Switch>
                 </Body>
             </Grid>

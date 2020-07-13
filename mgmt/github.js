@@ -3,10 +3,11 @@ const fs = require('fs')
 
 const { App } = require("@octokit/app")
 const { Octokit } = require("@octokit/rest")
-const { createAppAuth } = require("@octokit/auth-app")
 const { request } = require("@octokit/request")
 const { paginateRest } = require("@octokit/plugin-paginate-rest")
-const JWT = require('jsonwebtoken')
+
+const GithubRepository = require('./db/GithubRepository')
+const Action = require('./db/Action')
 
 Octokit.plugin(paginateRest)
 
@@ -19,6 +20,10 @@ const {
 
     GITHUB_OAUTH_CLIENT_ID,
 	GITHUB_OAUTH_CLIENT_SECRET,
+
+	PUBLIC_ROUTE_ROOT_PROTOCOL,
+	PUBLIC_ROUTE_ROOT_PORT,
+	PUBLIC_ROUTE_ROOT,
 } = process.env
 
 const PRIVATE_KEY = fs.readFileSync(GITHUB_APP_KEY_LOCATION, 'utf-8')
@@ -201,6 +206,71 @@ const getPublicKeys = async (token, username) => {
 	return data
 }
 
+const getParentAction = async (actionId) => {
+	let action = await Action.query().findById(actionId)
+	if (action.parentId) {
+		action = await Action.query().findById(action.parentId)
+	}
+	return action
+}
+
+const feedbackDeploymentStatus = async (actionId) => {
+	console.log('syncing ', actionId,' action to vcs')
+	const parentAction = await getParentAction(actionId)
+	const { repoName, owner, branch } = parentAction
+	const { title } = await Action.query().findById(actionId)
+	
+	const repo = await GithubRepository.query().where('full_name', [owner, repoName].join('/')).first()
+	if (!repo) {
+		throw new Error('repo not found')
+	}
+
+	const { installationId } = repo
+	const token = await getInstallationToken(installationId)
+
+	let deploymentId = parentAction.vcsId
+	if (!deploymentId) {
+		console.log('no deploymentId')
+		const { data } = await request('POST /repos/{owner}/{repo}/deployments', {
+			owner,
+			repo: repoName,
+			ref: branch,
+
+			environment: `Ultima - ${branch}`,
+			production_environment: branch === 'master' || branch === 'main',
+
+			headers: {
+				authorization: `Bearer ${token}`,
+				'content-type': 'application/vnd.github.ant-man-preview+json',
+			},
+		})
+
+		console.log('created deployment', data)
+
+		await Action.query().update({
+			vcsId: data.id,
+		}).where('id', actionId)
+
+		deploymentId = data.id
+	}
+
+	const state = parentAction.type === 'error' ? 'error' : (parentAction.completedAt ? 'success' : 'in_progress') /* error, failure, inactive, in_progress, queued pending, or success */
+
+	await request('POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses', {
+		owner, repo: repoName,
+		deployment_id: deploymentId,
+		log_url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/deployments/${parentAction.id}`, 
+		description: title,
+		state,
+		environment_url: `${PUBLIC_ROUTE_ROOT_PROTOCOL}://build.${PUBLIC_ROUTE_ROOT}:${PUBLIC_ROUTE_ROOT_PORT}/repo/${owner}/${repoName}/${branch}`, 
+		environment: branch,
+		headers: {
+			'content-type': 'application/vnd.github.ant-man-preview+json',
+			authorization: `Bearer ${token}`,
+		}
+	})
+}
+
 module.exports = {
     githubGet,
 	githubCodeToAuth,
@@ -211,4 +281,5 @@ module.exports = {
 	createEmptyRepo,
 	commitTreeToRepo,
 	getPublicKeys,
+	feedbackDeploymentStatus,
 }

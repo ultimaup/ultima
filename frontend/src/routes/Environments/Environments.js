@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components/macro'
+import { Link, useParams } from 'react-router-dom'
 import moment from 'moment'
 import Octicon, { GitBranch } from '@primer/octicons-react'
 
@@ -219,6 +220,10 @@ const EnvironmentBody = styled.div`
         padding-right: 16px;
     }
 
+    ${EnvList} {
+        margin-bottom: 16px;
+    }
+
     h5 {
         padding-left: 16px;
         margin-bottom: 12px;
@@ -242,6 +247,8 @@ const DBInstructionsModal = ({ dbConnectionInstructions, setDbConnectionInstruct
 const Environments = ({ owner, repoName }) => {
     const { loading, error, resources } = useResources({ owner, repoName })
     const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
+    const { branch } = useParams()
+    console.log(branch)
 
     useEffect(ensureNF, [])
 
@@ -255,14 +262,20 @@ const Environments = ({ owner, repoName }) => {
 
     return (
         <>
-            {resources.map(({ name, id, resources }) => {
+            {resources.filter(({ name }) => {
+                if (!branch) {
+                    return true
+                } else {
+                    return name === branch
+                }
+            }).map(({ name, id, resources }) => {
                 return (
                     <EnvironmentsContainer key={id}>
                         <EnvironmentHeader>
-                            <a href={`/${owner}/${repoName}/src/branch/${name}`}>
+                            <Link to={`/repo/${owner}/${repoName}/${name}`}>
                                 <Octicon icon={GitBranch} size={21} />
                                 {name}
-                            </a>
+                            </Link>
                             <Button to={`/repo/${owner}/${repoName}/${name}/config`}>Edit Environment Config</Button>
                         </EnvironmentHeader>
                         <EnvironmentBody>
