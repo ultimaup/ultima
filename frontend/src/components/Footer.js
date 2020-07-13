@@ -6,6 +6,7 @@ import { Grid } from './Layout'
 
 const SFooter = styled.footer`
     height: 40px;
+    margin-top: 32px;
     border-top: none;
     color: ${({ theme: { offWhite } }) => offWhite};
 `

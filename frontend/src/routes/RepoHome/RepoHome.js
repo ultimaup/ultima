@@ -53,7 +53,7 @@ const Columns = styled.div`
 export const Editor = ({ title, value, setValue }) => {
     const [height, setHeight] = useState('1000px')
     return (
-        <Container>
+        <Container style={{ marginTop: 0 }}>
             <Header>
                 {title}
             </Header>
@@ -108,6 +108,7 @@ const EditConfig = ({ title= 'Manage Environment Config' }) => {
                 fileContentsChanged={!!value} 
                 style={{
                     marginTop: 16,
+                    marginBottom: 16,
                 }}
                 onSubmit={({ commitMessage, description, branchName }) => {
                     setUltimaYml({
@@ -179,7 +180,7 @@ const RepoName = styled.div`
     }
 
     svg {
-        margin-right: 6px;
+        margin-right: 12px;
         opacity: 0.6;
     }
 `

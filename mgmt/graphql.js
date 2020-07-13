@@ -468,7 +468,7 @@ const resolvers = {
                 }).filter((_, i) => i < 20)
             }
 
-            return await Action.query().where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
+            return await Action.query().limit(10).where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
         },
         getAction: async (parent, { id }, context) => {
             if (!id) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components/macro'
 import { Link, useParams } from 'react-router-dom'
 import moment from 'moment'
-import Octicon, { GitBranch } from '@primer/octicons-react'
+import Octicon, { GitBranch, Versions } from '@primer/octicons-react'
 
 import useResources from '../../hooks/useResources'
 import useGetMinioToken from '../../hooks/useGetMinioToken'
@@ -244,11 +244,38 @@ const DBInstructionsModal = ({ dbConnectionInstructions, setDbConnectionInstruct
     </UltimaModal>
 )
 
+const EmptyStateContainer = styled.div`
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding-top: 32px;
+    padding-bottom: 32px;
+    h3 {
+        font-size: 18px;
+        line-height: 21px;
+        margin-top: 32px;
+        margin-bottom: 32px;
+    }
+    svg {
+        opacity: 0.6;
+    }
+`
+
+const EmptyState = () => {
+    const { owner, repoName } = useParams()
+    return (
+        <EmptyStateContainer>
+            <Octicon icon={Versions} size={128} />
+            <h3>To get started with Ultima, first configure your environment:</h3>
+            <Button to={`/repo/${owner}/${repoName}/integrate`}>Configure Environment</Button>
+        </EmptyStateContainer>
+    )
+}
+
 const Environments = ({ owner, repoName }) => {
     const { loading, error, resources } = useResources({ owner, repoName })
     const [dbConnectionInstructions, setDbConnectionInstructions] = useState(false)
     const { branch } = useParams()
-    console.log(branch)
 
     useEffect(ensureNF, [])
 
@@ -258,6 +285,10 @@ const Environments = ({ owner, repoName }) => {
 
     if (error) {
         return error.message
+    }
+
+    if (!loading && !resources.length) {
+        return <EmptyState />
     }
 
     return (

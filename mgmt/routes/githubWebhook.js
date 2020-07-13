@@ -69,6 +69,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 
 				await runTests({
 					...payload,
+					pusher: payload.sender,
 					codeZipUrl,
 					codeTarUrl,
 				})

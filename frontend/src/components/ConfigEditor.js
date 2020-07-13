@@ -496,7 +496,8 @@ const AddModule = ({ value, setValue }) => {
                                 ...value,
                                 [resourceName]: {
                                     type: 'web',
-                                    buildLocation: '/build'
+                                    buildLocation: '/build',
+                                    ...(templateId ? templates.find(({ id }) => templateId === id).template : {}),
                                 },
                             })
                         } else if (newResourceType === 'bucket') {
@@ -526,11 +527,15 @@ const AddModule = ({ value, setValue }) => {
                             <label>Resource Name</label>
                             <input onChange={e => setResourceName(e.target.value)} value={resourceName} />
                         </InputGroup>
-                        {newResourceType === 'api' && (
+                        {(newResourceType === 'api' || newResourceType === 'web') && (
                             <InputGroup>
                                 <label>Template</label>
                                 <select onChange={e => setTemplateId(e.target.value)} value={templateId}>
-                                    <option value="">No Template</option>
+                                    {(newResourceType === 'api' ? (
+                                        <option value="">No Template</option>
+                                    ) : (
+                                        <option value="">Plain HTML</option>
+                                    ))}
                                     {templates && templates.map(({ id, name }) => (
                                         <option key={id} value={id}>{name[0].toUpperCase()}{name.substring(1)}</option>
                                     ))}

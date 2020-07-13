@@ -6,7 +6,8 @@ import {useActions} from '../hooks/useActions'
 
 const Container = styled.div`
     display: inline-block;
-    margin-left: 9px;
+
+    ${({ hasLiveAction }) => hasLiveAction && `margin-left: 9px;`}
 `
 
 const DeploymentNotification = ({ owner, repoName }) => {
@@ -14,7 +15,7 @@ const DeploymentNotification = ({ owner, repoName }) => {
     const hasLiveAction = actions && actions.some(a => !a.completedAt)
 
     return (
-        <Container>
+        <Container hasLiveAction={hasLiveAction}>
             {hasLiveAction && <StatusDot />}
         </Container>
     )
