@@ -14,7 +14,6 @@ const uuid = require('uuid').v4
 
 const {
     AUTH_REDIRECT,
-    ELEVATED_AUTH_REDIRECT,
     GITHUB_CLIENT_ID,
     GITHUB_OAUTH_CLIENT_ID,
     GITEA_COOKIE_NAME,
@@ -72,46 +71,6 @@ const createLoginSession = () => {
     }
     return loginSessions[id]
 }
-
-
-router.get('/auth/github-oauth-redirect', cookieParser(), async (req, res) => {
-    const { code } = req.query
-    const { ultima_token } = req.cookies
-    const auth = await githubCodeToAuth(code, true)
-    const { access_token } = auth
-    const {login: username } = await githubGet('https://api.github.com/user', access_token)
-
-    let githubAccessToken
-
-    if (ultima_token) {
-        const existing = await jwt.verify(ultima_token)
-        githubAccessToken = existing.githubAccessToken
-    }
-
-    const user = await User.query().where({ username }).first()
-
-    const token = await jwt.sign({
-        ...user.toJSON(),
-        githubAccessToken,
-        githubOauthAccessToken: access_token,
-    })
-    res.cookie('ultima_token', token, { httpOnly: true })
-    
-    let redirectUrl = `${ELEVATED_AUTH_REDIRECT}?${querystring.encode({
-        token,
-    })}`
-    const { ultima_cli_sessionId } = req.cookies
-    if (ultima_cli_sessionId) {
-        setLoginSession({
-            id: ultima_cli_sessionId,
-            token,
-        })
-        res.cookie('ultima_cli_sessionId', null, { httpOnly: true })
-        redirectUrl = `${redirectUrl}&backTo=cli`
-    }
-
-    res.redirect(302, redirectUrl)
-})
 
 router.get('/auth/cli', async (req, res) => {
     const { sessionId, grants } = req.query
