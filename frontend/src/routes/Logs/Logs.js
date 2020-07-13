@@ -2,6 +2,9 @@ import React from 'react'
 import styled from 'styled-components/macro'
 import { useParams } from 'react-router-dom'
 
+import jwtDecode from 'jwt-decode'
+import { getToken } from '../../utils/token'
+
 const KibanaIframe = styled.iframe`
     width: 100%;
     height: 100%;
@@ -32,9 +35,13 @@ const IframeWrapper = styled.div`
     }
 `
 
-export const LogFrame = ({ tag, owner, className }) => {
-    const iframeUrl = `/kibana/s/${owner.toLowerCase()}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
-    const linkUrl = `/kibana/s/${owner.toLowerCase()}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
+export const LogFrame = ({ tag, className }) => {
+    const token = getToken()
+    const user = token ? jwtDecode(token) : {}
+    const { username } = user
+
+    const iframeUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
+    const linkUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
 
     return (
         <LogContainer className={className}>
