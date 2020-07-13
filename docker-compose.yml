@@ -257,7 +257,6 @@ services:
     environment:
       PORT: 4491
       CI: "true" # https://github.com/facebook/create-react-app/issues/8688#issuecomment-602084087
-      MGMT_ENDPOINT: http://mgmt:4467
 
   router:
     image: traefik:v2.2
