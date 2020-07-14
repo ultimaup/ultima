@@ -41,7 +41,7 @@ const DashboardHome = () => {
             <DashboardBody>
                 <Main>
                     <GettingStarted />
-                    <ActionList style={{ marginTop: 32 }} />
+                    <ActionList withRepo style={{ marginTop: 32 }} />
                 </Main>
                 <Divider />
                 <Sidebar className="six wide column">
