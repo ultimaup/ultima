@@ -9,7 +9,9 @@ const {
     githubCodeToAuth,
     githubGet,
 } = require('./github')
-const { ensureKibanaUser } = require('./kibana')
+const kibana = require('./kibana')
+const s3 = require('./s3')
+const { genBucketPass } = require('./ci')
 const uuid = require('uuid').v4
 
 const {
@@ -124,7 +126,10 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
     await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
 
     // ensure kibana user
-    const { sid } = await ensureKibanaUser({ email, username, fullName: name, password: user.id })
+    const { sid } = await kibana.ensureKibanaUser({ email, username, fullName: name, password: user.id })
+
+    // ensure minio user
+    await s3.ensureFileUserExists(username, genBucketPass(username))
 
     const sessionId = await getGiteaSession(username, user.id)
 
@@ -183,7 +188,7 @@ router.get('/kibana/*', async (req, res) => {
         try {
             const { email, username, name, id } = await jwt.verify(ultima_token)
     
-            const { sid } = await ensureKibanaUser({ email, username, fullName: name, password: id })
+            const { sid } = await kibana.ensureKibanaUser({ email, username, fullName: name, password: id })
             res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
             if (req.query.next) {
                 return res.redirect(302, req.query.next)
@@ -196,8 +201,20 @@ router.get('/kibana/*', async (req, res) => {
     res.redirect(302, req.query.next ? `/user/login?redirect_to=${req.query.next}` : '/user/login')
 })
 
+const ensureResourceAccess = async (username, fullNames) => {
+    if (!fullNames.length) {
+        return
+    }
+
+    await Promise.all([
+        kibana.ensureUserCanAccessRepos(username, fullNames),
+        s3.ensureUserCanAccessRepos(username, fullNames),
+    ])
+}
+
 module.exports = {
     router,
     getLoginSession,
     createLoginSession,
+    ensureResourceAccess,
 }

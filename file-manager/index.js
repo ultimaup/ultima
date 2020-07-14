@@ -50,6 +50,20 @@ const generatePolicy = (bucketName) => ({
     ]
 })
 
+const generateMultiBucketPolicy = bucketPatterns => ({
+	"Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": ["s3:*"],
+            "Resource": bucketPatterns.map(bucketPattern => (
+				`arn:aws:s3:::${bucketPattern}/*`
+			))
+        }
+    ]
+})
+
 const listUsers = () => execCommand(`mcli admin user list --json ${configName}`)
 
 const addUser = (user, password) => execCommand(`mcli admin user add --json ${configName} ${user} ${password}`)
@@ -62,6 +76,8 @@ const setPolicyOnUser = (policyName, user) => execCommand(`mcli admin policy set
 
 const addPolicy = (policyName, location) => execCommand(`mcli admin policy add --json ${configName} ${policyName} ${location}`)
 
+const deletePolicy = (policyName) => execCommand(`mcli admin policy remove --json ${configName} ${policyName}`)
+
 const createPolicy = async (bucketName) => {
 	const policy = generatePolicy(bucketName)
 
@@ -72,6 +88,7 @@ const createPolicy = async (bucketName) => {
 	await fse.writeJson(tmpLoc, policy)
 
 	await addPolicy(bucketName, tmpLoc)
+	await fse.remove(tmpDir)
 
 	return bucketName
 }
@@ -116,6 +133,39 @@ app.post('/web-bucket', async (req, res) => {
 	}
 
 	res.json(actualBucketName)
+})
+
+app.post('/ensure-access', async (req, res) => {
+	const { user, fullNames } = req.body
+
+	const bucketPatterns = fullNames.map(fn => {
+		const owner = fn.split('/')[0]
+		const name = fn.split('/')[1].substring(0,40)
+
+		return `${owner}-${name}-*`
+	})
+
+	bucketPatterns.push(`${user}-*`, user)
+
+	const policy = generateMultiBucketPolicy(bucketPatterns)
+	const policyName = `${user}-mb`
+
+	// write policy file
+	const tmpDir = await fse.mkdirp(`/tmp/${user}`)
+	const tmpLoc = path.resolve(tmpDir, `${policyName}.json`)
+
+	await fse.writeJson(tmpLoc, policy)
+
+	// remove policy if exists
+	await deletePolicy(policyName)
+
+	await addPolicy(policyName, tmpLoc)
+
+	await setPolicyOnUser(policyName, user)
+
+	await fse.remove(tmpDir)
+
+	res.json(true)
 })
 
 app.post('/:userId', async (req, res) => {

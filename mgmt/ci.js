@@ -461,13 +461,11 @@ const genBucketPass = seed => crypto.createHash('sha256').update(`${seed}-${SALT
 
 const genBucketHash = (repoName, ref) => crypto.createHash('sha256').update([repoName, ref].join('/')).digest('hex').substring(0, 8)
 
-const genBucketName = (resourceName, repository, ref) => `${genBucketHash(repository.full_name.split('/')[1], ref)}-${resourceName}`
+const genBucketName = (resourceName, repository, ref) => `${repository.full_name.split('/')[1].substring(0,40)}-${genBucketHash(repository.full_name.split('/')[1], ref)}-${resourceName}`
 
 const deployBucketResource = async ({ owner, resourceName, ref, repository, parentActionId, invocationId }) => {
 	const deployBucketActionId = parentActionId && (await logAction(parentActionId, { type: 'info', title: 'Allocating bucket', data: { resourceName } }))
 	try {
-		// ensure user
-		await s3.ensureFileUserExists(owner, genBucketPass(owner))
 		// create bucket as user
 		const actualBucketName = await s3.ensureFileBucket(genBucketName(resourceName, repository, ref), owner)
 	
