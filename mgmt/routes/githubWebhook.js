@@ -82,7 +82,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 					pusher: payload.sender,
 					codeZipUrl,
 					codeTarUrl,
-				})
+				}).catch(console.error)
 			}
 		}
 	} catch (e) {
