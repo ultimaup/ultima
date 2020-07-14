@@ -26,8 +26,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 			} else {
 				// addInstallation(installationId)
 			}
-		}
-		if (name === 'push') {
+		} else if (name === 'push') {
 			const { installation, repository, ref } = payload
 			const installationId = installation.id
 
