@@ -18,14 +18,16 @@ const webhooks = new Webhooks({
 webhooks.on("*", async ({ id, name, payload }) => {
 	try {
 		console.log(name, "event received")
-		if (name === 'installation') {
-			const { action, installation } = payload
-			if (action === 'deleted') {
-				const installationId = installation.id
-				removeInstallation(installationId)
-			} else {
-				// addInstallation(installationId)
-			}
+		// if (name === 'installation_repositories') {
+		// 	const { action, repositories_added } = payload
+		// 	if (action === 'added') {
+				
+		// 	}
+		// }
+		if (name === 'installation' && payload.action === 'deleted') {
+			const { installation } = payload
+			const installationId = installation.id
+			await removeInstallation(installationId)
 		} else if (name === 'push') {
 			const { installation, repository, ref } = payload
 			const installationId = installation.id

@@ -280,6 +280,29 @@ const addInstallation = async installationId => {
 	
 }
 
+const doesUserHaveInstallation = async username => {
+	const jwt = app.getSignedJsonWebToken()
+	try {
+		await request('GET /users/{username}/installation', {
+			username,
+			headers: {
+				authorization: `Bearer ${jwt}`,
+			},
+			mediaType: {
+				previews: [
+					'machine-man'
+				]
+			}
+		})
+		
+		return true
+	} catch (e) {
+		//
+	}
+
+	return false
+}
+
 module.exports = {
     githubGet,
 	githubCodeToAuth,
@@ -293,4 +316,5 @@ module.exports = {
 	feedbackDeploymentStatus,
 	removeInstallation,
 	addInstallation,
+	doesUserHaveInstallation,
 }

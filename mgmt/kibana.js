@@ -49,7 +49,7 @@ const ensureKibanaUser = async ({ email, username: user, fullName, password }) =
         throw e
     })
     const roleName = `${username}-role`
-    await createRole(roleName, indexPattern, spaceId).catch(e => {
+    await createRole(roleName, [indexPattern], spaceId).catch(e => {
         console.error(`error creating role`)
         throw e
     })
@@ -73,6 +73,28 @@ const ensureKibanaUser = async ({ email, username: user, fullName, password }) =
         sid,
         user: await getUser(username),
     }
+}
+
+const ensureUserCanAccessRepos = async (user, fullNames) => {
+    const ips = fullNames.map(fn => fn.split('/').join('-').toLowerCase()).map(ip => `logstash-${ip}-*`)
+    await Promise.all(
+        ips.map(ip => createIndexPattern(ip).catch(e => {
+            return ip
+        }))
+    )
+
+    const username = user.toLowerCase()
+    const spaceId = username
+    const roleName = `${username}-role`
+
+    const indexPattern = `logstash-${username}-*`
+
+    await createRole(roleName, [...ips, indexPattern], spaceId).catch(e => {
+        console.error(`error updating role`)
+        throw e
+    })
+
+    return true
 }
 
 const getSession = async ({ username, password }) => {
@@ -155,15 +177,13 @@ const updateSpaceConfig = (spaceId) => {
     return client.post(endpoint, { json: body }).json()
 }
 
-const createRole = (roleName, indexPattern, spaceId) => {
+const createRole = (roleName, indexPatterns, spaceId) => {
     const body = {
         "elasticsearch": {
             "cluster": [],
             "indices": [
                 {
-                    "names": [
-                        indexPattern,
-                    ],
+                    "names": indexPatterns,
                     "privileges": [
                         "all"
                     ]
@@ -218,4 +238,5 @@ const setDarkMode = (spaceId) => (
 
 module.exports = {
     ensureKibanaUser,
+    ensureUserCanAccessRepos,
 }
