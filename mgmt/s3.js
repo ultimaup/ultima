@@ -82,7 +82,7 @@ const headObject = ({ Bucket = BUILDER_BUCKET_ID, Key }) => {
 }
 
 const getWebLoginToken = async ({ username, password }) => {
-	const { result: { token } } = await got.post('minio/webrpc', {
+	const { result, error } = await got.post('minio/webrpc', {
 		prefixUrl: S3_ENDPOINT,
 		json: {
 			id: 1,
@@ -95,7 +95,21 @@ const getWebLoginToken = async ({ username, password }) => {
 		}
 	}).json()
 
-	return token
+	if (error) {
+		console.error(error)
+		throw error
+	} else {
+		return result.token
+	}
+}
+
+const ensureUserCanAccessRepos = async (user, fullNames) => {
+	return got.post(`${FILEMANAGER_ENDPOINT}/ensure-access`, {
+		body: JSON.stringify({ user, fullNames }),
+		headers: {
+			'content-type': 'application/json',
+		}
+	}).json()
 }
 
 module.exports = {
@@ -106,4 +120,5 @@ module.exports = {
 	ensureFileUserExists,
 	ensureFileBucket,
 	getWebLoginToken,
+	ensureUserCanAccessRepos,
 }
