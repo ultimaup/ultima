@@ -290,7 +290,7 @@ const GithubRepoList = () => {
                     {loading ? <Loading /> : (
                         displayedRepos.map(repo => (<RepoListItem vcsHost="github.com" onAddRepo={id => {}} key={repo.id} id={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
                     )}
-                    {!loading && repositories.length !== 0 && displayedRepos.length === 0 && hasGithubApp (
+                    {!loading && repositories.length !== 0 && displayedRepos.length === 0 && hasGithubApp && (
                         <EmptyState>
                             <UltimaHeartGH close />
                             <span>GitHub account linked successfully</span>
@@ -309,7 +309,7 @@ const GithubRepoList = () => {
                 </ul>
             </RepoListContainer>
             <UltimaModal bodyStyle={{ marginTop: 0 }} isOpen={modalOpen} onRequestClose={() => setModalOpen(false)} title="Add GitHub Repository">
-                <RepoListModalContainer style={{ maxHeight: step2 ? undefined : 'none', marginBottom: step2 ? undefined : 0 }}>
+                <RepoListModalContainer style={{ maxHeight: (!onboardingModal || step2) ? undefined : 'none', marginBottom: step2 ? undefined : 0 }}>
                     {(onboardingModal && !step2) ? (
                         <EmptyState>
                             <UltimaHeartGH large close />
