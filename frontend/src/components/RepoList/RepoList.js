@@ -245,8 +245,7 @@ const ResyncReposButton = styled.div`
 `
 
 const GithubRepoList = () => {
-    const [forceReload, setForceReload] = useState(false)
-    const { repositories, loading } = useRepositories(forceReload)
+    const { repositories, refresh, loading } = useRepositories()
     const [modalOpen, setModalOpen] = useState(false)
     const [onboardingModal, setOnboardingModal] = useState(false)
     const [step2, setStep2] = useState(false)
@@ -269,9 +268,7 @@ const GithubRepoList = () => {
                     <div>
                         <Octicon icon={MarkGithubIcon} /> &nbsp;
                         GitHub Repositories
-                        <ResyncReposButton onClick={() => {
-                            setForceReload(true)
-                        }}>
+                        <ResyncReposButton onClick={refresh}>
                             <Octicon icon={SyncIcon}/>
                         </ResyncReposButton>
                     </div>
