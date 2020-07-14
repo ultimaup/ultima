@@ -11,6 +11,7 @@ import useLegacyRepositories from '../../hooks/useLegacyRepositories'
 
 import { Button } from '../Layout'
 import LoadingSpinner from '../Loading'
+import useHasGithubApp from '../../hooks/useHasGithubApp'
 
 const Badge = styled.span`
     display: inline-block;
@@ -252,12 +253,16 @@ const GithubRepoList = () => {
     const [alreadyPoppedModal, setAlreadyPoppedModal] = useState(false)
     const [search, setSearch] = useState('')
     const displayedRepos = repositories.filter(r => r.isUltima)
+    const { hasGithubApp, loading: hasAppLoading } = useHasGithubApp()
 
     useEffect(() => {
         if (!alreadyPoppedModal && repositories.length > 0 && repositories.filter(r => r.isUltima).length === 0) {
-            setOnboardingModal(true)
-            setModalOpen(true)
-            setAlreadyPoppedModal(true)
+            if (!window.localStorage.alreadyPoppedModal) {
+                setOnboardingModal(true)
+                setModalOpen(true)
+                setAlreadyPoppedModal(true)
+                window.localStorage.alreadyPoppedModal = true
+            }
         }
     },[repositories, alreadyPoppedModal, modalOpen])
 
@@ -285,7 +290,7 @@ const GithubRepoList = () => {
                     {loading ? <Loading /> : (
                         displayedRepos.map(repo => (<RepoListItem vcsHost="github.com" onAddRepo={id => {}} key={repo.id} id={repo.id} isUltima={repo.isUltima} isPrivate={repo.private} name={repo.full_name} />))
                     )}
-                    {!loading && repositories.length !== 0 && displayedRepos.length === 0 && (
+                    {!loading && repositories.length !== 0 && displayedRepos.length === 0 && hasGithubApp (
                         <EmptyState>
                             <UltimaHeartGH close />
                             <span>GitHub account linked successfully</span>
@@ -294,7 +299,7 @@ const GithubRepoList = () => {
                             }}>Add a repo to Ultima</Button>
                         </EmptyState>
                     )}
-                    {!loading && repositories.length === 0 && (
+                    {!loading && !hasGithubApp && !hasAppLoading && (
                         <EmptyState>
                             <UltimaHeartGH />
                             <span>Ship your GitHub projects lightning fast with Ultima.</span>
