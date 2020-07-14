@@ -14,7 +14,6 @@ const API = require('./api')
 const UI = require('./ui')
 
 const config = require('../../config')
-const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 const getRepoName = require('./getRepoName')
 
@@ -67,22 +66,17 @@ const dev = async () => {
     const cfg = await config.get()
     const ui = UI()
 
-    let inUltimaFolder
-
     const { token } = cfg
 
-    inUltimaFolder = await checkInUltimaFolder({ token })
-
-    if (!inUltimaFolder) {
-        return
-    }
-    const { repoName, owner } = getRepoName(inUltimaFolder, jwtdecode(cfg.token))
+    const { repoName, owner } = await getRepoName(jwtdecode(cfg.token))
 
     let ultimaYml
     if (await fse.exists('./.ultima.yml')) {
         ultimaYml = await fse.readFile('./.ultima.yml', 'utf-8')
     } else {
-        return cli.log(`No .ultima.yml file found, please create one here and copy/paste it over: ${program.server}/${owner}/${repoName}/_new/master/.ultima.yml`)
+        cli.log(`No .ultima.yml file found, please create one here:`)
+        cli.url(`${program.server}/config-generator`, `${program.server}/config-generator`)
+        return
     }
 
     const ultimaCfgs = YAML.parse(ultimaYml)

@@ -56,6 +56,7 @@ services:
       - "db"
     volumes:
       - './mgmt:/app'
+      - './github-app.pem:/github-app.pem'
     working_dir: '/app'
     command: ["yarn", "dev"]
     env_file:
@@ -85,7 +86,7 @@ services:
       GITEA_COOKIE_NAME: sessionid
       JWT_SECRET: 9KvXNgRVquPnkKkSDN
       AUTH_REDIRECT: http://build.onultima.local:4480/user/login/complete
-      
+
       PUBLIC_ROUTE_ROOT_PROTOCOL: http
       PUBLIC_ROUTE_ROOT_PORT: 4480
 
@@ -108,6 +109,8 @@ services:
 
       INTERNAL_MGMT_ENDPOINT: http://192.168.1.112:4467
       REGISTRY_CACHE_ENDPOINT: http://192.168.1.112:4493/
+
+      GITHUB_APP_KEY_LOCATION: /github-app.pem
 
   dind:
     image: docker:dind

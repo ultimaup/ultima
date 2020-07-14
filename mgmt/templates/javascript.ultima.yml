@@ -1,0 +1,13 @@
+nodeapi:
+  type: api
+  runtime: node
+  start: yarn start
+  install:
+    command: yarn --mutex file --frozen-lockfile
+    watch: 
+      - yarn.lock
+  dev:
+    command: yarn start
+    back-sync: node_modules
+    watch:
+      - "*.js"

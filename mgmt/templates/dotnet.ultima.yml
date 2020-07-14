@@ -1,0 +1,15 @@
+dotnetapi:
+  type: api
+  runtime: mcr.microsoft.com/dotnet/core/sdk
+  start: bin/Release/netcoreapp3.1/dotnet
+  install:
+    command:
+      - dotnet restore
+    watch:
+      - dotnet.csproj
+  build:
+    - dotnet build -c Release
+  dev:
+    command: dotnet watch run
+    sync-ignore:
+      - obj

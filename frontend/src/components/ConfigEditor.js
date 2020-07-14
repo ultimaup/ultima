@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 import YAML from 'yaml'
 
 import UltimaModal from './UltimaModal'
 import CNameDebugger from './CNameDebugger'
+import { Button, Form, FormDiv, InputGroup, Divider, CloseButton, CircleButton, Hint, MultiListLabel } from './Layout'
+import { Header } from './RepoList/RepoList'
+import Octicon, { ChevronUpIcon, ChevronDownIcon, PlusIcon } from '@primer/octicons-react'
 
 import useDNSInfo from '../hooks/useDNSInfo'
+import useTemplates from '../hooks/useTemplates'
 import langs from '../utils/langs'
 
 const BranchDomains = styled.div`
-    .heading {
+    h3 {
         display: flex;
-        label {
-            flex: 1;
-            padding-left: 2px;
-        }
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    p {
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        line-height: 17px;
+        /* identical to box height */
+
+        letter-spacing: 0.1px;
+
+        color: #9E9E9E;
+        margin-bottom: 12px;
     }
 `
 
@@ -25,15 +39,22 @@ const BranchDomainRow = styled.div`
     }
 `
 
-const Module = styled.div`
-    background: rgba(0,0,0,0.1);
-    border: 1px solid rgba(255,255,255,0.1);
+const Module = styled(FormDiv)`
+    background: #292929;
+    border-radius: 5px;
     box-sizing: border-box;
-    border-radius: 4px;
-    max-width: 720px;
 
     :not(:first-child) {
         margin-top: 12px;
+    }
+
+    h3 {
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 19px;
+        letter-spacing: 0.1px;
+
+        color: #9E9E9E;
     }
 `
 
@@ -45,6 +66,7 @@ const EmptyState = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+
     button {
         margin-right: 8px;
     }
@@ -56,15 +78,12 @@ const BranchDomainMap = ({ value, onChange }) => {
 
     return (
         <BranchDomains>
-            <h4 style={{ display: 'flex', paddingLeft: 2 }}>
-                <div style={{ flex: 1, 
-    display: 'flex',
-    alignItems: 'center' }}>Add Custom Domains</div>
-                <button className="ui button green small" onClick={e => {
+            <h3>Add Custom Domains
+                <Button onClick={e => {
                     e.preventDefault()
                     setIsOpen(true)
-                }}>DNS Debugger</button>
-            </h4>
+                }}>DNS Debugger</Button>
+            </h3>
             <p>To use a custom domain with Ultima add a CNAME to {dnsInfo && dnsInfo.cname} or A record to {dnsInfo && dnsInfo.ipv4} & an AAAA record to {dnsInfo && dnsInfo.ipv6}</p>
             <UltimaModal isOpen={isOpen} onRequestClose={() => setIsOpen(false)} title="DNS Debugger">
                 <CNameDebugger dnsInfo={dnsInfo} />
@@ -73,7 +92,7 @@ const BranchDomainMap = ({ value, onChange }) => {
                 <BranchDomainRow className="heading">
                     <label>Branch</label>
                     <label>Custom Domain</label>
-                    <button className="ui button red" style={{visibility: 'hidden', height: 0}}>x</button>
+                    <CloseButton style={{visibility: 'hidden', height: 0}} />
                 </BranchDomainRow>
             )}
             
@@ -95,41 +114,41 @@ const BranchDomainMap = ({ value, onChange }) => {
                                 [branch]: e.target.value,
                             })
                         }} />
-                        <button className="ui button red" onClick={(e) => {
+                        <CloseButton type="danger" onClick={(e) => {
                             e.preventDefault()
                             const newV = {
                                 ...value,
                             }
                             delete newV[branch]
                             onChange(newV)
-                        }}>x</button>
+                        }} />
                     </BranchDomainRow>
                 )
             })}
 
             {Object.entries(value || {}).length === 0 ? (
                 <EmptyState>
-                    <button className="ui green button" onClick={(e) => {
+                    <Button onClick={(e) => {
                         e.preventDefault()
                         const a = Object.keys(value || {}).filter(s => s.startsWith('branch')).length
                         onChange({
                             ...value,
                             [`branch${a ? a+1 : ''}`]: 'domain.com',
                         })
-                    }}>Use custom domain with a branch</button>
+                    }}>Use custom domain with a branch</Button>
                 </EmptyState>
             ) : (
-                <button className="ui green button" onClick={(e) => {
+                <CircleButton onClick={(e) => {
                     e.preventDefault()
                     const a = Object.keys(value || {}).filter(s => s.startsWith('branch')).length
                     onChange({
                         ...value,
                         [`branch${a ? a+1 : ''}`]: 'domain.com',
                     })
-                }}>+</button>
+                }}>
+                    <Octicon icon={PlusIcon} />
+                </CircleButton>
             )}
-
-            
         </BranchDomains>
     )
 }
@@ -137,60 +156,91 @@ const BranchDomainMap = ({ value, onChange }) => {
 const StyledMultiList = styled.div`
     display: flex;
     flex-direction: column;
-    input {
-        max-width: 140px;
+    padding-bottom: 24px;
+    ${Button} {
+        width: 223px;
     }
-    button {
-        width: 50px;
+    ${InputGroup} {
+        display: flex;
+
+        ${CircleButton} {
+            margin-left: 8px;
+        }
     }
 `
 
-const MultiList = ({ value, onChange, ...props }) => (
+const MultiList = ({ value, onChange, placeholder, ...props }) => (
     <StyledMultiList>
-        {value.map((val, i) => <input key={i} {...props} value={val} onChange={e => {
-            const newValue = [...value]
-            newValue[i] = e.target.value
-            onChange({
-                target: {
-                    value: newValue,
-                }
-            })
-        }} />)}
-        <button className="ui green button" onClick={(e) => {
-            e.preventDefault()
-            onChange({
-                target: {
-                    value: [...value, ''],
-                },
-            })
-        }}>+</button>
+        {value.map((val, i) => (
+            <InputGroup>
+                <label />
+                <input key={i} {...props} value={val} placeholder={placeholder} onChange={e => {
+                    const newValue = [...value]
+                    newValue[i] = e.target.value
+                    onChange({
+                        target: {
+                            value: newValue,
+                        }
+                    })
+                }} />
+                <CloseButton onClick={() => {
+                    onChange({
+                        target: {
+                            value: value.filter(v => v !== val),
+                        },
+                    })
+                }} />
+            </InputGroup>
+        ))}
+        <InputGroup>
+            <label />
+            <Button onClick={(e) => {
+                e.preventDefault()
+                onChange({
+                    target: {
+                        value: [...value, ''],
+                    },
+                })
+            }}>
+                Add file name or pattern
+            </Button>
+        </InputGroup>
     </StyledMultiList>
 )
 
+const ModuleName = styled.div`
+    flex: 1;
+    text-align: left;
+    padding-left: 12px;
+    padding-right: 12px;
+`
+
 const ConfigModule = ({ moduleKey, module, setValue, value }) => {
     const [expanded, setExpanded] = useState(true)
+    const { loading, templates } = useTemplates()
 
     return (
         <Module>
-            <h3 className="ui attached header top" onClick={() => setExpanded(!expanded)} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+            <Header onClick={() => setExpanded(!expanded)} style={{
                 cursor: 'pointer',
             }}>
-                {expanded ? <i className="fa fa-caret-up" /> : <i className="fa fa-caret-down" />}&nbsp;
-                {moduleKey || 'New Module'}
-                <button className="ui button small red" onClick={() => {
+                <CircleButton>
+                    <Octicon icon={expanded ? ChevronUpIcon : ChevronDownIcon} />
+                </CircleButton>
+                <ModuleName>
+                    {moduleKey || 'New Resource'}
+                </ModuleName>
+                <CloseButton onClick={() => {
                     const newV = {
                         ...value,
                     }
                     delete newV[moduleKey]
                     setValue(newV)
-                }}>x</button>
-            </h3>
+                }} />
+            </Header>
             {expanded && value[moduleKey].type !== 'bucket' && <ModuleBody>
-                <div className="inline required field">
-                    <strong>Repository Subdirectory</strong>
+                <InputGroup>
+                    <label>Repository Subdirectory</label>
                     <input placeholder="." value={value[moduleKey].directory} onChange={e => {
                         setValue({
                             ...value,
@@ -200,12 +250,12 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
                 {(module.type === 'web' || moduleKey === 'web') && (
-                    <div className="inline required field">
-                        <strong>Website built output location</strong>
-                        <input autoFocus required value={value[moduleKey].buildLocation} onChange={e => {
+                    <InputGroup>
+                        <label>Website built output location</label>
+                        <input required value={value[moduleKey].buildLocation} onChange={e => {
                             setValue({
                                 ...value,
                                 [moduleKey]: {
@@ -214,11 +264,11 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                                 }
                             })
                         }} />
-                    </div>
+                    </InputGroup>
                 )}
                 {(module.type === 'api' || moduleKey === 'api') && (
-                    <div className="inline required field">
-                        <strong>Runtime</strong>
+                    <InputGroup>
+                        <label>Runtime</label>
                         <select onChange={(e) => {
                             setValue({
                                 ...value,
@@ -232,14 +282,14 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                                 <option key={runtime} value={runtime}>{name}</option>
                             ))}
                         </select>
-                    </div>
+                    </InputGroup>
                 )}
 
-                <div className="ui divider"></div>
+                <Divider />
                 <h3>Build Steps</h3>
                 
-                <div className="inline required field">
-                    <strong>Install</strong>
+                <InputGroup>
+                    <label>Install</label>
                     <input placeholder="# skip" required value={value[moduleKey].install && value[moduleKey].install.command || ''} onChange={e => {
                         setValue({
                             ...value,
@@ -252,10 +302,10 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Build</strong>
+                <InputGroup>
+                    <label>Build</label>
                     <input placeholder="# skip" value={value[moduleKey].build} onChange={e => {
                         setValue({
                             ...value,
@@ -265,10 +315,10 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Test</strong>
+                <InputGroup>
+                    <label>Test</label>
                     <input placeholder="# skip" value={value[moduleKey].test} onChange={e => {
                         setValue({
                             ...value,
@@ -278,10 +328,10 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Start</strong>
+                <InputGroup>
+                    <label>Start</label>
                     <input placeholder="# skip" required={module.type === 'api' || moduleKey === 'api'} value={value[moduleKey].start} onChange={e => {
                         setValue({
                             ...value,
@@ -291,14 +341,14 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="ui divider"></div>
+                <Divider />
 
                 <h3>Development Settings</h3>
 
-                <div className="inline required field">
-                    <strong>Dev Command</strong>
+                <InputGroup>
+                    <label>Dev Command</label>
                     <input placeholder="# skip" required={module.type !== 'web'} value={value[moduleKey].dev && value[moduleKey].dev.command || ''} onChange={e => {
                         setValue({
                             ...value,
@@ -311,14 +361,12 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Re-run when these files change</strong>
-                    <br />
-                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
-                    <br />
-                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.watch || []} onChange={e => {
+                <InputGroup>
+                    <MultiListLabel>Re-run when these files change</MultiListLabel>
+                    <Hint>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></Hint>
+                    <MultiList placeholder="**/*.js" required value={value[moduleKey].dev && value[moduleKey].dev.watch || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -330,14 +378,12 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Don't re-run when these files change</strong>
-                    <br />
-                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
-                    <br />
-                    <MultiList required value={value[moduleKey].dev && value[moduleKey].dev.ignore || []} onChange={e => {
+                <InputGroup>
+                    <MultiListLabel>Don't re-run when these files change</MultiListLabel>
+                    <Hint>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></Hint>
+                    <MultiList placeholder="**/*.js" required value={value[moduleKey].dev && value[moduleKey].dev.ignore || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -349,14 +395,12 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Don't sync these files to the dev environment</strong>
-                    <br />
-                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
-                    <br />
-                    <MultiList value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
+                <InputGroup>
+                    <MultiListLabel>Don't sync these files to the dev environment</MultiListLabel>
+                    <Hint>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></Hint>
+                    <MultiList placeholder="dependency_folder" value={value[moduleKey].dev && value[moduleKey].dev['sync-ignore'] || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -368,14 +412,12 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="inline required field">
-                    <strong>Run Install when these files change</strong>
-                    <br />
-                    <span>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></span>
-                    <br />
-                    <MultiList value={value[moduleKey].install && value[moduleKey].install.watch || []} onChange={e => {
+                <InputGroup>
+                    <MultiListLabel>Run Install when these files change</MultiListLabel>
+                    <Hint>You can use <a href="https://commandbox.ortusbooks.com/usage/parameters/globbing-patterns" target="_blank">glob patterns</a></Hint>
+                    <MultiList placeholder="*.lock" value={value[moduleKey].install && value[moduleKey].install.watch || []} onChange={e => {
                         setValue({
                             ...value,
                             [moduleKey]: {
@@ -387,9 +429,9 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
                             }
                         })
                     }} />
-                </div>
+                </InputGroup>
 
-                <div className="ui divider"></div>
+                <Divider />
                 <BranchDomainMap value={value[moduleKey]['branch-domains']} onChange={v => {
                     setValue({
                         ...value,
@@ -404,147 +446,159 @@ const ConfigModule = ({ moduleKey, module, setValue, value }) => {
     )
 }
 
+const AddModuleContainer = styled(Module)`
+    ${Button} {
+        width: 223px;
+    }
+`
+
 const AddModule = ({ value, setValue }) => {
+    const { loading, templates } = useTemplates()
     const [newResourceType, setNewResourceType] = useState('api')
     const [expanded, setExpanded] = useState(false)
     const [resourceName, setResourceName] = useState('')
-
-    if (!expanded) {
-        return (
-            <button style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green" onClick={() => setExpanded(true)}>
-                Add Module
-            </button>
-        )
-    }
+    const [templateId, setTemplateId] = useState(null)
 
     return (
-        <form className="inline field" onSubmit={(e) => {
-            e.preventDefault()
-            if (newResourceType === 'api') {
-                setValue({
-                    ...value,
-                    [resourceName]: {
-                        type: 'api',
-                        runtime: 'node',
-                    },
-                })
-            } else if (newResourceType === 'web') {
-                setValue({
-                    ...value,
-                    [resourceName]: {
-                        type: 'web',
-                        buildLocation: '/build'
-                    },
-                })
-            } else if (newResourceType === 'bucket') {
-                setValue({
-                    ...value,
-                    [resourceName]: {
-                        type: 'bucket',
-                    },
-                })
-            }
-
-            setExpanded(false)
-            setResourceName('')
-            setNewResourceType('api')
-        }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <label style={{ width: 150 }}>Add Module</label>
-                    <select onChange={(e) => {
-                        setNewResourceType(e.target.value)
-                    }} value={newResourceType} className="ui search normal selection dropdown">
-                        <option value="api">API</option>
-                        <option value="web">Website</option>
-                        <option value="bucket">Bucket</option>
-                    </select>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <label style={{ width: 150 }}>Name</label>
-                    <input className="ui search normal selection" onChange={e => setResourceName(e.target.value)} value={resourceName} />
-                </div>
-
-                <button disabled={!resourceName} style={{ marginLeft: 12, marginTop: 12, marginBottom: 8, width: 120 }} className="ui button green">
-                    Add
-                </button>
-                <span style={{
-                    cursor: 'pointer',
-                }} onClick={() => {
+        <AddModuleContainer>
+            <Header onClick={() => setExpanded(!expanded)} style={{
+                cursor: 'pointer',
+            }}>
+                <CircleButton>
+                    <Octicon icon={PlusIcon} />
+                </CircleButton>
+                <ModuleName>
+                    Add New Resource
+                </ModuleName>
+                <CloseButton onClick={() => {
                     setExpanded(false)
                     setResourceName('')
                     setNewResourceType('api')
-                }}>Cancel</span>
-            </div>
-        </form>
+                }} />
+            </Header>
+            {expanded && (
+                <ModuleBody>
+                    <Form onSubmit={(e) => {
+                        e.preventDefault()
+                        if (newResourceType === 'api') {
+                            setValue({
+                                ...value,
+                                [resourceName]: {
+                                    type: 'api',
+                                    runtime: 'node',
+                                    ...(templateId ? templates.find(({ id }) => templateId === id).template : {}),
+                                    id: undefined,
+                                    name: undefined,
+                                },
+                            })
+                        } else if (newResourceType === 'web') {
+                            setValue({
+                                ...value,
+                                [resourceName]: {
+                                    type: 'web',
+                                    buildLocation: '/build',
+                                    ...(templateId ? templates.find(({ id }) => templateId === id).template : {}),
+                                },
+                            })
+                        } else if (newResourceType === 'bucket') {
+                            setValue({
+                                ...value,
+                                [resourceName]: {
+                                    type: 'bucket',
+                                },
+                            })
+                        }
+
+                        setExpanded(false)
+                        setResourceName('')
+                        setNewResourceType('api')
+                    }}>
+                        <InputGroup>
+                            <label>Resource Type</label>
+                            <select onChange={(e) => {
+                                setNewResourceType(e.target.value)
+                            }} value={newResourceType}>
+                                <option value="api">API</option>
+                                <option value="web">Website</option>
+                                <option value="bucket">Bucket</option>
+                            </select>
+                        </InputGroup>
+                        <InputGroup>
+                            <label>Resource Name</label>
+                            <input onChange={e => setResourceName(e.target.value)} value={resourceName} />
+                        </InputGroup>
+                        {(newResourceType === 'api' || newResourceType === 'web') && (
+                            <InputGroup>
+                                <label>Template</label>
+                                <select onChange={e => setTemplateId(e.target.value)} value={templateId}>
+                                    {(newResourceType === 'api' ? (
+                                        <option value="">No Template</option>
+                                    ) : (
+                                        <option value="">Plain HTML</option>
+                                    ))}
+                                    {templates && templates.map(({ id, name }) => (
+                                        <option key={id} value={id}>{name[0].toUpperCase()}{name.substring(1)}</option>
+                                    ))}
+                                </select>
+                            </InputGroup>
+                        )}
+                        <InputGroup>
+                            <label />
+                            <Button disabled={!resourceName}>
+                                Add Resource
+                            </Button>
+                        </InputGroup>
+                    </Form>        
+                </ModuleBody>
+            )}
+        </AddModuleContainer>
     )
 }
 
-const ConfigEditor = ({ ioEle }) => {
-    const [value, setV] = useState({})
+const ConfigEmptyState = styled.div`
+    color: ${({ theme: { offWhite } }) => offWhite};
+    text-align: center;
+    padding-top: 32px;
+    padding-bottom: 24px;
+`
 
+const ModulesContainer = styled.div`
+    padding: 21px;
+    ${Module}:not(:first-child) {
+        margin-top: 26px;
+    }
+`
+
+export const ControlledConfigEditor = ({ value, setValue }) => {
+    const [data, setD] = useState({})
+    
     useEffect(() => {
-        let model
+        setD(value ? YAML.parse(value) : {})
+    }, [value])
 
-        const onChange = () => {
-            const content = model.getLinesContent().join('\n')
-            const data = YAML.parse(content)
-            setV(data || {})
-        }
-
-        if (ioEle) {
-            model = window.monaco && window.monaco.editor.getModels()[0]
-            if (model) {
-                model.onDidChangeContent(onChange)
-            } else {
-                let a = setInterval(() => {
-                    model = window.monaco && window.monaco.editor.getModels()[0]
-                    if (model) {
-                        model.onDidChangeContent(onChange)
-                        clearInterval(a)
-                    }
-                },50)
-            }
-
-            const data = YAML.parse(ioEle.value)
-            if (data) {
-                setV(data)
-            }
-        }
-    }, [ioEle])
-
-    const setValue = newValue => {
+    const setData = (newValue) => {
         if (!Object.keys(newValue).length) {
-            window.monaco.editor.getModels()[0].setValue('')
-        } else {
-            window.monaco.editor.getModels()[0].setValue(YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}') && !l.endsWith('null')).join('\n'))
+            return setValue('')
         }
-        document.getElementById('commit-button').disabled = false
+
+        const v = YAML.stringify(newValue).split('\n').filter(l => !l.includes('{}') && !l.endsWith('null')).join('\n')
+        setValue(v)
     }
 
     return (
-        <div>
-            <form className="ui form" onSubmit={e => e.preventDefault()} style={{ position: 'initial' }}>
-                <h3 className="ui top attached header" style={{
-                    position: 'absolute',
-                    width: '100%',
-                    zIndex: 10,
-                    top: 0,
-                }}>
-                    Manage Project Config
-                </h3>
-
-                <div className="ui attached segment" style={{ marginTop: 42, borderBottom: 'none' }}>
-                    {Object.entries(value || {}).map(([key, module]) => (
-                        <ConfigModule moduleKey={key} key={key} module={module} value={value} setValue={setValue} />
-                    ))}
-
-                    <AddModule value={value} setValue={setValue} />
-                </div>
-                
-            </form>
-        </div>
+        <>
+            <ModulesContainer>
+                {Object.entries(data || {}).map(([key, module]) => (
+                    <ConfigModule moduleKey={key} key={key} module={module} value={data} setValue={setData} />
+                ))}
+                {Object.keys(data).length === 0 ? (
+                    <ConfigEmptyState>
+                        To get started, add a resource to your environment
+                    </ConfigEmptyState>
+                ) : null}
+            
+                <AddModule value={data} setValue={setData} />
+            </ModulesContainer>
+        </>
     )
 }
-
-export default ConfigEditor

@@ -1,24 +1,27 @@
-
-@font-face {
-  font-family: 'Steradian';
-  src: url('./fonts/Steradian-Rg.woff2') format('woff2'),
-      url('./fonts/Steradian-Rg.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
+/* width */
+::-webkit-scrollbar {
+    width: 10px;
+    margin-right: -10px;
 }
 
-@font-face {
-  font-family: 'Steradian';
-  src: url('./fonts/Steradian-Bd.woff2') format('woff2'),
-      url('./fonts/Steradian-Bd.woff') format('woff');
-  font-weight: bold;
-  font-style: normal;
+/* Track */
+::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-@font-face {
-  font-family: 'Steradian';
-  src: url('./fonts/Steradian-Lt.woff2') format('woff2'),
-      url('./fonts/Steradian-Lt.woff') format('woff');
-  font-weight: 300;
-  font-style: normal;
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #888;
+    opacity: 0.6;
+    border-radius: 8px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+    opacity: 1;
+}
+
+body {
+    color: #F9F9F9;
 }

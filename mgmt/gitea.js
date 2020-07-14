@@ -160,9 +160,11 @@ const getUser = username => giteaFetch(`/api/v1/user`, {}, username).json()
 
 const getUserRepos = async ({ username }) => {
 	const user = await getUser(username)
-	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&exclusive=true`, {}, username).json()
+	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&limit=1000&exclusive=true`, {}, username).json()
 
-	return data
+	return data.sort((a, b) => {
+		return b.pushed_at - a.pushed_at
+	})
 }
 
 const getLatestCommitFromRepo = async ({ owner, repo }) => {
@@ -221,6 +223,52 @@ const createRepoFromTemplate = async ({ username, userId }, { name, description,
 	}
 }
 
+const b64e = data => Buffer.from(data).toString('base64')
+const b64d = data => Buffer.from(data, 'base64').toString()
+
+const getUltimaYml = async ({ username, owner, repo, branch }) => {
+	const path = '.ultima.yml'
+	try {
+		const { sha, content } = await giteaFetch(`/api/v1/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, {
+			method: 'get'
+		}, username).json()
+
+		return {
+			sha,
+			content: b64d(content),
+		}
+	} catch (e) {
+		if (e.message.toLowerCase().includes('not found')) {
+			return {
+				content: '',
+				sha: null,
+			}
+		}
+		console.error(e)
+		throw e
+	}
+}
+
+const setUltimaYml = async ({username, owner, repo, branch}, {message, sha}, content) => {
+	const path = '.ultima.yml'
+
+	const existing = await getUltimaYml({
+		username, owner, repo, branch,
+	})
+
+	const method = existing.content ? 'put' : 'post'
+
+	const data = await giteaFetch(`/api/v1/repos/${owner}/${repo}/contents/${path}`, {
+		body: JSON.stringify({
+			message, sha, content: b64e(content),
+			branch,
+		}),
+		method,
+	}, username).json()
+
+	return data
+}
+
 module.exports = {
 	ensureGiteaUserExists,
 	getGiteaSession,
@@ -232,4 +280,6 @@ module.exports = {
 	getRepo,
 	getUserRepos,
 	getLatestCommitFromRepo,
+	getUltimaYml,
+	setUltimaYml,
 }

@@ -1,20 +1,27 @@
-import React from 'react'
-import styled from 'styled-components'
+import React, { useState } from 'react'
+import styled from 'styled-components/macro'
+import { transparentize } from 'polished'
 
-import Octicon, { Rocket, Heart, Terminal } from '@primer/octicons-react'
+import Octicon, { RocketIcon, HeartIcon, TerminalIcon } from '@primer/octicons-react'
+import { ControlledCLIModal } from './CLIModal'
 
 const Welcome = styled.div`
     width: 100%;
-    /* height: 150px; */
-    background: #353945;
-    border-radius: 8px;
-    border: 1px solid #404552;
-    padding: 8px;
+    border-radius: 7px;
+    border: 1px solid #292929;
+    padding: 18px;
     text-align: center;
+    color: ${({ theme: { offWhite } }) => transparentize(0.4)(offWhite)};
 
     h2 {
-        color: #F9F9F9;
-        margin-top: 12px;
+        color: ${({ theme: { offWhite } }) => offWhite};
+        margin-bottom: 8px;
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: bold;
+        font-size: 24px;
+        line-height: 28px;
+        text-align: center;
     }
 
     ul {
@@ -23,6 +30,7 @@ const Welcome = styled.div`
         list-style: none;
         padding: 0;
         margin: 0;
+        margin-top: 8px;
 
         li, li a {
             text-align: center;
@@ -32,6 +40,8 @@ const Welcome = styled.div`
             display: flex;
             flex-direction: column;
             align-items: center;
+
+            color: ${({ theme : { colorPrimary } }) => colorPrimary};
 
             padding: 8px 0;
             padding-bottom: 6px;
@@ -43,28 +53,34 @@ const Welcome = styled.div`
     }
 `
 
-const GettingStarted = ({ cliLink }) => {
+const GettingStarted = () => {
+    const [isOpen, setIsOpen] = useState(false)
+
     return (
-        <Welcome>
-            <h2>Welcome to the Ultima Alpha</h2>
-            <p>In case you get stuck, here are some useful links</p>
-            <ul>
-                <li>
-                    <a target="_blank" rel="noopener noreferrer" href="/docs">
-                        <Octicon icon={Rocket} size={32} />
-                        <span>Documentation</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onClick={() => cliLink.click()}><Octicon icon={Terminal} size={32}/><span>CLI Login</span></a>
-                </li>
-                <li>
-                    
-                    <a target="_blank" href="/community"><Octicon icon={Heart} size={32} />
-                    <span>Live Support</span></a>
-                </li>
-            </ul>
-        </Welcome>
+        <>
+            <Welcome>
+                <h2>Welcome to the Ultima Alpha</h2>
+                <p>In case you get stuck, here are some useful links</p>
+                <ul>
+                    <li>
+                        
+                        <a target="_blank" rel="noopener noreferrer" href="/docs">
+                            <Octicon icon={RocketIcon} size={32} />
+                            <span>Ultima Getting Started</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a onClick={() => setIsOpen(true)}><Octicon icon={TerminalIcon} size={32}/><span>CLI Login</span></a>
+                    </li>
+                    <li>
+                        
+                        <a target="_blank" href="/community"><Octicon icon={HeartIcon} size={32} />
+                        <span>Live Support</span></a>
+                    </li>
+                </ul>
+            </Welcome>
+            <ControlledCLIModal isOpen={isOpen} setIsOpen={setIsOpen} />
+        </>
     )
 }
 

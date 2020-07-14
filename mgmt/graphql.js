@@ -1,18 +1,25 @@
 const { ApolloServer, gql } = require('apollo-server-express')
-const slugify = require('slugify')
+const { GraphQLJSON } = require('graphql-type-json')
 
 const Route = require('./db/Route')
 const Action = require('./db/Action')
 const Deployment = require('./db/Deployment')
 const User = require('./db/User')
 const Resource = require('./db/Resource')
+const Repository = require('./db/Repository')
+const GithubRepository = require('./db/GithubRepository')
 
 const { headersToUser } = require('./jwt')
-const { addSshKey, listTemplateRepos, createRepoFromTemplate, getRepo, getUserRepos, getLatestCommitFromRepo } = require('./gitea')
-const { runTests, genBucketPass } = require('./ci')
+const { getUserRepos } = require('./gitea')
+const gitea = require('./gitea')
+const { genBucketPass } = require('./ci')
+const templates = require('./templates')
 
 const { getCname } = require('./dns')
 const s3 = require('./s3')
+const github = require('./github')
+const auth = require('./auth')
+
 
 const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
@@ -25,6 +32,9 @@ const {
 
     PUBLIC_IPV4,
     PUBLIC_IPV6,
+
+    GITHUB_APP_NAME,
+    CHROME_EXT_ID,
 } = process.env
 
 const admins = [
@@ -33,6 +43,7 @@ const admins = [
 
 const typeDefs = gql`
     scalar DateTime
+    scalar JSON
 
     type User {
         id: ID
@@ -63,14 +74,6 @@ const typeDefs = gql`
         metadata: String
 
         parentId: ID
-    }
-
-    type Repo {
-        id: ID,
-        name: String
-        full_name: String
-        private: Boolean
-        ssh_url: String
     }
 
     type Route {
@@ -137,26 +140,61 @@ const typeDefs = gql`
     type MinioAuth {
         token: String
     }
+    type Repo {
+        id: ID
+        name: String
+        full_name: String
+        private: Boolean
+        isUltima: Boolean
+        vcs: String
+        ssh_url: String
+    }
+
+    type File {
+        content: String
+        sha: String
+    }
+
+    type Template {
+        id: ID,
+        name: String
+        template: JSON
+    }
+
+    input TemplateDirMapping {
+        dir: String
+        templateName: String
+    }
+
+    type LoginSession {
+        id: ID
+        token: String
+    }
 
     type Query {
         getDeployments(owner: String, repoName: String, branch: String) : [Deployment]
         getActions(owner: String, repoName: String, parentId: String) : [Action]
         getAction(id: ID) : Action
         getUsers: [User]
-        getTemplateRepos: [Repo]
-        getMyRepos: [Repo]
+        getTemplates: [Template]
+        getMyRepos: [Repo] #deprecated
         getPGEndpoint: String
         getEnvironments(owner: String, repoName: String): [Environment]
         getResources(owner: String, repoName: String): [ResourceEnvironment]
         getDNSRecords: DNSInfo
+        listRepos(vcs: String, force: Boolean): [Repo]
+        getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
+        getRepo(owner: String, repoName: String): Repo
+        getLoginSession(id: ID!): LoginSession
     }
 
     type Mutation {
+        createLoginSession: LoginSession
         activateUser(id: ID, activated: Boolean): User
-        addSSHkey(key: String, title: String) : Boolean
-        createRepo(name: String, description: String, private: Boolean, templateId: ID) : Repo
+        createRepo(name: String, private: Boolean, template: String, templatePopulatedDirs: [TemplateDirMapping], vcs: String) : Repo
         queryCname(hostname: String): CNameResult
         getMinioToken(bucketName: String): MinioAuth
+        setUltimaYml(owner: String, repoName: String, branch: String, commitMessage: String, commitDescription: String, value: String, sha: String) : File
     }
 `
 
@@ -167,8 +205,114 @@ const userCanAccessRepo = (user, { owner, repoName }) => {
 
 const unique = myArray => [...new Set(myArray)]
 
+const listGithubRepos = async (accessToken, username) => {
+    const repos = await github.listRepos({ accessToken })
+    const repoIds = repos.map(r => `${r.id}`)
+
+    const existing = await GithubRepository.query().where({ username })
+    const existingIds = existing.map(r => `${r.id}`)
+    const newRepos = repos.filter(r => !existingIds.includes(`${r.id}`))
+
+    const deletedRepoIds = existingIds.filter(id => !repoIds.includes(id))
+
+    if (newRepos.length) {
+        await GithubRepository.query().insert(
+            newRepos.map(({ id, created_at, pushed_at, name, full_name, private, installationId }) => ({
+                id,
+                createdAt: created_at,
+                pushedAt: pushed_at,
+                username,
+                name,
+                full_name,
+                private,
+                installationId,
+            }))
+        )
+    }
+
+    if (deletedRepoIds.length) {
+        await GithubRepository.query().where({
+            username,
+        }).whereIn('id', deletedRepoIds).delete()
+    }
+
+    if (existing.length) {
+        await Promise.all(
+            existing.map(({ id, created_at, pushed_at, name, full_name, private, installationId }) => GithubRepository.query().update({
+                createdAt: created_at,
+                pushedAt: pushed_at,
+                username,
+                name,
+                full_name,
+                private,
+                installationId,
+            }).where({
+                id,
+                username,
+            }))
+        )
+    }
+}
+
 const resolvers = {
+    JSON: GraphQLJSON,
     Query: {
+        getLoginSession: (parent, { id }) => auth.getLoginSession(id),
+        getUltimaYml: async (parent, { owner, repoName, branch }, context) => {
+            const { username } = context.user
+            const full_name = [owner, repoName].join('/')
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
+            if (githubRepo) {
+                const file = await github.getUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch })
+                return file
+            }
+
+            const giteaRepos = await getUserRepos({ username })
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            if (!giteaRepo) {
+                throw new Error('repository not found')
+            }
+
+            return await gitea.getUltimaYml({ username, owner, repo: repoName, branch })
+        },
+        listRepos: async (parent, { force, vcs }, context) => {
+            const { githubAccessToken, username } = context.user
+
+            if (vcs === 'github') {
+                if (!githubAccessToken) {
+                    throw new Error('unauthorized')
+                }
+                
+                let results = await GithubRepository.query().where({ username })
+                let recheckAccess = false
+                if (!results.length || force) {
+                    await listGithubRepos(githubAccessToken, username)
+                    results = await GithubRepository.query().where({ username })
+                    console.log(force, results.length)
+                    recheckAccess = true
+                }
+
+                const ultimaRepos = await Repository.query().whereIn('fullName', results.map(r => r.full_name))
+                const urMap = {}
+                ultimaRepos.forEach(({ fullName }) => {
+                    urMap[fullName] = true
+                })
+
+                if (recheckAccess) {
+                    auth.ensureResourceAccess(username, Object.keys(urMap).filter(fname => fname.split('/')[0] !== username)).catch(console.error)
+                }
+
+                return results.map(repo => {
+                    return {
+                        ...repo,
+                        vcs: 'github',
+                        isUltima: !!urMap[repo.full_name],
+                    }
+                })
+            }
+
+            return []
+        },
         getDNSRecords: async () => {
             return {
                 ipv4: PUBLIC_IPV4,
@@ -297,7 +441,31 @@ const resolvers = {
                 throw new Error('unauthorized')
             }
 
-            return await Action.query().where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
+            if (!owner && !repoName && !parentId) {
+                const { username } = context.user
+                const giteaRepos = await getUserRepos({ username })
+                const githubRepos = await GithubRepository.query().where({ username }).whereIn('full_name', Repository.query().select('full_name'))
+                const fullNames = [
+                    ...giteaRepos.map(g => g.full_name),
+                    ...githubRepos.map(g => g.full_name),
+                ]
+
+                // TODO: this is dumb
+                const f = await Promise.all(
+                    fullNames.map(full_name => {
+                        const [ owner, repoName ] = full_name.split('/')
+                        return {
+                            owner, repoName,
+                        }
+                    }).map(({ owner, repoName }) => Action.query().where({ owner, repoName }).orderBy('createdAt', 'DESC'))
+                )
+
+                return f.flat().sort((a, b) => {
+                    return b.createdAt - a.createdAt
+                }).filter((_, i) => i < 20)
+            }
+
+            return await Action.query().limit(10).where(parentId ? { parentId } : { owner, repoName }).orderBy('createdAt', parentId ? 'ASC' : 'DESC').skipUndefined()
         },
         getAction: async (parent, { id }, context) => {
             if (!id) {
@@ -322,14 +490,39 @@ const resolvers = {
 
             return await User.query()
         },
-        getTemplateRepos: listTemplateRepos,
+        getTemplates: async (parent, {}, context) => {
+            return await templates.list()
+        },
         getMyRepos: async (parent, {}, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
             const { username } = context.user
+            const giteaRepos = await getUserRepos({ username })
 
-            return await getUserRepos({ username })
+            return giteaRepos
+        },
+        getRepo: async (parent, { owner, repoName }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+            const { username } = context.user
+            const full_name = [owner, repoName].join('/')
+
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
+            if (githubRepo) {
+                return {
+                    ...githubRepo,
+                    vcs: 'github',
+                }
+            }
+
+            const giteaRepos = await getUserRepos({ username })
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            return giteaRepo && {
+                ...giteaRepo,
+                vcs: 'gitea',
+            }
         },
         getPGEndpoint: () => {
             let port = PG_BROKER_PORT
@@ -341,17 +534,12 @@ const resolvers = {
         },
     },
     Mutation: {
-        getMinioToken: async (parent, { bucketName }, context) => {
+        createLoginSession: auth.createLoginSession,
+        getMinioToken: async (parent, args, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
-
-            // const resource = await Resource.query().where({ deploymentId: bucketName }).first()
-            // TODO: check user has access to resource.repoName
-            const username = bucketName.split('-')[0]
-            if (context.user.username !== username) {
-                console.log('getMinioToken:', context.user.username, 'accessing', username)
-            }
+            const { username } = context.user
             const password = genBucketPass(username)
             const token = await s3.getWebLoginToken({ username, password })
 
@@ -381,51 +569,33 @@ const resolvers = {
             await User.query().update({ activated }).where('id', id)
             return await User.query().findById(id)
         },
-        addSSHkey: async (parent, { key, title }, context) => {
-            if (!context.user) {
-                throw new Error('unauthorized')
+        setUltimaYml: async (parent, { owner, repoName, branch, value, commitMessage, commitDescription, sha }, context) => {
+            const { username } = context.user
+            const full_name = [owner, repoName].join('/')
+            const githubRepo = await GithubRepository.query().where({ username, full_name }).first()
+            if (githubRepo) { 
+                await github.setUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch }, {
+                    message: commitMessage,
+                    description: commitDescription,
+                    sha,
+                }, value)
+
+                return await github.getUltimaYml(githubRepo.installationId, { owner, repo: repoName, branch })
             }
 
-            try {
-                await addSshKey(context.user.username, { key, title })
-            } catch (e) {
-                if (e.response) {
-                    throw new Error(e.response.body)
-                }
-                throw e
+            const giteaRepos = await getUserRepos({ username })
+            const giteaRepo = giteaRepos.find(r => r.full_name === full_name)
+            if (!giteaRepo) {
+                throw new Error('repository not found')
             }
 
-            return true
-        },
-        createRepo: async (parent, { name, description, private, templateId }, context) => {
-            if (!context.user) {
-                throw new Error('unauthorized')
-            }
+            await gitea.setUltimaYml({ username, owner, repo: repoName, branch }, {
+                message: commitMessage,
+                description: commitDescription,
+                sha,
+            }, value)
 
-            const { username, id, imageUrl } = context.user
-
-            const result = await createRepoFromTemplate({ username, userId: id }, {
-                name: slugify(name), description, private, templateId
-            })
-
-            const repo = await getRepo({ username }, { id: result.id })
-
-            try {
-                const latestCommit = await getLatestCommitFromRepo({ owner: repo.owner.login, repo: repo.name })
-                runTests({
-                    repository: repo,
-                    ref: `refs/heads/${repo.default_branch}`,
-                    pusher: {
-                        login: username,
-                        avatar_url: imageUrl,
-                    },
-                    commits: [latestCommit],
-                    after: latestCommit.sha,
-                })
-            } catch (e) {
-                console.error(e)
-            }
-            return repo
+            return await gitea.getUltimaYml({ username, owner, repo: repoName, branch })           
         },
     },
 }

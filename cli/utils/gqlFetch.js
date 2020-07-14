@@ -1,7 +1,8 @@
 const { program } = require('commander')
 const graphqlFetch = require('graphql-fetch')
 
-const gqlFetch = ({token}) => {
+const gqlFetch = (opts) => {
+    const {token} = opts || {}
     return (query, vars, opts = {}) => {
         const gqlFetch = graphqlFetch(`${program.server}/graphql`)
 

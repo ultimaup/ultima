@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components'
+import styled, { css } from 'styled-components/macro'
 
 export const Badge = styled.div`
     display: inline-block;
@@ -17,9 +17,9 @@ export const Badge = styled.div`
     text-align: center;
     padding: 2px 6px;
 
-    color: white;
+    color: ${({ theme: { offWhite } }) => offWhite};
     background: rgba(255,255,255,0.1);
-    border: 1px solid white;
+    border: 1px solid ${({ theme: { offWhite } }) => offWhite};
 
     ${({ variant }) => {
         switch (variant) {

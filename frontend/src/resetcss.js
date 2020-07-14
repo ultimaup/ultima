@@ -1,4 +1,4 @@
-import styled, { css, createGlobalStyle } from 'styled-components'
+import styled, { css, createGlobalStyle } from 'styled-components/macro'
 
 const resetCSS = css`
     /* http://meyerweb.com/eric/tools/css/reset/ 

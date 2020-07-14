@@ -10,20 +10,75 @@ const {
     githubGet,
 } = require('./github')
 const { ensureKibanaUser } = require('./kibana')
+const uuid = require('uuid').v4
 
 const {
     AUTH_REDIRECT,
     GITHUB_CLIENT_ID,
+    GITHUB_OAUTH_CLIENT_ID,
     GITEA_COOKIE_NAME,
+    GITHUB_APP_NAME,
 } = process.env
 
 const router = new Router()
 
 router.get('/auth/github', async (req, res) => {
-    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user%20user:email`)
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`)
 })
 
-router.get('/auth/github-redirect', async (req, res) => {
+router.get('/auth/github-oauth', async (req, res) => {
+    const { grants } = req.query
+    const scope = []
+    if (grants.includes('repo')) {
+        scope.push('repo')
+    }
+    if (grants.includes('keys')) {
+        scope.push('write:public_key')
+    }
+    res.redirect(302, `https://github.com/login/oauth/authorize?client_id=${GITHUB_OAUTH_CLIENT_ID}&scope=${[
+        'read:user',
+        'user:email',
+        ...scope,
+    ].join('%20')}`)
+})
+
+router.get('/vcs/:vcs', async (req, res) => {
+    const { vcs } = req.params
+    if (vcs === 'github') {
+        return res.redirect(`https://github.com/apps/${GITHUB_APP_NAME}/installations/new`, 302)
+    } else {
+        return res.status(404).send('unknown vcs')
+    }
+})
+
+const loginSessions = {}
+const getLoginSession = id => loginSessions[id]
+const setLoginSession = ({ id, token }) => {
+    loginSessions[id] = {
+        id,
+        token,
+    }
+
+    setTimeout(() => {
+        delete loginSessions[id]
+    }, 30000)
+}
+
+const createLoginSession = () => {
+    const id = uuid()
+    loginSessions[id] = {
+        id,
+    }
+    return loginSessions[id]
+}
+
+router.get('/auth/cli', async (req, res) => {
+    const { sessionId, grants } = req.query
+    res.cookie('ultima_cli_sessionId', sessionId, { httpOnly: true })
+    res.redirect(`/auth/github${grants ? `-oauth?grants=${grants}` : ''}`, 302)
+})
+
+router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
     const { code } = req.query
     const auth = await githubCodeToAuth(code)
 
@@ -53,7 +108,10 @@ router.get('/auth/github-redirect', async (req, res) => {
     })
 
     // get token for user
-    const token = await jwt.sign(user.toJSON())
+    const token = await jwt.sign({
+        ...user.toJSON(),
+        githubAccessToken: access_token,
+    })
 
     if (!user.activated) {
         return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({
@@ -70,13 +128,22 @@ router.get('/auth/github-redirect', async (req, res) => {
 
     const sessionId = await getGiteaSession(username, user.id)
 
+    let redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
+        token,
+    })}`
+    const { ultima_cli_sessionId } = req.cookies
+    if (ultima_cli_sessionId) {
+        setLoginSession({
+            id: ultima_cli_sessionId,
+            token,
+        })
+        redirectUrl = `${redirectUrl}&backTo=cli`
+    }
+
     res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
     res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
     res.cookie('ultima_token', token, { httpOnly: true })
 
-    const redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
-        token,
-    })}`
 
     res.redirect(302, redirectUrl)
 })
@@ -129,6 +196,8 @@ router.get('/kibana/*', async (req, res) => {
     res.redirect(302, req.query.next ? `/user/login?redirect_to=${req.query.next}` : '/user/login')
 })
 
-module.exports = app => {
-    app.use(router)
+module.exports = {
+    router,
+    getLoginSession,
+    createLoginSession,
 }

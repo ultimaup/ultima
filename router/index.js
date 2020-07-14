@@ -183,14 +183,19 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/kibana/logout`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/graphql`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/admin/waitlist`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/repo`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/oauth`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/repo/create`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/security`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/.well-known`, destination: FRONTEND_ENDPOINT },
-        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT, extensions: ['root', 'logged-in'] },
+        { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: FRONTEND_ENDPOINT, extensions: ['root', 'logged-in'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}`, destination: GITEA_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/docs`, destination: FRONTEND_ENDPOINT },
         { source: `pg.${PUBLIC_ROUTE_ROOT}`, destination: PGBROKER_ENDPOINT, extensions: ['tcp'] },
         { source: `build.${PUBLIC_ROUTE_ROOT}/minio`, destination: S3_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-bucket`, destination: FRONTEND_ENDPOINT },
-        { source: `build.${PUBLIC_ROUTE_ROOT}/docs`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/config-generator`, destination: FRONTEND_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/vcs`, destination: MGMT_ENDPOINT },
     ]
 }
 
@@ -256,7 +261,9 @@ const init = async () => {
                 ...c,
                 extensions: c.extensions ? JSON.parse(c.extensions) : c.extensions,
             }))
-        ].map(ensureConfig)
+        ].map(args => ensureConfig(args).catch(e => {
+            console.error(e, args)
+        }))
     )
 
     console.log(`ensured ${configs.length} configs`)

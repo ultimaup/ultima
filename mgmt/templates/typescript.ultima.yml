@@ -1,0 +1,14 @@
+typescript:
+  type: api
+  runtime: node
+  start: yarn start
+  build: yarn build
+  install:
+    command: yarn --mutex file --frozen-lockfile
+    watch: 
+      - yarn.lock
+  dev:
+    command: yarn dev
+    back-sync: node_modules
+    watch:
+      - "*.js"

@@ -85,6 +85,11 @@
     z-index: 999;
 }
 
+.button {
+    width: max-content;
+    height: max-content;
+}
+
 /*
 body {
     background: #363636;

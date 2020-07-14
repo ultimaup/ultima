@@ -1,21 +1,22 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
-import { HashRouter, Route, Switch, Link, useParams } from 'react-router-dom'
+import styled, { css } from 'styled-components/macro'
+import { Route, Switch, Link, useParams } from 'react-router-dom'
 import moment from 'moment'
-import Octicon, {GitBranch} from '@primer/octicons-react'
+import Octicon, {GitBranchIcon,ChevronRightIcon, RocketIcon } from '@primer/octicons-react'
 import { readableColor } from 'polished'
 
 import { useActions, useAction } from '../../hooks/useActions'
 import { Badge } from '../../components/Badge'
 import { LogFrame } from '../Logs/Logs'
 import StatusDot from '../../components/StatusDot'
+import Loading from '../../components/Loading'
 
 export const ActionContainer = styled.div`
     display: flex;
     padding: 16px 12px;
     border-radius: 4px;
-    color: white;
-    background: rgba(0,0,0,0.2);
+    color: ${({ theme: { offWhite } }) => offWhite};
+    background: #292929;
     border: 1px solid rgba(255,255,255,0.1);
     box-sizing: border-box;
     border-radius: 3px;
@@ -41,9 +42,10 @@ const AddonContainer = styled.div`
     border-bottom-right-radius: 3px;
 `
 
-const ActionLink = styled(ActionContainer).attrs(() => ({ as: Link }))`
+export const ActionLink = styled(ActionContainer).attrs(() => ({ as: Link }))`
+    color: ${({ theme: { offWhite } }) => offWhite};
     :hover {
-        color: white;
+        color: ${({ theme: { offWhite } }) => offWhite};
     }
 `
 
@@ -52,8 +54,27 @@ const ActionsContainer = styled.div`
         margin-top: 16px;
     }
     ${ActionLink} {
-        margin-bottom: 32px;
+        margin-bottom: 18px;
     }
+`
+
+const ProfilePic = styled.div`
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.1);
+    background-image: url('${({ src }) => src}');
+    background-size: cover;
+    border-radius: 3px;
+`
+
+const ShaLabel = styled.span`
+    background: ${({ theme: { backgroundColor } }) => backgroundColor};
+    border-radius: 2px;
+    font-size: 12px;
+    line-height: 15px;
+    font-family: monospace;
+    padding: 3px 12px;
+    color: ${({ theme: { offWhite } }) => offWhite};
 `
 
 const Body = styled.div`
@@ -61,11 +82,12 @@ const Body = styled.div`
     display: flex;
     align-items: center;
 
-    img {
-        width: 32px;
-        height: 32px;
+    ${ProfilePic} {
         margin-right: 8px;
         margin-left: 16px;
+    }
+    ${ShaLabel} {
+        margin-right: 8px;
     }
     a {
         margin-left: 0 !important;
@@ -81,54 +103,6 @@ const Timings = styled.div`
     flex-direction: column;
     margin-left: 8px;
     text-align: right;
-`
-
-const Status = styled.div`
-    width: 125px;
-    display: flex;
-    justify-content: center;
-`
-
-const Spinner = styled.div`
-    &,
-    &:after {
-        border-radius: 50%;
-        width: 10em;
-        height: 10em;
-    }
-
-    font-size: 1px;
-    position: relative;
-    text-indent: -9999em;
-    display: inline-block;
-    
-    border-top: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-right: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-bottom: 1.1em solid rgba(255, 255, 255, 0.2);
-    border-left: 1.1em solid #ffffff;
-    
-    
-    transform: translateZ(0);
-    
-    animation: load8 1.1s infinite linear;
-    
-    @keyframes load8 {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-`
-
-const BadgeSpinner = styled(Badge)`
-    display: flex;
-    align-items: center;
-
-    ${Spinner} {
-        margin-left: 4px;
-    }
 `
 
 const Logs = styled(LogFrame)`
@@ -182,7 +156,21 @@ const ResourceName = styled.div`
     color: ${props => readableColor(stringToColour(props.resourceName))};
 `
 
-const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
+const RepoBranch = styled.div`
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    svg {
+        margin-left: 0;
+    }
+    span {
+        font-weight: normal;
+        
+        margin-top: 2px;
+    }
+`
+
+const Action = ({ type, title, withRepo, repoName, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
     const data = JSON.parse(metadata)
 
     if (!title) {
@@ -191,29 +179,34 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
 
         if (data.commits) {
             commit = data.commits.find(c => c.id === hash)
-            imageUrl = new URL(data.pusherImageUrl)
-            imageUrl = imageUrl.pathname
+            imageUrl = data.pusherImageUrl
         }
 
         return (
             <ActionLink to={to} onClick={onClick}>
-                <Status>
+                {/* <Status>
                     {completedAt ? (type === 'error' ? <Badge variant="danger">Failed</Badge> : <Badge variant="success">Success</Badge>) : <BadgeSpinner variant="warning">Deploying <Spinner /></BadgeSpinner>}
-                </Status>
+                </Status> */}
+                <StatusDot complete={!!completedAt} status={type} />
                 <Body>
-                    <Octicon icon={GitBranch}/>
-                    {branch}
-                    <img src={imageUrl} alt="" />
-                    <a className="ui sha label ">
-                        <span className="shortsha">{hash.substring(0,9)}</span>
-                    </a>
-                    {commit && commit.message}
+                    <RepoBranch>
+                        {withRepo ? repoName : null}
+                        <span>
+                            <Octicon icon={GitBranchIcon}/>
+                            {branch}
+                        </span>
+                    </RepoBranch>
+                    <ProfilePic src={imageUrl} title="pusher profile pic" />
+                    <ShaLabel>
+                        {hash.substring(0,9)}
+                    </ShaLabel>
+                    {commit && commit.message.split('\n')[0]}
                 </Body>
                 <Timings>
                     <span title={completedAt}>{completedAt ? `completed in ${moment(completedAt).diff(createdAt, 'seconds')} seconds` : null}</span>
                     <span title={createdAt}>{moment(createdAt).fromNow()}</span>
                 </Timings>
-                {!noLink && <Chevron><i className="fa fa-chevron-right" /></Chevron>}
+                {!noLink && <Chevron><Octicon icon={ChevronRightIcon} /></Chevron>}
             </ActionLink>
         )
     }
@@ -247,13 +240,35 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
     )
 }
 
-const ActionDetails = ({ owner }) => {
-    const { parentId } = useParams()
+const EmptyStateContainer = styled.div`
+    opacity: 0.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding-top: 42px;
+    padding-bottom: 42px;
+
+    h3 {
+        margin-top: 21px;
+        font-size: 18px;
+    }
+`
+
+const EmptyState = () => (
+    <EmptyStateContainer>
+        <Octicon icon={RocketIcon} size={42} />
+        <h3>Deployments will show up here</h3>
+    </EmptyStateContainer>
+)
+
+const ActionDetails = () => {
+    const { parentId, owner } = useParams()
     const { action } = useAction(parentId)
     const { loading, error, actions } = useActions({ parentId })
 
     if (loading) {
-        return <p>Loading...</p>
+        return <Loading />
     }
 
     if (error) {
@@ -262,7 +277,7 @@ const ActionDetails = ({ owner }) => {
     }
 
     if (!actions.length) {
-        return <p>nothing yet</p>
+        return <EmptyState />
     }
 
     return (
@@ -275,11 +290,11 @@ const ActionDetails = ({ owner }) => {
     )
 }
 
-export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick }) => {
+export const ActionList = ({ style, owner, branch, withRepo, repoName, limit = Infinity, onClick }) => {
     const { loading, error, actions } = useActions({ owner, repoName })
 
     if (loading) {
-        return <p>Loading...</p>
+        return <Loading />
     }
 
     if (error) {
@@ -288,28 +303,29 @@ export const ActionList = ({ owner, branch, repoName, limit = Infinity, onClick 
     }
 
     if (!actions.length) {
-        return <p>nothing yet</p>
+        return <EmptyState />
     }
 
     return (
-        <ActionsContainer>
+        <ActionsContainer style={style}>
             {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
-                <Action key={action.id} {...action} to={`/${action.id}`} onClick={() => onClick && onClick(action.id)} />
+                <Action withRepo={withRepo} key={action.id} {...action} to={`/repo/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )
 }
 
-const Deployments = () => {
+const ActionListRoute = () => {
     const { owner, repoName } = useParams()
+    return <ActionList owner={owner} repoName={repoName} />
+}
 
+const Deployments = () => {
     return (
-        <HashRouter>
-            <Switch>
-                <Route path="/:parentId" component={props => <ActionDetails owner={owner} repoName={repoName} {...props} />} />
-                <Route path="/" component={props => <ActionList owner={owner} repoName={repoName} {...props} />} />
-            </Switch>
-        </HashRouter>
+        <Switch>
+            <Route path="/repo/:owner/:repoName/deployments/:parentId" component={ActionDetails} />
+            <Route path="/repo/:owner/:repoName/deployments" component={ActionListRoute} />
+        </Switch>
     )
 }
 

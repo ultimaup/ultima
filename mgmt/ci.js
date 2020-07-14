@@ -21,12 +21,9 @@ const Resource = require('./db/Resource')
 const route = require('./route')
 
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
-
-const { giteaStream } = require('./gitea')
+const feedbackDeploymentStatus = require('./feedbackDeploymentStatus')
 
 const {
-	GITEA_URL,
-
 	ENDPOINTS_ENDPOINT,
 	S3_ENDPOINT,
 	BUILDER_BUCKET_ID,
@@ -97,10 +94,12 @@ const createParentAction = async ({ owner, repoName, branch, hash, triggeredBy, 
 		metadata: JSON.stringify({ ...data, triggeredBy }),
 	})
 
+	feedbackDeploymentStatus(id).catch(console.error)
+
 	return id
 }
 
-const markActionComplete = async (id, updates = {}) => {
+const markActionComplete =  async (id, updates = {}) => {
 	const u = updates
 	if (u.data) {
 		u.metadata = JSON.stringify(u.data)
@@ -110,6 +109,8 @@ const markActionComplete = async (id, updates = {}) => {
 		completedAt: new Date(),
 		...updates,
 	}).skipUndefined()
+
+	feedbackDeploymentStatus(id).catch(console.error)
 }
 
 const checkAliasUse = async ({ alias, subdomain }) => {
@@ -160,7 +161,7 @@ const removeOrphans = async ({
 	}))
 }
 
-const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo  }) => {
+const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo }) => {
 	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
 
 	if (!config[resourceName].build && !config[resourceName].install && !config[resourceName].test && config[resourceName].type === 'web') {
@@ -216,7 +217,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
 		await pipeline(
-			giteaStream(codeTarUrl),
+			(await codeTarUrl()),
 			got.stream.post(container.hostname, {
 				headers: {
 					// 'content-type': 'application/octet-stream',
@@ -252,7 +253,7 @@ const deployWebResource = async ({ ref, repository, resourceName, parentActionId
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying web resource', data: { resourceName } })
 
 	// TODO: use stream from earlier instead of fetching from s3 again
-	const builtBundleStream = builtBundleKey ? s3.getStream({ Key: builtBundleKey }) : giteaStream(codeTarUrl)
+	const builtBundleStream = builtBundleKey ? s3.getStream({ Key: builtBundleKey }) : (await codeTarUrl())
 
 	const ts = tarStream.extract()
 	ts.on('entry', (header, stream, next) => {
@@ -532,7 +533,7 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const runTests = async ({ ref, after, repository, pusher, commits }) => {
+const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl, codeZipUrl }) => {
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const branch = ref.split('refs/heads/')[1]
@@ -564,24 +565,22 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		description: commitMessage,
 		triggeredBy: pusher.login,
 		data: actionData,
+		feedbackDeploymentStatus,
 	})
 
 	const invocationId = parentActionId
 
-	const codeZipUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.zip`
-
 	let config = {}
 	let shouldDie = false
 
-	let legacyInstaller = null
-	let legacyPackage = null
 	let hasConfig = false
 
 	try {
-		await new Promise((resolve, reject) => {
+		await new Promise(async (resolve, reject) => {
 			let promises = []
+			const zipStream = await codeZipUrl()
 			// handle "special" files special-y
-			giteaStream(codeZipUrl)
+			zipStream
 				.pipe(unzip.Parse())
 				.on('entry', entry => {
 					const { path, type } = entry
@@ -608,28 +607,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 						)
 					}
 
-					if (realPath === 'package.json') {
-						legacyInstaller = 'npm install'
-						promises.push(
-							streamToBuf(entry)
-								.then(buf => {
-									return buf.toString('utf8')
-								})
-								.then(text => JSON.parse(text))
-								.then(pkgJson => {
-									legacyPackage = pkgJson
-								})
-								.catch(e => {
-									logAction(parentActionId, { type: 'error', title: 'failed to parse package.json', data: { error: e } })
-									shouldDie = 'failed to parse package.json'
-									console.error('failed to parse package.json', e)
-								})
-						)
-					}
-					if (realPath === 'yarn.lock') {
-						legacyInstaller = 'yarn'
-					}
-
 					if (path === '.env.example') {
 						// send to env handler
 						return
@@ -648,32 +625,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 			delete config.hasAPI
 		}
 
-		if (!hasConfig || (!config.api && legacyPackage)) {
-			config.api = {
-				runtime: 'node',
-				type: 'api',
-				start: 'npm run start',
-				install: {
-					command: legacyInstaller == 'yarn' ? 'yarn --mutex file --frozen-lockfile' : 'npm install',
-					watch: [
-						legacyInstaller === 'yarn' ? 'yarn.lock' : 'package-lock.json',
-					]
-				},
-				dev: {
-					command: (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.dev && 'npm run dev') || 'npm run start',
-					watch: [
-						'*.js',
-					],
-				},
-			}
-			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.build) {
-				config.api.build = 'npm run build'
-			}
-			if (legacyPackage && legacyPackage.scripts && legacyPackage.scripts.test) {
-				config.api.test = 'npm run test'
-			}
-		}
-
 		if (shouldDie) {
 			throw new Error(shouldDie)
 		}
@@ -682,7 +633,8 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 		if (!config) {
 			logAction(parentActionId, { type: 'info', title: 'no .ultima.yml found', description: 'assuming nodejs api app', completedAt: true })
 		} else {
-			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} resources to deploy`, completedAt: true })
+			const plural = Object.keys(config).length > 1
+			logAction(parentActionId, { type: 'debug', title: `Found ${Object.keys(config).length} ${plural ? 'resources': 'resource'} to deploy`, completedAt: true })
 		}
 
 		if (hasAPI) {
@@ -723,8 +675,6 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 				...genBucketEnv(config, user, repository, ref)
 			}
 		}
-
-		const codeTarUrl = `${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`
 
 		await Promise.all(
 			Object.entries(config)
@@ -797,7 +747,7 @@ const runTests = async ({ ref, after, repository, pusher, commits }) => {
 }
 
 module.exports = {
-	runTests,
+	runPipeline,
 	genBucketEnv,
 	genBucketPass,
 	deployBucketResource,

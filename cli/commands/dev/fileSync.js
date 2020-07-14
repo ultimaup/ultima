@@ -13,12 +13,6 @@ const apiClient = require('./client')
 const repoRelative = (...loc) => {
 	return p.resolve('/', ...loc).substring(1)
 }
-const removeLeadingSlash = (str) => {
-	if (str[0] === '/') {
-		return str.substring(1)
-	}
-	return str
-}
 
 const FileSync = () => {
 

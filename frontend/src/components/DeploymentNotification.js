@@ -1,13 +1,13 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 
 import StatusDot from './StatusDot'
 import {useActions} from '../hooks/useActions'
 
 const Container = styled.div`
-    position: absolute;
-    margin-left: 6px;
-    margin-top: -4px;
+    display: inline-block;
+
+    ${({ hasLiveAction }) => hasLiveAction && `margin-left: 9px;`}
 `
 
 const DeploymentNotification = ({ owner, repoName }) => {
@@ -15,7 +15,7 @@ const DeploymentNotification = ({ owner, repoName }) => {
     const hasLiveAction = actions && actions.some(a => !a.completedAt)
 
     return (
-        <Container>
+        <Container hasLiveAction={hasLiveAction}>
             {hasLiveAction && <StatusDot />}
         </Container>
     )

@@ -1,5 +1,5 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled from 'styled-components/macro'
 import { Switch, Route, Link } from 'react-router-dom'
 
 import Terms from './Terms'
@@ -50,7 +50,7 @@ export const LegalContent = styled.div`
         max-width: 840px;
     }
     .Callout {
-        border-left: 3px solid white;
+        border-left: 3px solid ${({ theme: { offWhite } }) => offWhite};
         display: inline-block;
         padding-left: 12px;
     }
@@ -106,7 +106,7 @@ const List = () => (
 )
 
 const Legals = () => (
-    <LegalContent>
+    <LegalContent id="ultima-root">
         <a href="/" className="back">{'<--'} back to Ultima</a>
         <Container>
             <List />
