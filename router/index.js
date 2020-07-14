@@ -196,6 +196,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/dev-bucket`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/config-generator`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/vcs`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/github`, destination: MGMT_ENDPOINT },
     ]
 }
 
