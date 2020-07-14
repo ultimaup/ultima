@@ -1,18 +1,31 @@
 const { serverWithMiddleware } = require('./server')
 const { getSchemaEnv, genPass } = require('../dbMgmt')
 const jwt = require('../jwt')
+const Repository = require('../db/Repository')
+const GithubRepository = require('../db/GithubRepository')
 
 const {
     PG_BROKER_PORT,
 } = process.env
+
+const userCanAccessRepo = async (usr, environment) => {
+    if (environment.startsWith(usr.username.toLowerCase())) {
+        return true
+    }
+
+    const ultimaRepos = await Repository.query().whereIn('fullName', GithubRepository.query().select('full_name').where({ username }))
+    return ultimaRepos.map(ur => ur.fullName.split('/').join('-')).some(name => {
+        return environment.startsWith(`${name}-`)
+    })
+}
 
 const getConnectionDetails = async ({ database, user }) => {
     const environment = database
     const token = user
 
     const usr = await jwt.verify(token)
-    // naiive af
-    if (!environment.startsWith(usr.username.toLowerCase())) {
+    
+    if (!await userCanAccessRepo(usr, environment)) {
         throw new Error('unauthorized')
     }
 
