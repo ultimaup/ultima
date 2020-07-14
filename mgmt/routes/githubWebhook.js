@@ -77,7 +77,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 					})
 				}
 
-				await runPipeline({
+				runPipeline({
 					...payload,
 					pusher: payload.sender,
 					codeZipUrl,
