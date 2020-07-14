@@ -186,6 +186,7 @@ const typeDefs = gql`
         getUltimaYml(owner: String, repoName: String, branch: String, force: Boolean): File
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
+        getHasGithubApp: Boolean
     }
 
     type Mutation {
@@ -257,6 +258,13 @@ const listGithubRepos = async (accessToken, username) => {
 const resolvers = {
     JSON: GraphQLJSON,
     Query: {
+        getHasGithubApp: (parent, args, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+            const { username } = context.user
+            return github.doesUserHaveInstallation(username)
+        },
         getLoginSession: (parent, { id }) => auth.getLoginSession(id),
         getUltimaYml: async (parent, { owner, repoName, branch }, context) => {
             const { username } = context.user
