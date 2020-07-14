@@ -207,11 +207,11 @@ const unique = myArray => [...new Set(myArray)]
 
 const listGithubRepos = async (accessToken, username) => {
     const repos = await github.listRepos({ accessToken })
-    const repoIds = repos.map(r => r.id)
+    const repoIds = repos.map(r => `${r.id}`)
 
     const existing = await GithubRepository.query().where({ username })
-    const existingIds = existing.map(r => r.id)
-    const newRepos = repos.filter(r => !existingIds.includes(r.id))
+    const existingIds = existing.map(r => `${r.id}`)
+    const newRepos = repos.filter(r => !existingIds.includes(`${r.id}`))
 
     const deletedRepoIds = existingIds.filter(id => !repoIds.includes(id))
 
@@ -277,15 +277,19 @@ const resolvers = {
         },
         listRepos: async (parent, { force, vcs }, context) => {
             const { githubAccessToken, username } = context.user
+
             if (vcs === 'github') {
                 if (!githubAccessToken) {
                     throw new Error('unauthorized')
                 }
                 
                 let results = await GithubRepository.query().where({ username })
+                let recheckAccess = false
                 if (!results.length || force) {
                     await listGithubRepos(githubAccessToken, username)
                     results = await GithubRepository.query().where({ username })
+                    console.log(force, results.length)
+                    recheckAccess = true
                 }
 
                 const ultimaRepos = await Repository.query().whereIn('fullName', results.map(r => r.full_name))
@@ -293,6 +297,10 @@ const resolvers = {
                 ultimaRepos.forEach(({ fullName }) => {
                     urMap[fullName] = true
                 })
+
+                if (recheckAccess) {
+                    auth.ensureResourceAccess(username, Object.keys(urMap).filter(fname => fname.split('/')[0] !== username)).catch(console.error)
+                }
 
                 return results.map(repo => {
                     return {
@@ -527,17 +535,11 @@ const resolvers = {
     },
     Mutation: {
         createLoginSession: auth.createLoginSession,
-        getMinioToken: async (parent, { bucketName }, context) => {
+        getMinioToken: async (parent, args, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')
             }
-
-            // const resource = await Resource.query().where({ deploymentId: bucketName }).first()
-            // TODO: check user has access to resource.repoName
-            const username = bucketName.split('-')[0]
-            if (context.user.username !== username) {
-                console.log('getMinioToken:', context.user.username, 'accessing', username)
-            }
+            const { username } = context.user
             const password = genBucketPass(username)
             const token = await s3.getWebLoginToken({ username, password })
 

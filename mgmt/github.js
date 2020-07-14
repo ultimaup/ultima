@@ -60,9 +60,7 @@ const listRepos = async ({ accessToken }) => {
 		},
 	})
 
-	let repos = []
-
-	await Promise.all(
+	const repos = await Promise.all(
 		installations.map(async ({ id }) => {
 			const repositories = await octokit.paginate("GET /user/installations/:installation_id/repositories", {
 				installation_id: id,
@@ -71,12 +69,12 @@ const listRepos = async ({ accessToken }) => {
 					accept: "application/vnd.github.machine-man-preview+json",
 				},
 			})
-			repos.push(repositories.map(repo => {
+			return repositories.map(repo => {
 				return {
 					...repo,
 					installationId: id,
 				}
-			}))
+			})
 		})
 	)
 

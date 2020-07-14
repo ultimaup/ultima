@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+import { useState } from 'react'
 
 const LIST_REPOS = gql`
     query listGithubRepos($force: Boolean) {
@@ -12,12 +13,21 @@ const LIST_REPOS = gql`
     }
 `
 
-const useRepositories = (force) => {
-    const { loading, error, data } = useQuery(LIST_REPOS, { variables: { force } })
+const useRepositories = () => {
+    const [refetchLoading, setRefetchLoading] = useState(false)
+    const { loading, error, data, refetch } = useQuery(LIST_REPOS)
 
     return {
-        loading,
+        loading: loading || refetchLoading,
         error,
+        refresh: () => {
+            setRefetchLoading(true)
+            refetch({
+                force: true,
+            }).then(() => {
+                setRefetchLoading(false)
+            })
+        },
         repositories: data ? [...data.listRepos].sort((a,b) => {
             if (a.isUltima) {
                 return 1
