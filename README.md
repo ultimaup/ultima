@@ -1,6 +1,6 @@
 ![Ultima logo](frontend/public/logo.svg)
 
-[![Build Status](https://drone.onultima.com/api/badges/joshbalfour/platform/status.svg)](https://drone.onultima.com/joshbalfour/platform)
+[![Build Status](https://drone.onultima.com/api/badges/ultimaup/ultima/status.svg)](https://drone.onultima.com/ultimaup/ultima)
 ## 
 
 # Ultima Cloud Platform
@@ -24,12 +24,12 @@ Configuration is stored in a `.ultima.yml` file in your repository. Changes made
 
 
 ## Getting Started
-The quickest way to get started with ultima is to head over to [build.onultima.com](https://build.onultima.com) and login with your GitHub. From there check out our [getting started docs](https://build.onultima.com/docs/#/) and enjoy!
+The quickest way to get started with ultima is to head over to [build.onultima.com](https://build.onultima.com) and login with your GitHub. From there check out our [getting started docs](https://build.onultima.com/docs/#/install/getting-started-ultima-project) and enjoy!
 
 ## Contributing
 Our roadmap is available over on [the issues/milestones tab](https://github.com/ultimaup/ultima/milestones), if you'd like to work on any of those issues please check it's not already marked as in progress on a [project board](https://github.com/ultimaup/ultima/projects). I'm always available in the [community chat](https://build.onultima.com/community) for any questions you have.
 
 ## Self hosting
-If you'd like to host your own instance of Ultima [check out our self-hosting guide](https://build.onultima.com/docs/#/).
+If you'd like to host your own instance of Ultima [check out our self-hosting guide](https://build.onultima.com/docs/#//install/local-ultima-deployment).
 
 > Note: Ultima is currently early-access, features are subject to change. To keep up to date [follow us on twitter](https://twitter.com/ultimaup) and join our [community slack](https://build.onultima.com/community).
