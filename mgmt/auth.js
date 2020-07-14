@@ -138,6 +138,7 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
             token,
         })
         redirectUrl = `${redirectUrl}&backTo=cli`
+        res.cookie('ultima_cli_sessionId', null, { httpOnly: true, maxAge: 0 })
     }
 
     res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
