@@ -156,7 +156,21 @@ const ResourceName = styled.div`
     color: ${props => readableColor(stringToColour(props.resourceName))};
 `
 
-const Action = ({ type, title, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
+const RepoBranch = styled.div`
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    svg {
+        margin-left: 0;
+    }
+    span {
+        font-weight: normal;
+        
+        margin-top: 2px;
+    }
+`
+
+const Action = ({ type, title, withRepo, repoName, description, owner, createdAt, completedAt, metadata, branch, hash, noLink, to, onClick }) => {
     const data = JSON.parse(metadata)
 
     if (!title) {
@@ -175,8 +189,13 @@ const Action = ({ type, title, description, owner, createdAt, completedAt, metad
                 </Status> */}
                 <StatusDot complete={!!completedAt} status={type} />
                 <Body>
-                    <Octicon icon={GitBranchIcon}/>
-                    {branch}
+                    <RepoBranch>
+                        {withRepo ? repoName : null}
+                        <span>
+                            <Octicon icon={GitBranchIcon}/>
+                            {branch}
+                        </span>
+                    </RepoBranch>
                     <ProfilePic src={imageUrl} title="pusher profile pic" />
                     <ShaLabel>
                         {hash.substring(0,9)}
@@ -271,7 +290,7 @@ const ActionDetails = () => {
     )
 }
 
-export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, onClick }) => {
+export const ActionList = ({ style, owner, branch, withRepo, repoName, limit = Infinity, onClick }) => {
     const { loading, error, actions } = useActions({ owner, repoName })
 
     if (loading) {
@@ -290,7 +309,7 @@ export const ActionList = ({ style, owner, branch, repoName, limit = Infinity, o
     return (
         <ActionsContainer style={style}>
             {actions.filter(a => !branch || a.branch === branch).filter((a, i) => i < limit).map(action => (
-                <Action key={action.id} {...action} to={`/repo/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
+                <Action withRepo={withRepo} key={action.id} {...action} to={`/repo/${owner || action.owner}/${repoName || action.repoName}/deployments/${action.id}`} onClick={() => onClick && onClick(action.id)} />
             ))}
         </ActionsContainer>
     )
