@@ -3,7 +3,7 @@ const got = require('got')
 const uuid = require('uuid').v4
 
 const Repository = require('../db/Repository')
-const { runTests } = require('../ci')
+const { runPipeline } = require('../ci')
 const { getInstallationToken, getUltimaYml, removeInstallation, addInstallation } = require('../github')
 
 const {
@@ -75,7 +75,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 					})
 				}
 
-				await runTests({
+				await runPipeline({
 					...payload,
 					pusher: payload.sender,
 					codeZipUrl,

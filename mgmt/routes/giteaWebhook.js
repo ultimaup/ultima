@@ -7,7 +7,7 @@ const {
 	GITEA_URL,
 } = process.env
 
-const { runTests } = require('../ci')
+const { runPipeline } = require('../ci')
 const { giteaStream } = require('../gitea')
 const Repository = require('../db/Repository')
 
@@ -51,7 +51,7 @@ router.post('/gitea-hook', async (req, res) => {
 				const codeZipUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.zip`)
 				const codeTarUrl = async () => giteaStream(`${GITEA_URL}/${repository.full_name}/archive/${after}.tar.gz`)
 
-				runTests({
+				runPipeline({
 					...req.body,
 					codeZipUrl,
 					codeTarUrl,

@@ -533,7 +533,7 @@ const removeLeadingSlash = (str) => {
 	return str
 }
 
-const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, codeZipUrl }) => {
+const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl, codeZipUrl }) => {
 	console.log(`gitea webhook triggered because ${pusher.login} pushed ${after} to ${ref} on ${repository.full_name}`)
 
 	const branch = ref.split('refs/heads/')[1]
@@ -747,7 +747,7 @@ const runTests = async ({ ref, after, repository, pusher, commits, codeTarUrl, c
 }
 
 module.exports = {
-	runTests,
+	runPipeline,
 	genBucketEnv,
 	genBucketPass,
 	deployBucketResource,
