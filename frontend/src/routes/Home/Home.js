@@ -1,5 +1,6 @@
 import React from 'react'
 import Octicon, { MarkGithubIcon } from '@primer/octicons-react'
+import { Link } from 'react-router-dom'
 import './Home.css'
 
 const Home = () => (
@@ -63,6 +64,9 @@ const Home = () => (
           <div className="link-list">
               <span>Developers</span>
               <a href="/docs">Documentation</a>
+              <a target="_blank" rel="noopener noreferrer" href="https://github.com/ultimaup/ultima">
+                Github
+              </a>
               <a href="https://status.onultima.com/">Service Status</a>
               <a id="login" href="/auth/github">
                 <Octicon icon={MarkGithubIcon} />
@@ -74,6 +78,13 @@ const Home = () => (
               <a href="https://twitter.com/ultimaup">Twitter</a>
               <a href="https://medium.com/words-from-ultima">Medium</a>
               <a href="mailto:josh@onultima.com">Contact</a>
+          </div>
+          <div className="link-list">
+              <span>Agreements</span>
+              <Link to="/legals/aup">Acceptable Use Policy</Link>
+              <Link to="/legals/terms">Terms of Service</Link>
+              <Link to="/legals/privacy">Privacy Policy</Link>
+              <Link to="/legals/dmca">DMCA</Link>
           </div>
         </div>
       </div>

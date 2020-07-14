@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components/macro'
-import Octicon, { PlusIcon, TriangleDownIcon, PersonIcon, SignOutIcon } from '@primer/octicons-react'
+import Octicon, { LogoGithubIcon, TriangleDownIcon, PersonIcon, SignOutIcon } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
@@ -236,6 +236,9 @@ const Navbar = () => {
                         </Link>
                     </Brand>
                     <Right>
+                        <a target="_blank" rel="noopener noreferrer" href="https://github.com/ultimaup/ultima">
+                            <Octicon icon={LogoGithubIcon} />
+                        </a>
                         <NavLink href="/docs">
                             Docs
                         </NavLink>
