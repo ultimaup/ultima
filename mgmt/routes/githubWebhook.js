@@ -24,8 +24,8 @@ webhooks.on("*", async ({ id, name, payload }) => {
 				
 		// 	}
 		// }
-		if (name === 'installation' && action === 'deleted') {
-			const { action, installation } = payload
+		if (name === 'installation' && payload.action === 'deleted') {
+			const { installation } = payload
 			const installationId = installation.id
 			await removeInstallation(installationId)
 		} else if (name === 'push') {
