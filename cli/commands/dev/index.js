@@ -14,7 +14,6 @@ const API = require('./api')
 const UI = require('./ui')
 
 const config = require('../../config')
-const checkInUltimaFolder = require('../up/checkInUltimaFolder')
 const makeTunnel = require('../db/makeTunnel')
 const getRepoName = require('./getRepoName')
 
