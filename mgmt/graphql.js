@@ -288,7 +288,6 @@ const resolvers = {
                 if (!results.length || force) {
                     await listGithubRepos(githubAccessToken, username)
                     results = await GithubRepository.query().where({ username })
-                    console.log(force, results.length)
                     recheckAccess = true
                 }
 
