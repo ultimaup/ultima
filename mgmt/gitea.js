@@ -160,7 +160,7 @@ const getUser = username => giteaFetch(`/api/v1/user`, {}, username).json()
 
 const getUserRepos = async ({ username }) => {
 	const user = await getUser(username)
-	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&limit=1000&exclusive=true`, {}, username).json()
+	const { data } = await giteaFetch(`/api/v1/repos/search?uid=${user.id}&limit=1000`, {}, username).json()
 
 	return data.sort((a, b) => {
 		return b.pushed_at - a.pushed_at
