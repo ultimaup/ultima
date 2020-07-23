@@ -58,7 +58,7 @@ const aliasConfig = ({ alias, middlewares, key }) => (alias ? `
         certResolver = "${CERT_RESOLVER_HTTP}"
         [[http.routers.${key}.tls.domains]]
             main = "${alias}"
-            sans = ["${alias}"]` : ''}` : ''
+            sans = ["${alias}", "sslfix.${alias}"]` : ''}` : ''
 )
 
 const genConfig = ({ source, destination, alias, extensions = [] }) => {
