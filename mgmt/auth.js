@@ -123,7 +123,7 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
     }
 
     // ensure gitea user
-    await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
+    // await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
 
     // ensure kibana user
     const { sid } = await kibana.ensureKibanaUser({ email, username, fullName: name, password: user.id })
@@ -131,7 +131,12 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
     // ensure minio user
     await s3.ensureFileUserExists(username, genBucketPass(username))
 
-    const sessionId = await getGiteaSession(username, user.id)
+    try {
+        const sessionId = await getGiteaSession(username, user.id)
+        res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
+    } catch (e) {
+        //
+    }
 
     let redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
         token,
@@ -145,11 +150,9 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
         redirectUrl = `${redirectUrl}&backTo=cli`
         res.cookie('ultima_cli_sessionId', null, { httpOnly: true, maxAge: 0 })
     }
-
-    res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
+    
     res.cookie('sid', sid, { httpOnly: true, path: '/kibana' })
     res.cookie('ultima_token', token, { httpOnly: true })
-
 
     res.redirect(302, redirectUrl)
 })
