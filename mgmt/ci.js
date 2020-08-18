@@ -162,7 +162,7 @@ const removeOrphans = async ({
 }
 
 const buildResource = async ({ invocationId, config, resourceName, repository,user, schemaEnv, codeTarUrl, parentActionId, after, branch, repo }) => {
-	const builderEndpointId = `${repository.full_name.split('/').join('-')}-builder-${resourceName}-${uuid()}`
+	const builderEndpointId = `${repository.full_name.split('/').join('-').split('.').join('-')}-builder-${resourceName}-${uuid()}`
 
 	if (!config[resourceName].build && !config[resourceName].install && !config[resourceName].test && config[resourceName].type === 'web') {
 		return {
@@ -213,7 +213,7 @@ const buildResource = async ({ invocationId, config, resourceName, repository,us
 	let builtBundleKey
 	const buildActionId = await logAction(parentActionId, { type: 'info', title: 'building', data: { logTag: builderEndpointId, resourceName } })
 	try {
-		builtBundleKey = `${repository.full_name.split('/').join('-')}/${resourceName}/${after}.tar.gz`
+		builtBundleKey = `${repository.full_name.split('/').join('-').split('.').join('-')}/${resourceName}/${after}.tar.gz`
 		const { writeStream, promise } = s3.uploadStream({ Key: builtBundleKey })
 
 		await pipeline(
@@ -346,7 +346,7 @@ const routesEnv = (config, { branch, repo, user }) => {
 }
 
 const deployApiResource = async ({ ref, invocationId, repository, config, resourceName, after, parentActionId, resultingBundleLocation, schemaEnv, branch, repo, user }) => {
-	const resultingEndpointId = `${repository.full_name.split('/').join('-')}-${resourceName}-${after}`
+	const resultingEndpointId = `${repository.full_name.split('/').join('-').split('.').join('-')}-${resourceName}-${after}`
 	let endpointUrl
 	const deployActionId = await logAction(parentActionId, { type: 'info', title: 'deploying api', resourceName })
 	const runtime = (config[resourceName] && config[resourceName].runtime) || 'node'
@@ -461,7 +461,7 @@ const genBucketPass = seed => crypto.createHash('sha256').update(`${seed}-${SALT
 
 const genBucketHash = (repoName, ref) => crypto.createHash('sha256').update([repoName, ref].join('/')).digest('hex').substring(0, 8)
 
-const genBucketName = (resourceName, repository, ref) => `${repository.full_name.split('/')[1].substring(0,40)}-${genBucketHash(repository.full_name.split('/')[1], ref)}-${resourceName}`
+const genBucketName = (resourceName, repository, ref) => `${repository.full_name.split('/')[1].split('.').join('-').substring(0,40)}-${genBucketHash(repository.full_name.split('/')[1].split('.').join('-'), ref)}-${resourceName}`
 
 const deployBucketResource = async ({ owner, resourceName, ref, repository, parentActionId, invocationId }) => {
 	const deployBucketActionId = parentActionId && (await logAction(parentActionId, { type: 'info', title: 'Allocating bucket', data: { resourceName } }))
@@ -639,10 +639,10 @@ const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl
 			const dbActionId = await logAction(parentActionId, { type: 'info', title: 'allocating schema' })
 
 			try {
-				const schema = `${repository.full_name.split('/').join('-')}-${branch}`
+				const schema = `${repository.full_name.split('/').join('-').split('.').join('-')}-${branch}`
 				const schemaInfo = {
-					username: `${repository.full_name.split('/').join('-')}-${branch}`,
-					password: genPass(`${repository.full_name.split('/').join('-')}-${branch}`),
+					username: `${repository.full_name.split('/').join('-').split('.').join('-')}-${branch}`,
+					password: genPass(`${repository.full_name.split('/').join('-').split('.').join('-')}-${branch}`),
 					schema,
 				}
 
