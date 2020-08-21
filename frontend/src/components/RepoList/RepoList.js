@@ -372,7 +372,6 @@ const UltimaRepoList = () => {
 const RepoList = () => (
     <>
         <GithubRepoList />
-        <UltimaRepoList />
     </>
 )
 
