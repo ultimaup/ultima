@@ -55,7 +55,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 
 				const codeZipUrl = async () => {
 					const token = await getInstallationToken(installationId)
-					const url = `https://api.github.com/repos/${repository.full_name}/zipball`
+					const url = `https://api.github.com/repos/${repository.full_name}/zipball/${ref}`
 					return got.stream(url, {
 						headers: {
 							Accept: '*/*',
@@ -67,7 +67,7 @@ webhooks.on("*", async ({ id, name, payload }) => {
 
 				const codeTarUrl = async () => {
 					const token = await getInstallationToken(installationId)
-					const url = `https://api.github.com/repos/${repository.full_name}/tarball`
+					const url = `https://api.github.com/repos/${repository.full_name}/tarball/${ref}`
 					return got.stream(url, {
 						headers: {
 							Accept: '*/*',
