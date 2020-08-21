@@ -233,6 +233,7 @@ const feedbackDeploymentStatus = async (actionId) => {
 			owner,
 			repo: repoName,
 			ref: branch,
+			auto_merge: false,
 
 			environment: `Ultima - ${branch}`,
 			production_environment: branch === 'master' || branch === 'main',
