@@ -347,7 +347,8 @@ const resolvers = {
                     stage,
                 }
             }).map(environment => {
-                const resources = eq
+                const resources = {}
+                eq
                     .filter(e => e.stage === environment.stage)
                     .filter(({ type, routeId }) => {
                         if (type === 'web' || type === 'api') {
@@ -381,10 +382,15 @@ const resolvers = {
                             route,
                         }
                     })
+                    .forEach(resource => {
+                        if (!resources[resource.deploymentId]) {
+                            resources[resource.deploymentId] = resource
+                        }
+                    })
 
                 return {
                     ...environment,
-                    resources,
+                    resources: Object.values(resources),
                 }
             }).filter(e => !!e.resources.length)
 
