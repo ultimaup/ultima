@@ -406,8 +406,11 @@ const resolvers = {
             let q = Deployment.query()
             
             if (!repoName) {
+                const usersGithubRepos = GithubRepository.query().select('full_name').where('username', context.user.username)
+                const userDeploymentIds = Resource.query().select('deploymentId').whereIn('repoName', usersGithubRepos)
+                
                 q = q.whereIn('id',
-                        Route.query().select('deploymentId').where('deploymentId', 'like', `${o}-%`)
+                        Route.query().select('deploymentId').whereIn('deploymentId', userDeploymentIds)
                     )
             } else {
                 q = q.where('repoName', `${owner}/${repoName}`).where('stage', 'like', 'refs/%')
