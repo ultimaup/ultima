@@ -5,6 +5,9 @@ const {
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
     BILLING_DISABLED,
+
+    BUSINESS_TIER_PRICE_ID,
+    PERSONAL_TIER_PRICE_ID,
 } = process.env
 
 const bodyParser = require('body-parser')
