@@ -140,13 +140,14 @@ const repoPaidFor = async ({ owner, repo }) => {
     if (BILLING_DISABLED) {
         return true
     }
+    
     const ownerUser = await User.query().where('username', owner).first()
     if (ownerUser && ownerUser.tier) {
-        const userRepos = await Repository.query().where('fullName', 'like', `${ownerUser}/%`).count()
-        return userRepos < 5 
+        const [{count}] = await Repository.query().where('fullName', 'like', `${ownerUser}/%`).count()
+        return count < 5 
     }
 
-    const usersWithAccess = await User.query().whereIn('username', GithubRepository.query('username').where('full_name', `${owner}/${repo}`))
+    const usersWithAccess = await User.query().whereIn('username', GithubRepository.query().select('username').where('full_name', `${owner}/${repo}`))
     return usersWithAccess.some(user => {
         return user.tier === 'business'
     })
