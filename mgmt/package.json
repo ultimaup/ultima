@@ -31,6 +31,7 @@
     "pg": "^8.1.0",
     "pg-protocol": "^1.2.2",
     "slugify": "^1.4.0",
+    "stripe": "^8.91.0",
     "tar-fs": "^2.1.0",
     "tar-stream": "^2.1.2",
     "tough-cookie": "^3.0.0",

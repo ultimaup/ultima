@@ -11,6 +11,7 @@ const { ensureAllLiveDeploymentsExist } = require('./boot')
 
 const migrate = require('./db/migrate')
 const webhooks = require('./routes/githubWebhook')
+const billing = require('./billing')
 
 const {
     PORT = 3000,
@@ -25,7 +26,7 @@ app.use(auth.router)
 dev(app)
 migrate().catch(console.error)
 graphql(app)
-
+billing.webhook(app)
 app.use(webhooks.middleware)
 
 app.get('/', (req, res) => {

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react'
 import styled, { css } from 'styled-components/macro'
 import { useHistory } from 'react-router-dom'
 
-import jwtDecode from 'jwt-decode'
+// import jwtDecode from 'jwt-decode'
 
 import { setToken } from '../../utils/token'
+// import Tiers from '../../components/Billing'
 
 const LoginButton = (props) => (
     <svg width="260" height="40" viewBox="0 0 260 40" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -24,7 +25,7 @@ const LoginContainer = styled.div`
     justify-content: center;
     flex-direction: column;
     width: 100%;
-    height: 100vh;
+    min-height: 100vh;
 
     @media (prefers-color-scheme: light) {
         svg {
@@ -38,7 +39,7 @@ const LoginContainer = styled.div`
         color: ${({ theme: { offWhite } }) => offWhite};
 
         a {
-            color: ${({ theme: { offWhite } }) => offWhite};
+            /* color: ${({ theme: { offWhite } }) => offWhite}; */
         }
         .ready, .nav {
             background: #191919;
@@ -88,8 +89,8 @@ const ProfilePic = styled.div`
 
 const Login = () => {
     const [auth, setAuth] = useState(null)
-    const urlParams = new URLSearchParams(window.location.search)
-    const isWaitlist = !!urlParams.get('waitlist')
+    // const urlParams = new URLSearchParams(window.location.search)
+    // const isWaitlist = !!urlParams.get('waitlist')
     const history = useHistory()
 
     useEffect(() => {
@@ -112,7 +113,7 @@ const Login = () => {
         }
         const urlParams = new URLSearchParams(window.location.search)
 
-        if (auth && !isWaitlist) {
+        if (auth) {
             let redirectTo = window.localStorage.getItem('authRedirect') || '/'
             if (urlParams.get('backTo') && urlParams.get('backTo') === 'cli') {
                 redirectTo = '/user/login/cli'
@@ -120,30 +121,36 @@ const Login = () => {
             window.localStorage.removeItem('authRedirect')
             history.push(redirectTo)
         }
-    }, [auth, isWaitlist])
+    }, [auth])
 
-    let me
-    if (isWaitlist && auth) {
-        try {
-            me = jwtDecode(auth.token)
-        } catch (e) {
-            console.error(e)
-        }
-    }
+    // let me
+    // if (isWaitlist && auth) {
+    //     try {
+    //         me = jwtDecode(auth.token)
+    //     } catch (e) {
+    //         console.error(e)
+    //     }
+    // }
 
-    if (isWaitlist && me) {
-        return (
-            <LoginContainer id="ultima-root">
-                <ProfilePic src={me.imageUrl} />
-                <h1>You're on the waitlist</h1>
-                <p>To get earlier access, message @josh in the community</p>
-                <a className="button" href="/community">
-                <div className="slack-logo"></div>
-                    Join the Insiders community
-                </a>
-            </LoginContainer>
-        )
-    }
+    // if (isWaitlist && me) {
+    //     return (
+    //         <LoginContainer id="ultima-root">
+    //             {/* <ProfilePic src={me.imageUrl} /> */}
+    //             <h1>Welcome to Ultima Early Access!</h1>
+    //             <p>To get started, tell us how you're going to use Ultima:</p>
+
+    //             <Tiers />
+                
+    //             <span style={{ marginBottom: 8 }}>Cancel anytime for a pro-rated refund</span>
+
+    //             <span style={{ marginBottom: 8 }}>Any questions?</span>
+    //             <a className="button" href="/community">
+    //                 <div className="slack-logo"></div>
+    //                 Join the Insiders community
+    //             </a>
+    //         </LoginContainer>
+    //     )
+    // }
 
     return (
         <LoginContainer id="ultima-root">
