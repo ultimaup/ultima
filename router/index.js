@@ -3,6 +3,7 @@ const path = require('path')
 const express = require('express')
 const bodyParser = require('body-parser')
 const fetch = require('node-fetch')
+const isValidDomain = require('is-valid-domain')
 
 const Route = require('./db/Route')
 
@@ -232,7 +233,18 @@ const ensurePropogation = async key => {
 
 app.post('/route', async (req, res) => {
     let { subdomain, source, destination, alias, extensions, deploymentId } = req.body
+
     source = source || `${subdomain}.${PUBLIC_ROUTE_ROOT}`
+
+    if (alias) {
+        if (!isValidDomain(alias)) {
+            throw new Error('invalid custom domain')
+        }
+
+        if (alias.includes(PUBLIC_ROUTE_ROOT)) {
+            throw new Error('invalid custom domain')
+        }
+    }
 
     await ensureConfig({ source, alias, destination, extensions })
     await Route.set({ source, destination, alias, extensions, deploymentId })

@@ -7,6 +7,7 @@
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "fs-extra": "^9.0.0",
+    "is-valid-domain": "^0.0.15",
     "knex": "^0.21.1",
     "node-fetch": "^2.6.0",
     "objection": "^2.1.3",
