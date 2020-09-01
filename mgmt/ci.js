@@ -466,6 +466,7 @@ const genBucketName = (resourceName, repository, ref) => `${repository.full_name
 const deployBucketResource = async ({ owner, resourceName, ref, repository, parentActionId, invocationId }) => {
 	const deployBucketActionId = parentActionId && (await logAction(parentActionId, { type: 'info', title: 'Allocating bucket', data: { resourceName } }))
 	try {
+		await s3.ensureFileUserExists(owner, genBucketPass(owner))
 		// create bucket as user
 		const actualBucketName = await s3.ensureFileBucket(genBucketName(resourceName, repository, ref), owner)
 	
