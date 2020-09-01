@@ -11,6 +11,7 @@ const stripe = require('stripe')(STRIPE_SECRET)
 
 const User = require('./db/User')
 const GithubRepository = require('./db/GithubRepository')
+const Repository = require('./db/Repository')
 
 const tiers = {
     business: 'price_1H5DbfAGuVE9p5CbrcwHxXDY',
@@ -134,7 +135,8 @@ const getStripeKey = () => STRIPE_KEY
 const repoPaidFor = async ({ owner, repo }) => {
     const ownerUser = await User.query().where('username', owner).first()
     if (ownerUser && ownerUser.tier) {
-        return true
+        const userRepos = await Repository.query().where('fullName', 'like', `${ownerUser}/%`).count()
+        return userRepos < 5 
     }
 
     const usersWithAccess = await User.query().whereIn('username', GithubRepository.query('username').where('full_name', `${owner}/${repo}`))
