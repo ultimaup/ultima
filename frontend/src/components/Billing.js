@@ -115,6 +115,7 @@ const Tier = ({ title, benefits, children }) => (
 
 const Tiers = ({ className }) => {
     const [error, setError] = useState(null)
+    const [expanded, setExpanded] = useState(false)
     const { stripeKey } = useStripeKey()
 
     useEffect(() => {
@@ -142,7 +143,10 @@ const Tiers = ({ className }) => {
     return (
         <Billing className={className}>
             <TierHeading>To start using Ultima, please select a tier</TierHeading>
-            <TiersContainer>
+            {!expanded && (
+                <button style={{ display: 'block', margin: 'auto' }} onClick={() => setExpanded(true)}>View Options</button>
+            )}
+            {expanded && <TiersContainer>
                 <Tier title="Hobby" benefits={[
                     '1 repository',
                     'Unlimited branches',
@@ -164,7 +168,7 @@ const Tiers = ({ className }) => {
                 ]}>
                     <TierButton price="£150 / month" tier="business" onClick={onClick} />
                 </Tier>
-            </TiersContainer>
+            </TiersContainer>}
             {error && <p>{error}</p>}
         </Billing>
     )
