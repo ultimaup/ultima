@@ -18,8 +18,8 @@ const GithubRepository = require('./db/GithubRepository')
 const Repository = require('./db/Repository')
 
 const tiers = {
-    business: 'price_1H5DbfAGuVE9p5CbrcwHxXDY',
-    personal: 'price_1HMwHZAGuVE9p5CbCxygA4oL',
+    business: BUSINESS_TIER_PRICE_ID,
+    personal: PERSONAL_TIER_PRICE_ID,
 }
 
 const handleStripeEvent = async event => {
