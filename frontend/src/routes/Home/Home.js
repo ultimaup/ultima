@@ -1,18 +1,42 @@
 import React from 'react'
+import styled from 'styled-components'
 import Octicon, { MarkGithubIcon } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 import './Home.css'
 
+const AccouncementBanner = styled.a`
+  background: #ECB22E;
+  display: block;
+  text-align: center;
+  width: 100%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  color: black;
+`
+
 const Home = () => (
     <div id="ultima-root">
+      <AccouncementBanner href="/auth/github">
+        Ultima is now available in public early access! Click here to sign up.
+      </AccouncementBanner>
       <div className="nav">
         <div className="grid">
           <div className="logo" onClick={() => { window.location.href = '/' }}>
             <div className="logo-img"></div>
             <span className="logo-text">ultima</span>
           </div>
-          <a href="https://medium.com/words-from-ultima">Announcements</a>
-          <a href="https://twitter.com/ultimaup"><span className="mobile-hide">Live </span>updates</a>
+          <div style={{ flex: 1 }}>
+            <a href="https://medium.com/words-from-ultima">Announcements</a>
+            <a href="https://twitter.com/ultimaup"><span className="mobile-hide">Live </span>updates</a>
+            <a target="_blank" rel="noopener noreferrer" href="https://github.com/ultimaup/ultima">
+              View Source
+            </a>
+
+            </div>
+            <a id="login" href="/auth/github">
+              <Octicon icon={MarkGithubIcon} />
+              &nbsp;&nbsp;Log in
+            </a>
         </div>
       </div>
       <div className="section top">
@@ -20,10 +44,11 @@ const Home = () => (
           <h1>Build faster.</h1>
           <p>We’re building the most powerful, intuitive developer experience in the world. Ultima gives you everything you need to build, grow and manage your product. 
             <br /><br /> <a target="blank" rel="noopener" href="https://medium.com/words-from-ultima/announcing-ultima-build-faster-ship-faster-20ff1dd035a8">Read our announcement here</a> </p>
-          <a className="button" href="/community">
-            <div className="slack-logo"></div>
-            Join the Insiders community
-          </a>
+          
+          <a className="button" id="login" href="/auth/github">
+              <Octicon size={24} icon={MarkGithubIcon} />
+              &nbsp;&nbsp;Get Started
+            </a>
           <ul className="usps">
             <li>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -48,7 +73,7 @@ const Home = () => (
       </div>
       <div className="section ready">
         <div className="grid">
-          <h2>Ready to get early access?</h2>
+          <h2>Have any questions?</h2>
           <a className="button" href="/community">
             <div className="slack-logo"></div>
             Join the Insiders community
@@ -68,10 +93,6 @@ const Home = () => (
                 Github
               </a>
               <a href="https://status.onultima.com/">Service Status</a>
-              <a id="login" href="/auth/github">
-                <Octicon icon={MarkGithubIcon} />
-                &nbsp;&nbsp;Log in
-              </a>
           </div>
           <div className="link-list">
               <span>About</span>
