@@ -4,6 +4,7 @@ const {
     PUBLIC_ROUTE_ROOT,
     PUBLIC_ROUTE_ROOT_PROTOCOL,
     PUBLIC_ROUTE_ROOT_PORT,
+    BILLING_DISABLED,
 } = process.env
 
 const bodyParser = require('body-parser')
@@ -133,6 +134,9 @@ const webhook = app => {
 const getStripeKey = () => STRIPE_KEY
 
 const repoPaidFor = async ({ owner, repo }) => {
+    if (BILLING_DISABLED) {
+        return true
+    }
     const ownerUser = await User.query().where('username', owner).first()
     if (ownerUser && ownerUser.tier) {
         const userRepos = await Repository.query().where('fullName', 'like', `${ownerUser}/%`).count()
