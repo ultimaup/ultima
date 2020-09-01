@@ -45,7 +45,7 @@ export const LogFrame = ({ tag, className }) => {
 
     return (
         <LogContainer className={className}>
-            <a href={linkUrl}>View in Kibana &#x2197;</a>
+            <a target="_blank" href={linkUrl}>View in Kibana &#x2197;</a>
             <IframeWrapper>
                 <KibanaIframe src={iframeUrl} />
             </IframeWrapper>
