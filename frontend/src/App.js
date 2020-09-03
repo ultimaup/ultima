@@ -20,7 +20,6 @@ const RepoHome = React.lazy(() => import('./routes/RepoHome'))
 const DashboardHome = React.lazy(() => import('./routes/DashboardHome'))
 const CLI = React.lazy(() => import('./routes/CLI'))
 const ConfigGenerator = React.lazy(() => import('./routes/ConfigGenerator'))
-const Billing = React.lazy(() => import('./routes/Billing'))
 
 const SecurityRedirect = () => {
     window.location.href = '/assets/.well-known/security.txt'
@@ -50,7 +49,6 @@ const App = () => (
                     <BrowserRouter>
                         <Switch>
                             <Route path="/admin/waitlist" component={WaitlistAdmin} />
-                            <Route path="/billing" component={Billing} />
                             <Route path="/community" component={SlackRedirect} />
                             <Route path="/user/login/cli" component={CLI} />
                             <Route path="/user/login" component={Login} />

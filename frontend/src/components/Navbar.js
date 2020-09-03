@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled, { css } from 'styled-components/macro'
-import Octicon, { LogoGithubIcon, TriangleDownIcon, PersonIcon, SignOutIcon } from '@primer/octicons-react'
+import Octicon, { LogoGithubIcon, TriangleDownIcon, HeartFillIcon, SignOutIcon } from '@primer/octicons-react'
 import { Link } from 'react-router-dom'
 
 import { ControlledCLIModal } from './CLIModal'
@@ -9,6 +9,7 @@ import { Grid } from './Layout'
 import { ReactComponent as Logo } from './LogoWithText.svg'
 import jwtDecode from 'jwt-decode'
 import { getToken, clearToken } from '../utils/token'
+import usePortalUrl from '../hooks/usePortalUrl'
 
 const Container = styled.div`
     width: 100%;
@@ -159,6 +160,8 @@ const UserMenu = () => {
     const [isActive, setIsActive] = useState(false)
     const token = getToken()
     const user = token ? jwtDecode(token) : {}
+    const { portalUrl } = usePortalUrl()
+
     if (!token) {
         return <NavLink href="/auth/github">Sign in</NavLink>
     }
@@ -168,11 +171,15 @@ const UserMenu = () => {
             <Octicon icon={TriangleDownIcon} />
             <Dropdown isActive={isActive}>
                 <UserName>Signed in as {user.username}</UserName>
-                <Divider />
-                <NavLinkLink to={`/`}>
-                    <Octicon width={12} icon={PersonIcon} />
-                    Profile
-                </NavLinkLink>
+                {portalUrl && (
+                    <>
+                        <Divider />
+                        <NavLink href={portalUrl} target="_blank">
+                            <Octicon width={12} icon={HeartFillIcon} />
+                            Billing
+                        </NavLink>
+                    </>
+                )}
                 <Divider />
                 <NavLink onClick={() => {
                     clearToken()
@@ -232,7 +239,7 @@ const Navbar = () => {
                             <div>
                                 <Logo />
                             </div>
-                            <Badge>alpha</Badge>
+                            <Badge>early access</Badge>
                         </Link>
                     </Brand>
                     <Right>

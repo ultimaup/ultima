@@ -177,6 +177,11 @@
     background: #F9F9F9;
 }
 
+.button#login {
+    width: 140px;
+    justify-content: space-evenly;
+}
+
 .button:hover {
     background: rgba(249, 249, 249, 0.85);
 }
@@ -405,6 +410,24 @@ a {
 }
 .top .grid:after {
     opacity: 0.3;
+}
+
+#login:not(.button) {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    padding: 4px 12px;
+    line-height: 155.5%;
+    letter-spacing: -0.035em;
+    color: #1A1A1A;
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(26, 26, 26, 0.1);
+    box-sizing: border-box;
+    border-radius: 5px;
+    text-decoration: none;
+    background: #F9F9F9;
+    opacity: 1;
 }
 
 @media (max-width: 870px) {

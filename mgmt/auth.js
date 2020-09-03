@@ -4,7 +4,7 @@ const cookieParser = require('cookie-parser')
 
 const User = require('./db/User')
 const jwt = require('./jwt')
-const { ensureGiteaUserExists, getGiteaSession } = require('./gitea')
+
 const { 
     githubCodeToAuth,
     githubGet,
@@ -20,6 +20,7 @@ const {
     GITHUB_OAUTH_CLIENT_ID,
     GITEA_COOKIE_NAME,
     GITHUB_APP_NAME,
+    BILLING_DISABLED,
 } = process.env
 
 const router = new Router()
@@ -101,13 +102,20 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
             //
         }
     }
-    // create or get user
-    const user = await User.ensure({
+    
+    const u = {
         username,
         imageUrl,
         name,
         email,
-    })
+    }
+
+    if (BILLING_DISABLED) {
+        u.tier = 'business'
+    }
+
+    // create or get user
+    const user = await User.ensure(u)
 
     // get token for user
     const token = await jwt.sign({
@@ -122,21 +130,11 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
         })}`)
     }
 
-    // ensure gitea user
-    // await ensureGiteaUserExists({ id: user.id, username, imageUrl, name, email })
-
     // ensure kibana user
     const { sid } = await kibana.ensureKibanaUser({ email, username, fullName: name, password: user.id })
 
     // ensure minio user
     await s3.ensureFileUserExists(username, genBucketPass(username))
-
-    try {
-        const sessionId = await getGiteaSession(username, user.id)
-        res.cookie(GITEA_COOKIE_NAME, sessionId, { httpOnly: true })
-    } catch (e) {
-        //
-    }
 
     let redirectUrl = `${AUTH_REDIRECT}?${querystring.encode({
         token,

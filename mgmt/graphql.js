@@ -19,6 +19,7 @@ const { getCname } = require('./dns')
 const s3 = require('./s3')
 const github = require('./github')
 const auth = require('./auth')
+const billing = require('./billing')
 
 
 const {
@@ -32,9 +33,6 @@ const {
 
     PUBLIC_IPV4,
     PUBLIC_IPV6,
-
-    GITHUB_APP_NAME,
-    CHROME_EXT_ID,
 } = process.env
 
 const admins = [
@@ -50,6 +48,7 @@ const typeDefs = gql`
         imageUrl: String
         username: String
         activated: Boolean
+        tier: String
     }
 
     type Deployment {
@@ -187,6 +186,9 @@ const typeDefs = gql`
         getRepo(owner: String, repoName: String): Repo
         getLoginSession(id: ID!): LoginSession
         getHasGithubApp: Boolean
+        getCheckoutSessionId(tier: String): String
+        getPortalUrl: String
+        getStripePublicKey: String
     }
 
     type Mutation {
@@ -258,6 +260,21 @@ const listGithubRepos = async (accessToken, username) => {
 const resolvers = {
     JSON: GraphQLJSON,
     Query: {
+        getStripePublicKey: billing.getStripeKey,
+        getCheckoutSessionId: (parent, { tier }, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            return billing.getCheckoutSessionId(tier, context.user.username)
+        },
+        getPortalUrl: (parent, args, context) => {
+            if (!context.user) {
+                throw new Error('unauthorized')
+            }
+
+            return billing.getPortalUrl(context.user.username)
+        },
         getHasGithubApp: (parent, args, context) => {
             if (!context.user) {
                 throw new Error('unauthorized')

@@ -19,6 +19,7 @@ const Action = require('./db/Action')
 const RouteModel = require('./db/Route')
 const Resource = require('./db/Resource')
 const route = require('./route')
+const billing = require('./billing')
 
 const { ensureSchema, getSchemaEnv, genPass } = require('./dbMgmt')
 const feedbackDeploymentStatus = require('./feedbackDeploymentStatus')
@@ -572,9 +573,14 @@ const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl
 	let config = {}
 	let shouldDie = false
 
-	let hasConfig = false
-
 	try {
+		try {
+			await billing.repoPaidFor({ owner: user, repo })
+		} catch (e) {
+			const message = 'Billing issue - please verify your subscription allows you to deploy this repository.'
+			await logAction(parentActionId, { type: 'error', title: message })
+			throw message
+		}
 		await new Promise(async (resolve, reject) => {
 			let promises = []
 			const zipStream = await codeZipUrl()
@@ -596,7 +602,6 @@ const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl
 								.then(text => yaml.safeLoad(text))
 								.then(configFromYml => {
 									config = configFromYml
-									hasConfig = true
 								})
 								.catch(e => {
 									logAction(parentActionId, { type: 'error', title: 'failed to parse .ultima.yml', data: { error: e } })

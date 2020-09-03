@@ -59,7 +59,7 @@ const GettingStarted = () => {
     return (
         <>
             <Welcome>
-                <h2>Welcome to the Ultima Alpha</h2>
+                <h2>Welcome to Ultima Early Access</h2>
                 <p>In case you get stuck, here are some useful links</p>
                 <ul>
                     <li>
