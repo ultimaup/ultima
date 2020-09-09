@@ -13,7 +13,9 @@ const Repository = require('../db/Repository')
 
 const router = new Router()
 
-router.use(bodyParser.json())
+router.use(bodyParser.json({
+	limit: '50mb',
+}))
 
 router.post('/gitea-hook', async (req, res) => {
 	console.log('gitea webhook called')
