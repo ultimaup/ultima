@@ -76,9 +76,9 @@ const ensureKibanaUser = async ({ email, username: user, fullName, password }) =
 }
 
 const ensureUserCanAccessRepos = async (user, fullNames) => {
-    const ips = fullNames.map(fn => fn.split('/').join('-').toLowerCase()).map(ip => `logstash-${ip}-*`)
+    const ips = fullNames.map(fn => fn.split('/').join('-').toLowerCase()).map(ip => ([`logstash-${ip}-*`, `logstash-${ip}*`]))
     await Promise.all(
-        ips.map(ip => createIndexPattern(ip).catch(e => {
+        ips.flat().map(ip => createIndexPattern(ip).catch(e => {
             return ip
         }))
     )
