@@ -40,8 +40,8 @@ export const LogFrame = ({ tag, className }) => {
     const user = token ? jwtDecode(token) : {}
     const { username } = user
 
-    const iframeUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
-    const linkUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase()}"',kind:kuery)`
+    const iframeUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?embed=true&flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase().split('.').join('-')}"',kind:kuery)`
+    const linkUrl = `/kibana/s/${username.toLowerCase()}/app/infra#/logs/stream?flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)&logFilter=(expression:'tag:"${tag.toLowerCase().split('.').join('-')}"',kind:kuery)`
 
     return (
         <LogContainer className={className}>

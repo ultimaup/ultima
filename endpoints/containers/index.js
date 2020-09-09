@@ -202,7 +202,7 @@ const deploymentToConfig = deployment => {
 				Type: 'gelf',
 				Config: {
 					'gelf-address': GELF_ADDRESS,
-					tag: (deployment.stage.startsWith('refs/') ? deployment.repoName.split('/').join('-') : deployment.id).toLowerCase(),
+					tag: (deployment.stage.startsWith('refs/') ? deployment.repoName.split('/').join('-') : deployment.id).toLowerCase().split('.').join('-'),
 				},
 			},
 		},
