@@ -322,9 +322,9 @@ const resolvers = {
                     urMap[fullName] = true
                 })
 
-                if (recheckAccess) {
+                // if (recheckAccess) {
                     auth.ensureResourceAccess(username, Object.keys(urMap).filter(fname => fname.split('/')[0] !== username)).catch(console.error)
-                }
+                // }
 
                 return results.map(repo => {
                     return {

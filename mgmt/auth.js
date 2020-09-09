@@ -209,7 +209,7 @@ const ensureResourceAccess = async (username, fullNames) => {
     }
 
     await Promise.all([
-        kibana.ensureUserCanAccessRepos(username, fullNames),
+        kibana.ensureUserCanAccessRepos(username, fullNames.map(l => l.split('.').join('-'))),
         s3.ensureUserCanAccessRepos(username, fullNames),
     ])
 }
