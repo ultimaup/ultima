@@ -199,6 +199,7 @@ const defaultConfigs = () => {
         { source: `build.${PUBLIC_ROUTE_ROOT}/billing`, destination: FRONTEND_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/vcs`, destination: MGMT_ENDPOINT },
         { source: `build.${PUBLIC_ROUTE_ROOT}/github`, destination: MGMT_ENDPOINT },
+        { source: `build.${PUBLIC_ROUTE_ROOT}/stripe`, destination: MGMT_ENDPOINT },
     ]
 }
 
