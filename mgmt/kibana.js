@@ -76,7 +76,7 @@ const ensureKibanaUser = async ({ email, username: user, fullName, password }) =
 }
 
 const ensureUserCanAccessRepos = async (user, fullNames) => {
-    const ips = fullNames.map(fn => fn.split('/').join('-').toLowerCase()).map(ip => ([`logstash-${ip}-*`, `logstash-${ip}*`]))
+    const ips = fullNames.map(fn => fn.split('/').join('-').toLowerCase()).map(ip => ([`logstash-${ip}-*`, `logstash-${ip}`]))
     await Promise.all(
         ips.flat().map(ip => createIndexPattern(ip).catch(e => {
             return ip
@@ -90,7 +90,7 @@ const ensureUserCanAccessRepos = async (user, fullNames) => {
     const indexPattern = `logstash-${username}-*`
 
     await createRole(roleName, [...ips, indexPattern], spaceId).catch(e => {
-        console.error(`error updating role`)
+        console.error(`error updating role: ${JSON.stringify([roleName, [...ips, indexPattern], spaceId])}`,)
         throw e
     })
 
