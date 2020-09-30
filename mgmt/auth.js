@@ -123,12 +123,12 @@ router.get('/auth/github-redirect', cookieParser(), async (req, res) => {
         githubAccessToken: access_token,
     })
 
-    if (!user.activated) {
-        return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({
-            token,
-            waitlist: true,
-        })}`)
-    }
+    // if (!user.activated) {
+    //     return res.redirect(302, `${AUTH_REDIRECT}?${querystring.encode({
+    //         token,
+    //         waitlist: true,
+    //     })}`)
+    // }
 
     // ensure kibana user
     const { sid } = await kibana.ensureKibanaUser({ email, username, fullName: name, password: user.id })
