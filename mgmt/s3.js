@@ -30,7 +30,7 @@ const ensureWebBucket = (bucketName) => (
 	}).json().then(r => r)
 )
 
-const ensureFileBucket = (bucketName, ownerId) => (
+const ensureFileBucket = (bucketName, ownerId = BUILDER_BUCKET_ID) => (
 	got.post(`${FILEMANAGER_ENDPOINT}/file-bucket`, {
 		body: JSON.stringify({ bucketName, ownerId }),
 		headers: {
@@ -112,8 +112,35 @@ const ensureUserCanAccessRepos = async (user, fullNames) => {
 	}).json()
 }
 
+const listAllContents = async ({ Bucket, Prefix }) => {
+	// repeatedly calling AWS list objects because it only returns 1000 objects
+	let list = [];
+	let shouldContinue = true;
+	let nextContinuationToken = null;
+	while (shouldContinue) {
+	  let res = await s3
+		.listObjectsV2({
+		  Bucket,
+		  Prefix,
+		  ContinuationToken: nextContinuationToken || undefined,
+		})
+		.promise();
+	  list = [...list, ...res.Contents];
+  
+	  if (!res.IsTruncated) {
+		shouldContinue = false;
+		nextContinuationToken = null;
+	  } else {
+		nextContinuationToken = res.NextContinuationToken;
+	  }
+	}
+	return list;
+  };
+
 module.exports = {
 	uploadStream,
+	client: s3,
+	listAllContents,
 	getStream,
 	headObject,
 	ensureWebBucket,

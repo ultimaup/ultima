@@ -12,6 +12,7 @@ const { ensureAllLiveDeploymentsExist } = require('./boot')
 const migrate = require('./db/migrate')
 const webhooks = require('./routes/githubWebhook')
 const billing = require('./billing')
+const dbBackup = require('./dbBackup')
 
 const {
     PORT = 3000,
@@ -39,3 +40,5 @@ app.listen({ port: PORT }, () => {
         ensureAllLiveDeploymentsExist().catch(console.error)
     }, 2000)
 })
+
+dbBackup.schedule()
