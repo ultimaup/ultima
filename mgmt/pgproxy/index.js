@@ -13,7 +13,7 @@ const userCanAccessRepo = async (usr, environment) => {
         return true
     }
 
-    const ultimaRepos = await Repository.query().whereIn('fullName', GithubRepository.query().select('full_name').where({ username }))
+    const ultimaRepos = await Repository.query().whereIn('fullName', GithubRepository.query().select('full_name').where({ username: usr.username }))
     return ultimaRepos.map(ur => ur.fullName.split('/').join('-')).some(name => {
         return environment.startsWith(`${name}-`)
     })
