@@ -328,7 +328,7 @@ const getSubdomain = ({
 	branch,
 	repo,
 	user,
-}) => `${resourceName}-${branch}-${repo}-${user}`.split('.').join('-')
+}) => `${resourceName}-${branch}-${repo}-${user}`.split('.').join('-').split('/').join('-')
 
 const routesEnv = (config, { branch, repo, user }) => {
 	const obj = {}
