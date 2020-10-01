@@ -89,7 +89,7 @@ const ensureUserCanAccessRepos = async (user, fullNames) => {
 
     const indexPattern = `logstash-${username}-*`
 
-    await createRole(roleName, [...ips, indexPattern], spaceId).catch(e => {
+    await createRole(roleName, [...ips, indexPattern].flat(), spaceId).catch(e => {
         console.error(`error updating role: ${JSON.stringify([roleName, [...ips, indexPattern], spaceId])}`,)
         throw e
     })
