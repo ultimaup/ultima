@@ -24,7 +24,7 @@ Configuration is stored in a `.ultima.yml` file in your repository. Changes made
 
 
 ## Getting Started
-The quickest way to get started with ultima is to head over to [build.onultima.com](https://build.onultima.com) and login with your GitHub. From there check out our [getting started docs](https://build.onultima.com/docs/#/install/getting-started-ultima-project) and enjoy!
+The quickest way to get started with this awesome project is to head over to [build.onultima.com](https://build.onultima.com) and login with your GitHub. From there check out our [getting started docs](https://build.onultima.com/docs/#/install/getting-started-ultima-project) and enjoy!
 
 ## Contributing
 Our roadmap is available over on [the issues/milestones tab](https://github.com/ultimaup/ultima/milestones), if you'd like to work on any of those issues please check it's not already marked as in progress on a [project board](https://github.com/ultimaup/ultima/projects). [Contributor docs](https://build.onultima.com/docs/#/contributing/getting-started) are coming soon but I'm always available in the [community chat](https://build.onultima.com/community) for any questions you have.
