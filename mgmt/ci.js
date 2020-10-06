@@ -454,12 +454,18 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 		routeId: newRoute.source,
 	}).where('id', resourceId)
 
+	console.log(resourceName, 'updated new route', newRoute)
+
 	if (currentRoute && currentRoute.deploymentId) {
+		console.log(resourceName, 'removing current deployment', currentRoute)
 		await removeDeployment(currentRoute.deploymentId)
+		console.log(resourceName, 'removed current deployment', currentRoute)
 	}
 
+	console.log(resourceName, 'marking action complete')
 	await markActionComplete(routeActionId, { type, description: message, data: { resourceName, resourceUrl, url } })
 	
+	console.log(resourceName, 'marked action complete')
 	return {
 		resourceUrl,
 		resourceName,
