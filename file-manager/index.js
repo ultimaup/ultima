@@ -82,7 +82,8 @@ const createPolicy = async (bucketName) => {
 	const policy = generatePolicy(bucketName)
 
 	// write policy file
-	const tmpDir = await fse.mkdirp(`/tmp/${bucketName}`)
+	const tmpDir = `/tmp/${bucketName}`
+	await fse.mkdirp(tmpDir)
 	const tmpLoc = path.resolve(tmpDir, `${bucketName}.json`)
 
 	await fse.writeJson(tmpLoc, policy)
