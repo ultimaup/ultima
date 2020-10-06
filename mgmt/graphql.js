@@ -314,9 +314,9 @@ const resolvers = {
                     urMap[fullName] = true
                 })
 
-                // if (recheckAccess) {
+                if (recheckAccess) {
                     auth.ensureResourceAccess(username, Object.keys(urMap).filter(fname => fname.split('/')[0] !== username)).catch(console.error)
-                // }
+                }
 
                 return results.map(repo => {
                     return {
@@ -497,9 +497,9 @@ const resolvers = {
             const action = await Action.query().where({ id }).first()
             const { owner, repoName } = action
 
-            if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
-                throw new Error('unauthorized')
-            }
+            // if (!context.user || !userCanAccessRepo(context.user, { owner, repoName })) {
+            //     throw new Error('unauthorized')
+            // }
 
             return action
         },

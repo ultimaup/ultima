@@ -712,6 +712,8 @@ const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl
 				})
 		)
 
+		console.log('resourceRoutes', JSON.stringify(resourceRoutes, null, '\t'))
+
 		const liveResourceRoutes = await Promise.all(resourceRoutes.map(route => deployRoute({ ...route, config, parentActionId ,branch, repo, user })))
 
 		await markActionComplete(parentActionId, {
