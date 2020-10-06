@@ -404,6 +404,7 @@ const deployApiResource = async ({ ref, invocationId, repository, config, resour
 }
 
 const deployRoute = async ({ resourceId, config, parentActionId, resourceName, deploymentId, url ,branch, repo, user }) => {
+	console.log(`deploying route for ${repo} ${resourceName}`)
 	const routeActionId = await logAction(parentActionId, { type: 'debug', title: 'Putting resource live', data: { resourceName } })
 	const subdomain = getSubdomain({ resourceName,
 		branch,
@@ -412,6 +413,8 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 	})
 	// get current route
 	const [currentRoute] = await route.get(subdomain)
+
+	console.log(resourceName, 'got current route', currentRoute)
 
 	// add endpoint route
 	const resourceRoute = {
@@ -424,6 +427,8 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 	let type
 	let message
 	const alias = config && config[resourceName] && config[resourceName]['branch-domains'] && config[resourceName]['branch-domains'][branch]
+	console.log(resourceName, 'alias', alias)
+
 	if (alias) {
 		if (await checkAliasUse({ alias, subdomain })) {
 			type = 'warning'
@@ -433,6 +438,8 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 		}
 	}
 
+	console.log(resourceName, 'alias checked', alias)
+
 	// TODO: this is dumb
 	if (currentRoute && currentRoute.source) {
 		await Resource.query().update({
@@ -441,6 +448,7 @@ const deployRoute = async ({ resourceId, config, parentActionId, resourceName, d
 	}
 	
 	const resourceUrl = await route.set(resourceRoute)
+	console.log(resourceName, 'resourceUrl set', resourceUrl)
 	const newRoute = await RouteModel.query().where({ destination: url }).first()
 	await Resource.query().update({
 		routeId: newRoute.source,
@@ -714,7 +722,11 @@ const runPipeline = async ({ ref, after, repository, pusher, commits, codeTarUrl
 
 		console.log('resourceRoutes', JSON.stringify(resourceRoutes, null, '\t'))
 
-		const liveResourceRoutes = await Promise.all(resourceRoutes.map(route => deployRoute({ ...route, config, parentActionId ,branch, repo, user })))
+		const liveResourceRoutes = await Promise.all(
+			resourceRoutes
+				.map(route => deployRoute({ ...route, config, parentActionId ,branch, repo, user })
+			)
+		)
 
 		await markActionComplete(parentActionId, {
 			data: {
