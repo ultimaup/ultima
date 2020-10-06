@@ -116,7 +116,7 @@ const backupAllDBs = async () => {
     await Promise.all(
         dbs.map(dbName => {
             return backupDb(dbName).catch(e => {
-                console.error(`error backing up ${dbname}: ${e.message}`, e)
+                console.error(`error backing up ${dbName}: ${e.message}`, e)
             })
         })
     )
