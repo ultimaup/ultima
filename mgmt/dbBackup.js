@@ -13,7 +13,7 @@ const {
 } = process.env
 
 const backupDb = async (dbName) => {
-    const timestamp = encodeURIComponent(new Date()).toISOString()
+    const timestamp = encodeURIComponent(new Date().toISOString())
     const filepath = `${timestamp}.sql.gz`
     const pgDumpChild = spawn('pg_dump', [dbName, '--no-password'], {
         stdio: ['ignore', 'pipe', 'inherit'],
