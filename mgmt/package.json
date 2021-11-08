@@ -11,7 +11,7 @@
     "@octokit/rest": "^18.0.0",
     "@octokit/webhooks": "^7.6.3",
     "apollo-fetch": "^0.7.0",
-    "apollo-server": "^2.14.2",
+    "apollo-server": "^2.25.3",
     "aws-sdk": "^2.635.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
