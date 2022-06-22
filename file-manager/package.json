@@ -9,7 +9,7 @@
 		"body-parser": "^1.19.0",
 		"express": "^4.17.1",
 		"fs-extra": "^8.1.0",
-		"got": "^10.7.0",
+		"got": "^11.8.5",
 		"minio": "^7.0.16",
 		"s3rver": "^3.5.0",
 		"stream-to-string": "^1.2.0",
