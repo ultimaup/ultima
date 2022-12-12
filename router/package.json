@@ -5,7 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "fs-extra": "^9.0.0",
     "is-valid-domain": "^0.0.15",
     "knex": "^0.21.1",
