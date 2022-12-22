@@ -23,7 +23,7 @@
     "graphql-type-json": "^0.3.2",
     "gunzip-maybe": "^1.4.1",
     "js-yaml": "^3.13.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "klaw": "^3.0.0",
     "knex": "^0.21.1",
     "mime-types": "^2.1.26",
